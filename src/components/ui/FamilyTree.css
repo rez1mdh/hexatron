@@ -1,0 +1,227 @@
+/* src/components/ui/FamilyTree.css
+   Apple-inspired minimalist Family Tree component styles
+*/
+
+.family-tree-root {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-top: 1.5rem;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.family-tree-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.family-tree-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.family-tree-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.family-tree-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.family-tree-btn-tool {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.family-tree-btn-tool:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.family-tree-btn-tool.active {
+  background: var(--accent-glow);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+
+/* Add member panel */
+.family-tree-add-drawer {
+  padding: 1rem 1.25rem;
+  background: var(--bg-overlay);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.family-tree-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 170px;
+}
+
+.family-tree-field label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+/* Interactive Canvas Viewport */
+.family-tree-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  background: var(--bg-base);
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+}
+
+.family-tree-canvas-wrapper:active {
+  cursor: grabbing;
+}
+
+.family-tree-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Connector lines */
+.family-tree-connector-line {
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.family-tree-connector-line.marriage {
+  stroke: #ec4899;
+  stroke-width: 1.5;
+  stroke-dasharray: 4, 3;
+}
+
+.family-tree-connector-line.adoption {
+  stroke: #ff9f0a;
+  stroke-width: 1.5;
+  stroke-dasharray: 3, 3;
+}
+
+/* Generation level background labels */
+.generation-guide-line {
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+  stroke-dasharray: 2, 4;
+}
+
+.generation-guide-text {
+  fill: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Node card */
+.family-node-g {
+  cursor: pointer;
+}
+
+.family-node-rect {
+  fill: var(--bg-surface);
+  stroke: var(--border);
+  stroke-width: 1;
+  rx: 8;
+  ry: 8;
+  transition: all var(--transition);
+}
+
+.family-node-g:hover .family-node-rect {
+  stroke: var(--accent);
+  fill: var(--bg-elevated);
+}
+
+.family-node-g.is-focus .family-node-rect {
+  stroke: var(--accent);
+  stroke-width: 2;
+  fill: var(--bg-elevated);
+}
+
+.family-node-avatar-bg {
+  fill: var(--bg-overlay);
+}
+
+.family-node-name-text {
+  fill: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.family-node-role-text {
+  fill: var(--text-secondary);
+  font-size: 10px;
+}
+
+.family-node-date-text {
+  fill: var(--text-muted);
+  font-size: 9px;
+}
+
+.family-node-unlink-btn {
+  fill: var(--text-muted);
+  cursor: pointer;
+  transition: fill var(--transition);
+}
+
+.family-node-unlink-btn:hover {
+  fill: var(--danger);
+}
+
+/* Empty State */
+.family-tree-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  color: var(--text-secondary);
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.family-tree-empty-state p {
+  font-size: 0.85rem;
+  max-width: 38ch;
+}

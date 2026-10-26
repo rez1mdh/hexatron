@@ -1,0 +1,141 @@
+================================================================================
+HEXATRON PROJECT CONTEXT PROMPT
+================================================================================
+File: AI_GUIDES/PROJECT_CONTEXT_PROMPT.txt
+Purpose: Normal continuation prompt for an AI coding agent.
+When to use:
+- When starting a fresh AI conversation.
+- When the previous AI coding agent's context or memory has reset.
+- When switching accounts, tools, or resuming development after a break.
+- When an agent needs to understand the codebase and current status before modifying it.
+
+Copy and paste the text below into the AI coding agent's initial prompt.
+================================================================================
+
+# PROJECT CONTEXT & AGENT CONTINUATION INSTRUCTIONS
+
+You are pair-programming with the user on **Hexatron**, an existing, fully functioning, private worldbuilding encyclopedia and interactive relational knowledge-graph application.
+
+Treat this document as your primary briefing. Inspect the actual codebase and existing stored data before proposing or making changes. Do NOT rebuild this application from scratch, do NOT delete existing data, and do NOT invent fictional lore.
+
+---
+
+## 1. PROJECT IDENTITY & PURPOSE
+
+Hexatron is a private, local-first worldbuilding encyclopedia designed for writers, worldbuilders, game masters, and lore enthusiasts. It provides an Obsidian-like, rich media wiki experience combined with an interactive D3 network graph, specialized family-tree succession views, and demographic/ethnolinguistic analytics.
+
+Key differentiators:
+- **True Cosmological & Geographical Hierarchy**: Separates Universes, Galaxies, Solar Systems, Planets, Continents, Nations, Administrative Divisions (Governorates, States, Territories), and Settlements (Cities, Towns). A nation is never conflated with a world or planet; multiple sovereign nations coexist on continents.
+- **Permanent Entry Numbers (#001–#999+)**: Every entity has a permanent, chronological entry number that NEVER shifts or renumbers when entities are sorted, edited, or deleted. This allows canonical reference numbers across author notes.
+- **First-Class Typed Relationships**: Connections between entities are stored as first-class directional records with relationship types, dates, notes, and reverse labels (e.g., "capital of" / "capital is", "governs" / "governed by", "parent of" / "child of", "allied with", "proposes").
+- **Local-First & Private**: The primary database is stored inside the user's browser IndexedDB via Dexie.js for instant, zero-latency access without cloud dependency. An optional, secure Supabase cloud-sync layer is available.
+
+---
+
+## 2. TECHNOLOGY STACK & ARCHITECTURE
+
+- **Core Framework**: React 18 with TypeScript 5+ (Strict mode).
+- **Bundler & Dev Server**: Vite 6+.
+- **Database & Storage**:
+  - `Dexie.js 4+` (IndexedDB wrapper).
+  - Database name: `hexatron`.
+  - Tables:
+    - `universes`: Top-level cosmic domain (`id`, `title`, `description`, timestamps).
+    - `worlds`: World/setting containers belonging to a universe (`id`, `universeId`, `title`, `color`, `icon`).
+    - `entityTypes`: Category definitions (`id`, `name`, `color`, `icon`, `isBuiltIn`, `defaultFields`).
+    - `entities`: All lore articles (`id`, `worldId`, `typeId`, `title`, `entryNumber`, `aliases`, `article`, `properties`, `tags`, `canonStatus`, `demographicDatasets`, `linkedEntityIds`).
+    - `relationshipTypes`: Relation definitions (`id`, `name`, `reverseName`, `color`, `isBuiltIn`).
+    - `relationships`: Directional links (`id`, `fromEntityId`, `toEntityId`, `typeId`, `worldId`, `canonStatus`, `dateStart`, `dateEnd`, `notes`).
+    - `images`: Image attachments with local Blobs (`id`, `entityId`, `role`, `localBlob`, `remotePath`, `caption`).
+    - `changes`: Mutation ledger for synchronization (`id`, `table`, `operation`, `payload`, `clientId`, `syncedAt`).
+- **Rich Text Editor**: TipTap (ProseMirror-based). Rich text is stored as a serialized JSON string in `entity.article`.
+- **Graph Visualization**: D3.js (d3-force, d3-selection, d3-zoom) implementing an Obsidian-style network graph with scope filtering, category filtering, bounded node sizes (9–22px), selection dimming/highlighting, and an alpha-decay settled simulation.
+- **State Management**: Zustand (`src/store/appStore.ts`) for UI state (sidebars, active navigation context, theme, modal triggers, `universeVersion`).
+- **Icons**: Lucide React.
+- **Styling**: Vanilla CSS using custom design tokens (`src/index.css`, `src/pages/pages.css`, `src/components/layout/layout.css`).
+
+### Key Project Files & Folders:
+- `src/db/schema.ts` — Dexie database class, schema versions, TypeScript data models.
+- `src/db/operations.ts` — High-level CRUD operations, cascading deletions (`deleteWorldCascade`, `deleteUniverseCascade`), entry number generator (`getNextEntryNumber`, `ensureEntityEntryNumbers`), and v2 self-describing export/import (`exportAll`, `validateBackup`, `restoreBackup`, `mergeBackup`).
+- `src/db/seed.ts` — Built-in entity types (13+ types) and relationship types.
+- `src/db/importAurythar.ts` — Established canonical lore for the Federated States of Aurythar (114 entities, 214 relationships, calendar systems, and competing historical theories).
+- `src/components/graph/GraphView.tsx` — D3 interactive force-directed graph.
+- `src/components/ui/LinkedEntitiesPanel.tsx` — Categorized, collapsible, searchable linked entities browser with entry number badges.
+- `src/components/ui/BackupModal.tsx` — Self-describing JSON backup center with real-time validation, diff reporting, safe Merge mode, and clean Restore mode.
+- `src/components/ui/ManageUniversesModal.tsx` — Centralized manager to inspect, open, and delete universes and worlds.
+- `src/components/ui/DeleteConfirmModal.tsx` — Irreversible deletion safety dialog showing exact entity/connection impact counts.
+- `src/components/layout/` — `AppShell.tsx`, `TopBar.tsx`, `LeftSidebar.tsx`, `RightSidebar.tsx`.
+
+### Development & Verification Commands:
+- Start development server: `npm run dev` (Runs Vite on `http://localhost:5173/`).
+- Type check: `cmd.exe /c ".\node_modules\.bin\tsc.cmd --noEmit"`.
+- Production bundle build: `npm run build`.
+
+---
+
+## 3. FEATURE STATUS (IMPLEMENTED VS PLANNED)
+
+### Fully Implemented & Verified:
+1. **Multi-Universe & World Isolation**: Users can organize lore across multiple universes and worlds.
+2. **Cosmological & Geographical Hierarchy**: Entities classified properly into Universe (`et-universe`), Galaxy (`et-galaxy`), Star/Solar System (`et-solar-system`), Planet (`et-planet`), Continent (`et-continent`), Nation (`et-nation`), Governorate (`et-governorate`), State (`et-state`), Territory (`et-territory`), City (`et-city`), Settlement (`et-settlement`), Calendar (`et-calendar`), and Theory (`et-theory`).
+3. **Permanent Entry Numbers (#001–#114+)**: Assigned chronologically and never reordered or altered by edits, sorting, or deletions.
+4. **TipTap ProseMirror Article Editor**: Full rich-text editing with wiki-linking, tags, aliases, canon statuses (Canon, In-Progress, Disputed, Apocrypha), and custom key-value property fields.
+5. **Right-Sidebar Linked Entities Panel**: Categorized groups (Cosmology, Administration, Settlements, Politics & Economics, Peoples & Faith, History), real-time search filtering, entry number chips, collapsible sections, and multi-verb aggregation on single cards.
+6. **Redesigned Interactive Graph**:
+   - Scopes: All Universes, Current Universe, Current World, Nation & Hierarchy, Local Ego Network.
+   - Category filter pills: All Types, Geography, Administration, Settlements, Politics & Econ, Peoples & Faith, History.
+   - Node radii bounded strictly between 9px and 22px to prevent visual explosions.
+   - Selection dimming (`opacity: 0.22` for unrelated nodes, vibrant indigo `#6366f1` for active paths).
+   - Smart label decluttering (zoomed-out shows numbers/prominent titles; zoomed-in shows full labels).
+   - Settled simulation: Force simulation stops computing once `alpha < 0.005` to prevent CPU drain.
+7. **Family Tree & Succession View**: `InheritanceAssistant.tsx` renders generational kinship and parent/child/spouse networks.
+8. **Cascading Universe & World Deletions**: Deleting a world or universe safely removes child entities, images, and relationships to prevent orphaned data, accompanied by an explicit confirmation modal with data impact counts.
+9. **Reliable Self-Describing Backup System (V2)**:
+   - Export format: Versioned, human-readable `.json` (`hexatron-backup`, version 2) containing all universes, worlds, entities, articles, relationships, custom types, permanent entry numbers, and Base64-encoded image assets.
+   - Filename: Standardized with date (e.g., `worldbuilding-backup-YYYY-MM-DD.json`).
+   - Import validation: Pre-import file analysis reporting version compatibility, syntax integrity, record counts, and database diffs.
+   - Import modes:
+     - **Merge / Import**: Non-destructive, adds missing records, preserves existing lore, resolves entry number collisions.
+     - **Restore / Replace**: Clean database replacement with pre-restore emergency snapshot.
+10. **Global Command Palette (Ctrl+K)**: Quick actions `/c <name>`, `/new <type> <name>`, `/link <src> <rel> <target>`, `/tree <name>`, `/graph`, `/find <query>`, `/manage`, `/backup`, `/restore`.
+11. **Dark & Light Modes**: Seamless theme switching with curated HSL design tokens.
+
+### Partially Implemented / Optional:
+- **Cloud Synchronization**: Supabase integration code exists in `src/services/supabase.ts` and `src/services/cloudSync.ts`. Works when user inputs credentials in `AuthModal.tsx`. Local IndexedDB remains the primary offline-capable source of truth.
+
+### Planned / Future:
+- Interactive 2D map canvas with coordinate pins.
+- Chronological timeline scrubber across historical eras.
+
+---
+
+## 4. DATA SAFETY & PRESERVATION RULES
+
+1. **Never casually clear or overwrite IndexedDB**: The user's active lore is stored in the browser's `hexatron` database. Never run destructive operations without explicit user confirmation.
+2. **Never overwrite permanent entry numbers**: Once an entity has an `entryNumber`, it is permanent.
+3. **Never merge unrelated entities just because their titles match**: Match by stable internal UUIDs (`id`).
+4. **Protect existing canon**: In the Universe of Aurythar (530 A.C.), 114 entities and 214 relationships form the baseline canon. Do not remove, rename, or invent new facts about existing entities unless explicitly directed by the user.
+5. **No hallucinated lore**: The user's lore documents and instructions are the source of truth. Do not invent fictional names, dates, religions, or historical events.
+6. **Pre-operation backups**: When performing bulk data operations or database migrations, always save an emergency snapshot via `exportAll()` first.
+
+---
+
+## 5. DESIGN PRINCIPLES & STYLING
+
+- **Aesthetic**: Premium, dark-mode-first, restrained, modern encyclopedia design (inspired by Obsidian and Wikipedia, but visually elevated).
+- **Color System**: Custom CSS properties in `src/index.css`. Glassmorphism overlays (`backdrop-filter: blur(12px)`), subtle borders (`var(--border)`), tailored hover states, vibrant indigo accents (`#6366f1` / `#7c6af7`).
+- **Typography**: Clean, readable sans-serif system fonts with monospace accents for entry numbers (`.lep-entry-number`, `.badge`).
+- **Responsiveness**: Sidebars collapse on smaller screens; top bar search adapts into an icon.
+
+---
+
+## 6. DEVELOPMENT WORKFLOW FOR CONTINUATION AGENTS
+
+When the user asks you to implement a new feature or fix an issue:
+1. **Inspect First**: Read the relevant files using `view_file` or `grep_search`. Do not guess how a component or table is structured.
+2. **Extend, Don't Rebuild**: Add to the existing components and Dexie operations. Do not introduce alternative ORMs, redundant state managers, or conflicting UI frameworks.
+3. **Preserve Relationships & IDs**: When editing entities or worlds, maintain stable UUIDs and permanent entry numbers.
+4. **Verify TypeScript**: Always verify your edits by running `cmd.exe /c ".\node_modules\.bin\tsc.cmd --noEmit"`. Zero compilation errors is mandatory.
+5. **Test in Browser**: Use `browser_subagent` to test your changes visually at `http://localhost:5173/`.
+6. **Report Accurately**: State clearly what files were modified, what was tested, and confirm that existing lore data remains intact.
+================================================================================

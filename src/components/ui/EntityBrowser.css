@@ -1,0 +1,197 @@
+/* src/components/ui/EntityBrowser.css */
+
+.entity-browser {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+}
+
+.eb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.eb-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.eb-icon {
+  color: var(--accent);
+}
+
+.eb-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.eb-count-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--bg-overlay);
+  color: var(--text-muted);
+}
+
+.eb-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.eb-search-icon {
+  position: absolute;
+  left: 8px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.eb-search-input {
+  width: 100%;
+  padding: 6px 26px 6px 28px;
+  font-size: 0.8rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  outline: none;
+  transition: all var(--transition);
+}
+
+.eb-search-input:focus {
+  border-color: var(--accent);
+  background: var(--bg-base);
+}
+
+.eb-clear-btn {
+  position: absolute;
+  right: 6px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.eb-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.eb-select-row {
+  display: flex;
+  gap: 6px;
+}
+
+.eb-select {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  font-size: 0.72rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  outline: none;
+  cursor: pointer;
+}
+
+.eb-select:focus {
+  border-color: var(--accent);
+}
+
+.eb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.eb-loading,
+.eb-empty {
+  padding: 16px 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.eb-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: left;
+  width: 100%;
+}
+
+.eb-item:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-subtle);
+}
+
+.eb-item.active {
+  background: var(--accent-subtle);
+  border-color: var(--accent-dim);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.eb-item-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.eb-item-number {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent-text);
+  background: var(--bg-overlay);
+  padding: 1px 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.eb-item-title {
+  font-size: 0.8rem;
+}
+
+.eb-item-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.65rem;
+  color: var(--type-color, var(--text-muted));
+  background: var(--bg-base);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}

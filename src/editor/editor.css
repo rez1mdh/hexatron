@@ -1,0 +1,297 @@
+/* src/editor/editor.css — styles specific to the editor shell */
+
+.article-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────────────────── */
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+
+.toolbar-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.toolbar-btn.active {
+  background: var(--accent-glow);
+  color: var(--accent-text);
+  border-color: var(--accent-dim);
+}
+
+.toolbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+/* ── Editor content area ──────────────────────────────────────────────── */
+.editor-content-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 2.5rem;
+}
+
+.editor-content-wrapper .tiptap-content {
+  outline: none;
+  min-height: 300px;
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+.editor-footer {
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border);
+  text-align: right;
+}
+
+/* ── Autocomplete dropdown ────────────────────────────────────────────── */
+.entity-suggest-dropdown {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  min-width: 260px;
+  max-width: 360px;
+  overflow: hidden;
+}
+
+.suggest-header {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-overlay);
+}
+
+.suggest-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  text-align: left;
+  transition: background var(--transition);
+}
+
+.suggest-item:hover, .suggest-item.active {
+  background: var(--accent-glow);
+  color: var(--accent-text);
+}
+
+.suggest-title { font-size: 0.9rem; font-weight: 500; }
+.suggest-alias { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
+
+.suggest-hint {
+  padding: 5px 12px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+}
+
+/* ── Read-only view for Encyclopedia Articles ───────────────────────────── */
+.article-editor.readonly {
+  height: auto;
+  display: block;
+  position: static;
+}
+
+.article-editor.readonly .editor-content-wrapper {
+  padding: 0;
+  overflow: visible;
+  height: auto;
+}
+
+.article-editor.readonly .tiptap-content {
+  min-height: auto;
+  outline: none;
+  max-width: 100%;
+}
+
+.suggest-item-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+/* ── Link to Entity Dialog Modal ──────────────────────────────────────── */
+.link-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.link-modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 440px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.link-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+.link-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.link-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.link-modal-close:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.link-modal-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+}
+
+.link-modal-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.link-modal-label-hint {
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.link-modal-label-hint strong {
+  color: var(--accent-text);
+}
+
+.link-modal-results {
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.link-modal-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition);
+  width: 100%;
+}
+
+.link-modal-item:hover,
+.link-modal-item.active {
+  background: var(--accent-glow);
+  color: var(--accent-text);
+}
+
+.link-modal-item-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+  flex: 1;
+}
+
+.link-modal-item-alias {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.link-modal-empty {
+  padding: 20px;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.link-modal-footer {
+  padding: 8px 14px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border);
+}

@@ -1,0 +1,270 @@
+================================================================================
+HEXATRON REBUILD PROJECT PROMPT (EMERGENCY RECONSTRUCTION)
+================================================================================
+File: AI_GUIDES/REBUILD_PROJECT_PROMPT.txt
+Purpose: Comprehensive specification and emergency instructions to rebuild the
+Hexatron worldbuilding encyclopedia application from scratch if the original
+project is lost, corrupted, or explicitly ordered to be reconstructed.
+
+IMPORTANT SAFETY NOTICE:
+DO NOT USE THIS PROMPT DURING ORDINARY MAINTENANCE.
+If the existing application codebase or database is available, STOP immediately
+and use AI_GUIDES/PROJECT_CONTEXT_PROMPT.txt instead.
+Inspect the filesystem and search for backups before overwriting any files.
+================================================================================
+
+# HEXATRON EMERGENCY REBUILD SPECIFICATION & BLUEPRINT
+
+You are an expert full-stack engineer tasked with reconstructing **Hexatron**, a private, local-first worldbuilding encyclopedia and interactive relationship-graph application.
+
+---
+
+## 1. COMPLETE PRODUCT SPECIFICATION
+
+### 1.1 Objective & Target Use
+Hexatron is a dedicated desktop and mobile web application built for authors, narrative designers, and worldbuilders who maintain sprawling fictional universes with intricate political, dynastic, cultural, and geographical lore.
+
+It combines:
+1. **Wikipedia/Obsidian-Style Encyclopedia**: Rich-text lore articles with wikilinks, backlink detection, and structured metadata.
+2. **Cosmological & Geographical Hierarchy**: A rigorous 8-level cosmological nesting model (`Universe -> Galaxy -> Solar System -> Planet -> Continent -> Nation -> Governorate/State -> Settlement/City`). Nations are never conflated with planets or worlds; multiple sovereign nations coexist on continents.
+3. **Permanent Chronological Entry Numbers (#001–#999+)**: Every entity has an immutable entry number assigned at creation that remains fixed regardless of alphabetical sorting, editing, or deletion of other entities.
+4. **First-Class Relational Spiderweb Graph**: Interactive force-directed network graph visualizing alliances, enmities, administrative authority, kinship, and historical ties with scope filters, category filters, and selection highlighting.
+5. **Categorized Linked Entities**: Right-hand contextual panel grouping an article's incoming and outgoing links by category (Cosmology, Administration, Settlements, Politics & Economics, Peoples & Faith, History).
+6. **Family Tree & Succession Visualizer**: Dedicated generator rendering kinship networks and generational succession.
+7. **Self-Describing Backup & Recovery**: Version 2 `.json` backup system with validation engine, non-destructive Merge mode, and clean atomic Restore mode.
+8. **Local-First Zero-Latency Storage**: Primary data resides in browser IndexedDB (Dexie.js), with optional cloud sync to Supabase.
+
+---
+
+## 2. DATA MODEL & SCHEMA SPECIFICATION
+
+The application utilizes IndexedDB via **Dexie.js** with database name `hexatron`. All records must adhere to the following TypeScript interfaces:
+
+```typescript
+// --- Cosmological & Geographical Hierarchy Types ---
+export type HierarchyLevel =
+  | 'universe' | 'galaxy' | 'solar-system' | 'planet' | 'continent'
+  | 'nation' | 'governorate' | 'state' | 'territory' | 'city' | 'settlement';
+
+// --- Canon Status ---
+export type CanonStatus = 'canon' | 'in_progress' | 'disputed' | 'apocrypha';
+
+// --- Database Records ---
+
+export interface Universe {
+  id: string;             // UUIDv4
+  title: string;          // e.g., "Universe of Aurythar"
+  description?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface World {
+  id: string;             // UUIDv4
+  universeId: string;     // Foreign key to Universe.id
+  title: string;          // e.g., "Aurythar"
+  description?: string;
+  color?: string;         // Hex accent color (e.g., "#3b82f6")
+  icon?: string;          // Lucide icon name (e.g., "Globe")
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface PropertyFieldDef {
+  key: string;            // e.g., "capital", "population", "climate"
+  label: string;
+  type: 'text' | 'number' | 'date' | 'select' | 'entity_ref';
+  options?: string[];
+  required?: boolean;
+}
+
+export interface EntityType {
+  id: string;             // e.g., "et-character", "et-nation", "et-continent", "et-city"
+  name: string;
+  color: string;
+  icon: string;           // Lucide icon name
+  description?: string;
+  isBuiltIn: boolean;
+  defaultFields?: PropertyFieldDef[];
+}
+
+export interface Entity {
+  id: string;             // Immutable UUIDv4
+  worldId: string;        // Foreign key to World.id
+  typeId: string;         // Foreign key to EntityType.id
+  title: string;          // Primary title (e.g., "Federated States of Aurythar")
+  entryNumber?: number;   // Permanent sequential integer (#001, #002, etc.)
+  aliases: string[];      // Alternate names, acronyms (e.g., ["FSA", "Federation"])
+  article?: string;       // Serialized TipTap ProseMirror JSON doc string
+  properties?: Record<string, unknown>; // Custom key-values (governmentType, capital, etc.)
+  tags: string[];
+  canonStatus: CanonStatus;
+  linkedEntityIds: string[]; // Denormalized target entity IDs mentioned in article
+  createdAt: number;
+  updatedAt: number;
+  deletedAt?: number;
+}
+
+export interface RelationshipType {
+  id: string;             // e.g., "rt-capital-of", "rt-governs", "rt-citizen", "rt-parent"
+  name: string;           // Outgoing label (e.g., "capital of", "governs", "citizen of")
+  reverseName: string;    // Incoming label (e.g., "capital is", "governed by", "has citizen")
+  color: string;
+  isBuiltIn: boolean;
+}
+
+export interface Relationship {
+  id: string;             // UUIDv4
+  fromEntityId: string;   // Foreign key to Entity.id
+  toEntityId: string;     // Foreign key to Entity.id
+  typeId: string;         // Foreign key to RelationshipType.id
+  worldId: string;        // Foreign key to World.id
+  canonStatus: CanonStatus;
+  dateStart?: string;
+  dateEnd?: string;
+  notes?: string;
+  createdAt: number;
+  updatedAt: number;
+  deletedAt?: number;
+}
+
+export interface EntityImage {
+  id: string;             // UUIDv4
+  entityId: string;       // Foreign key to Entity.id
+  role: 'avatar' | 'banner' | 'gallery' | 'map';
+  caption?: string;
+  localBlob?: Blob;       // Stored locally in IndexedDB
+  remotePath?: string;    // Remote URL if synced
+  width?: number;
+  height?: number;
+  mimeType?: string;
+  sortOrder: number;
+  createdAt: number;
+}
+```
+
+### 1.2 IndexedDB Table Schema
+```typescript
+class HexatronDB extends Dexie {
+  universes!: Table<Universe>;
+  worlds!: Table<World>;
+  entityTypes!: Table<EntityType>;
+  entities!: Table<Entity>;
+  relationshipTypes!: Table<RelationshipType>;
+  relationships!: Table<Relationship>;
+  images!: Table<EntityImage>;
+  changes!: Table<ChangeEvent>;
+
+  constructor() {
+    super('hexatron');
+    this.version(2).stores({
+      universes:         'id, title',
+      worlds:            'id, universeId, title',
+      entityTypes:       'id, name, isBuiltIn',
+      entities:          'id, worldId, typeId, title, entryNumber, canonStatus, createdAt, updatedAt, deletedAt, *tags, *aliases, *linkedEntityIds',
+      relationshipTypes: 'id, name, isBuiltIn',
+      relationships:     'id, fromEntityId, toEntityId, typeId, worldId, deletedAt',
+      images:            'id, entityId, role, sortOrder',
+      changes:           'id, table, clientId, createdAt, syncedAt',
+    });
+  }
+}
+```
+
+---
+
+## 3. CORE BEHAVIOR & BUSINESS RULES
+
+1. **Stable Internal IDs vs. Permanent Entry Numbers**:
+   - `id`: Internal UUIDv4 used as foreign keys across relationships, image links, and backlinks.
+   - `entryNumber`: Human-facing sequential integer (`#001` - `#999+`) assigned at creation. Once assigned, it is NEVER modified, reused, or shifted.
+2. **Geographical & Cosmological Invariants**:
+   - Multiple nations must be able to belong to the same continent (e.g., FSA, Grand Duchy of Valais, Kingdom of Oakhaven on Continent of Aurythar).
+   - Administrative divisions (Governorates, States, Territories) belong to a Nation.
+   - Settlements (Cities, Towns) belong to a State/Governorate and/or Nation.
+   - The hierarchy is maintained via first-class relationships:
+     - `Planet Aurythar` --[contains]--> `Continent of Aurythar`
+     - `Continent of Aurythar` --[contains]--> `Federated States of Aurythar`
+     - `Federated States of Aurythar` --[governs]--> `Governorate of Aurythar Central`
+     - `State of Eldoria` --[capital is]--> `City of Eldoria`
+3. **No Hallucinated Lore or Silent Changes**:
+   - An entity must never be created or altered with invented facts.
+   - Competing historical claims or conflicting figures must be preserved as separate `et-theory` entities or flagged under `canonStatus: "disputed"`.
+4. **Safe Cascading Deletions**:
+   - Deleting a World must delete all child entities, relationships, and images belonging to that world.
+   - Deleting a Universe must cascade through all child worlds and their entities.
+   - Deletions must require explicit modal confirmation showing exact counts of child records to be erased.
+5. **Graph Radius Bounding & Performance**:
+   - Node radii must be mathematically bounded between `9px` and `22px` regardless of connection count.
+   - Force simulation must stop computing physics when `alpha < 0.005`.
+   - Dim unrelated nodes (`opacity: 0.22`) when a node is selected.
+
+---
+
+## 4. UI ARCHITECTURE & COMPONENT SPECIFICATION
+
+### Layout Structure:
+```
++-------------------------------------------------------------------------+
+| TopBar: [Menu] Hexatron   [Search/Ctrl+K]   [Sync] [Graph] [Export] [Import] [Theme] [Panel] |
++------------------+------------------------------------+-----------------+
+| LeftSidebar:     | Main Content Area:                 | RightSidebar:   |
+| - Universes      | - HomePage (Hero, Worlds Grid)     | - Linked        |
+|   - Child Worlds | - WorldPage (Filters, Entity List) |   Entities      |
+| - Graph View     | - EntityPage (TipTap Lore Article) |   (Categorized) |
+| - Manage Unis    | - EntityEditPage (Form & Editor)   | - All Entities  |
+| - Backup/Restore | - GraphPage (Obsidian D3 View)     |   Quick Search  |
++------------------+------------------------------------+-----------------+
+```
+
+### Essential UI Components:
+1. `AppShell.tsx`: Three-column shell managing layout, responsive collapse, theme, and global modals (`ManageUniversesModal`, `BackupModal`).
+2. `TopBar.tsx`: Brand wordmark, command palette launcher (`Ctrl+K`), cloud sync indicator, graph view shortcut, backup export/import triggers, theme toggle.
+3. `LeftSidebar.tsx`: Hierarchical universe tree with expandable child worlds, hover trash buttons, and navigation links.
+4. `RightSidebar.tsx`: Contextual drawer housing the `LinkedEntitiesPanel` when viewing an entity, and a fast entity search browser.
+5. `LinkedEntitiesPanel.tsx`: Collapsible accordion groups (Cosmology, Administration, Settlements, Politics & Economics, Peoples & Faith, History), live text search, entry number chips (`#016`), and multi-relationship badge pills on cards.
+6. `GraphView.tsx`: D3 force-directed SVG/Canvas graph with scope selector (All, Universe, World, Nation Hierarchy, Ego Network), category pills, zoom controls, and settled simulation.
+7. `BackupModal.tsx`: Dual-tab modal for downloading human-readable `.json` backups and validating/importing backups with Merge or Restore modes.
+8. `DeleteConfirmModal.tsx`: Irreversible deletion safety dialog showing entity and connection counts before deletion.
+9. `CommandPalette.tsx`: Global shortcut modal (`Ctrl+K`) with `/c`, `/new`, `/link`, `/tree`, `/graph`, `/find`, `/manage`, `/backup`, `/restore`.
+
+---
+
+## 5. RECOMMENDED REBUILD IMPLEMENTATION SEQUENCE
+
+If rebuilding the codebase from scratch, execute in this exact sequence:
+
+### Phase 1: Environment & Tooling
+```bash
+npx -y create-vite-app@latest ./ --template react-ts
+npm install dexie uuid lucide-react zustand d3 @types/d3 @tiptap/react @tiptap/pm @tiptap/starter-kit @supabase/supabase-js
+```
+
+### Phase 2: Core Database & Models
+1. Implement `src/db/schema.ts` with Dexie table definitions.
+2. Implement `src/db/seed.ts` containing the 13+ built-in entity types and relationship types.
+3. Implement `src/db/operations.ts` for entity CRUD, entry number assignment, and cascading deletions.
+
+### Phase 3: Backup & Restore Engine
+1. Implement V2 self-describing JSON export (`exportAll`).
+2. Implement validation engine (`validateBackup`) supporting both V2 and legacy V1.
+3. Implement non-destructive `mergeBackup` and atomic `restoreBackup`.
+4. If an existing `worldbuilding-backup-*.json` file is found on the filesystem, import it immediately to recover data.
+
+### Phase 4: App Shell & Global State
+1. Implement `src/store/appStore.ts` using Zustand.
+2. Implement `src/index.css` with dark/light mode CSS tokens.
+3. Build `TopBar.tsx`, `LeftSidebar.tsx`, `RightSidebar.tsx`, and `AppShell.tsx`.
+
+### Phase 5: Lore Articles & Editor
+1. Implement TipTap article editor with ProseMirror JSON serialization.
+2. Build `EntityPage.tsx` and `EntityEditPage.tsx`.
+3. Build `LinkedEntitiesPanel.tsx` with dynamic categorization and real-time search.
+
+### Phase 6: Spiderweb Graph
+1. Implement `GraphView.tsx` with D3 force simulation, scope filtering, category filtering, bounded radii, and settled physics.
+
+### Phase 7: Verification & Testing
+1. Run `cmd.exe /c ".\node_modules\.bin\tsc.cmd --noEmit"` to ensure zero TypeScript errors.
+2. Verify in browser: Home Page -> World Page -> Entity Page -> Graph View -> Backup & Restore.
+================================================================================

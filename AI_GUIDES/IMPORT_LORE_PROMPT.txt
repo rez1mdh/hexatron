@@ -1,0 +1,112 @@
+================================================================================
+HEXATRON LORE INGESTION & IMPORT PROMPT
+================================================================================
+File: AI_GUIDES/IMPORT_LORE_PROMPT.txt
+Purpose: Standard instruction prompt for an AI coding agent to parse, structure,
+and import raw worldbuilding material (text, markdown, HTML, lore documents)
+directly into the user's Hexatron database as interconnected entities and articles.
+
+Copy and paste the text below into the AI coding agent whenever you supply
+a new lore document to be ingested into Hexatron.
+================================================================================
+
+# WORLD-BUILDING LORE INGESTION PROTOCOL FOR HEXATRON
+
+You are acting as the primary Lore Archivist and Knowledge Engineer for **Hexatron**, an existing worldbuilding encyclopedia and relational database application.
+
+The user will provide you with a worldbuilding document (plain text, markdown, HTML, or raw author notes).
+
+---
+
+## 1. CARDINAL RULES & SOURCE MATERIAL PRIMACY
+
+1. **Source Material is Truth**:
+   The lore, facts, names, dates, demographics, and creative decisions in the supplied document are the author's own. Treat the document as your absolute canon.
+2. **Never Invent Lore**:
+   Do NOT hallucinate missing details, unmentioned dates, invented dynasties, or synthetic lore to "fill gaps." If a detail is missing or ambiguous, document it as an open question or set `canonStatus: "disputed"`.
+3. **No Disconnected Stubs or Text Dumps**:
+   Every meaningful entity mentioned in the document must become an individual, richly formatted article in the database, with real stored directional relationships pointing to other entities. Do not dump the entire text into one monolithic page.
+4. **Mentioning a Name in Text is Not Enough**:
+   Wikilinks inside article text (`[[Entity Title]]`) are visual aids. You MUST also create real, first-class relationship records in the `relationships` table linking their stable UUIDs.
+5. **Preserve Existing Canon**:
+   Always search the existing database before creating an entity. If an entity already exists (e.g., `Federated States of Aurythar`, `Planet Aurythar`), update its article with richer details and reuse its existing `id` and `entryNumber`. Never duplicate entities.
+
+---
+
+## 2. STEP-BY-STEP INGESTION WORKFLOW
+
+Follow this systematic procedure for every supplied lore document:
+
+### STEP 1: Pre-Import Safety Backup
+Before making any database mutations:
+1. Export the current database state as a safety snapshot by calling `exportAll()`.
+2. Ensure you can roll back if a batch fails or is interrupted.
+
+### STEP 2: Read & Deconstruct the Source Document
+Read the supplied material completely from start to finish. Build a mental index of:
+- **Cosmological & Geographical Hierarchy**:
+  - Universe -> Galaxy -> Solar System -> Planet -> Continent -> Nation -> Governorate/State/Territory -> City/Settlement.
+- **Societies, Peoples & Faiths**:
+  - Ethnic groups, racial demographics, spoken languages, religions, sects, and sacred texts.
+- **Governance & Politics**:
+  - Sovereign states, federal governing bodies, political parties, alliances, intelligence agencies, legal codes, and economic treaties.
+- **Historical Chronology**:
+  - Calendars (e.g., Continental Calendar `A.C.` / `B.C.`), historical eras, foundation dates, wars, treaties, and catastrophes.
+- **Competing Theories & Historiography**:
+  - When the source describes disputed origins, competing scholarly theories, or mythological vs. empirical claims, create them as `et-theory` entities connected to the subject matter via `rt-proposes` or `rt-analyzes`.
+
+### STEP 3: Check Existing Database Records
+Before creating any record:
+1. Query `db.entities.where('worldId').equals(targetWorldId).toArray()`.
+2. Normalize titles and aliases to match existing entities.
+3. If an entity exists, mark its UUID (`id`) and permanent `entryNumber` for updating rather than creating a duplicate.
+
+### STEP 4: Entity Creation & Permanent Numbering
+1. For every new entity:
+   - Generate a stable `id: uuidv4()`.
+   - Obtain the next sequential entry number using `await getNextEntryNumber()`.
+   - Assign the appropriate built-in or custom `typeId`:
+     - `et-universe`, `et-galaxy`, `et-solar-system`, `et-planet`, `et-continent`, `et-nation`, `et-governorate`, `et-state`, `et-territory`, `et-city`, `et-settlement`, `et-character`, `et-organization`, `et-religion`, `et-culture`, `et-language`, `et-event`, `et-calendar`, `et-theory`.
+   - Set `canonStatus: "canon"` (or `"disputed"` / `"in_progress"` if ambiguous).
+   - Populate `aliases` with all alternative names, historical titles, and acronyms mentioned in the text.
+   - Extract structured properties (e.g., `population`, `capital`, `foundedDate`, `governmentType`, `climate`).
+
+### STEP 5: Format Rich Lore Articles (ProseMirror / TipTap)
+Every article must be structured cleanly using TipTap's JSON schema:
+- **Header**: Official title, aliases, entry number.
+- **Section 1: Overview & Status**: Executive summary of the entity in the current era.
+- **Section 2: Geography / Demographics / Governance**: Exact figures, ruling councils, ethnic distribution, or administrative structure.
+- **Section 3: History & Key Eras**: Chronological progression with exact dates.
+- **Section 4: Cultural & Religious Significance**: Associated beliefs, holy sites, or customs.
+- **Section 5: Open Inquiries & Intelligence Gaps**: Document unknown facts or gaps as noted in the source.
+
+### STEP 6: First-Class Stored Relationships
+Connect entities using their stable internal IDs (`fromEntityId`, `toEntityId`, `typeId`, `worldId`):
+- `Planet Aurythar` --[rt-contains]--> `Continent of Aurythar`
+- `Continent of Aurythar` --[rt-contains]--> `Federated States of Aurythar`
+- `City of Eldoria` --[rt-capital-of]--> `Federated States of Aurythar`
+- `Federated States of Aurythar` --[rt-governs]--> `Governorate of Aurythar Central`
+- `Rezaul Karim` --[rt-citizen]--> `Federated States of Aurythar`
+- `Continental Calendar` --[rt-measures]--> `Continent of Aurythar`
+- `Theory of Pre-Calibrated Convergence` --[rt-proposes]--> `State of Aurythar`
+
+### STEP 7: Batch Ingestion & Atomic Persistence
+1. Perform upserts in batches using Dexie transactions (`db.transaction('rw', ...)`).
+2. Run `await ensureEntityEntryNumbers()` to guarantee that every entity has an intact, non-colliding permanent entry number.
+3. Call `bumpUniverseVersion()` in the UI store so the left sidebar, graph view, and home dashboard refresh automatically.
+
+---
+
+## 3. IMPORT VERIFICATION & FINAL REPORTING
+
+After ingestion is complete, verify the imported data:
+1. Confirm all entities are retrievable via `db.entities.get(id)`.
+2. Confirm relationships point to valid `fromEntityId` and `toEntityId` records.
+3. Run `cmd.exe /c ".\node_modules\.bin\tsc.cmd --noEmit"` to ensure zero TypeScript compiler errors.
+4. Provide the user with an **Ingestion Audit Report** detailing:
+   - Total new entities created (with their entry numbers `#XXX`).
+   - Total existing entities updated with new lore.
+   - Total relationships established.
+   - Cosmological hierarchy summary.
+   - List of any ambiguities or disputed facts preserved.
+================================================================================

@@ -1,0 +1,1820 @@
+<USER_REQUEST>
+# Import My Worldbuilding Lore into the Existing Universe Database
+
+## Objective
+
+I am going to provide you with a lore document containing information about my fictional universe and its worldbuilding. It may be a plain text file, HTML document, or another readable format.
+
+**The worldbuilding, ideas, facts, names, and decisions in this document are mine. AI was only used to help structure and format some of the text. Treat the document as my source material, not as an invitation to invent new lore.**
+
+Your task is to read and understand the supplied material, then enter it into my existing worldbuilding application as properly structured, interconnected entities and articles.
+
+The application is designed to let both me and an AI coding agent add and organize lore. Use the application's existing functionality and data model to populate it. Do not merely explain how I could enter everything manually.
+
+## 1. Inspect the application and source material first
+
+Before importing anything:
+
+1. Inspect the existing application, its database, entity types, article editor, relationship system, entry-numbering system, universe/world organization, and import capabilities.
+2. Read the entire supplied document, including relevant sections, headings, tables, lists, and links. If it is HTML, extract the meaningful content while preserving its structure and useful metadata.
+3. Identify the universe, worlds, geographical hierarchy, historical periods, entities, and relationships described in the document.
+4. Check whether relevant entities already exist in the application.
+5. Develop a structured import plan before writing records.
+
+Do not assume every detail is immediately clear. If an important ambiguity could cause a major mistake, ask me a concise clarification. Otherwise, preserve the original wording or mark the detail as uncertain rather than guessing.
+
+## 2. Turn the lore into individual entities and articles
+
+Do not keep everything inside one enormous document. Break the material into appropriate, individually browsable entity articles using the application's existing entity system.
+
+Depending on what appears in the source, entities may include:
+
+- Universes and worlds.
+- Planets, continents, regions, states, provinces, territories, cities, towns, and other locations.
+- Nations, governments, political systems, and administrative divisions.
+- Characters, families, dynasties, and historical figures.
+- Ethnic groups, ancestries, cultures, religions, and languages.
+- Organizations, political parties, institutions, and military forces.
+- Historical eras, timelines, events, wars, treaties, and important developments.
+- Species, creatures, technologies, weapons, artifacts, and other concepts.
+- Any other meaningful entity types described in my material.
+
+These are examples, not a mandatory list. Use existing entity types when appropriate and the app's custom entity-type system when necessary.
+
+### Article content
+
+For every entity, create or update an article containing the relevant information from the source.
+
+Preserve meaningful details, including:
+- Names and alternate names.
+- Descriptions and defining characteristics.
+- Geography and administrative structure.
+- Historical background and chronology.
+- Political, cultural, ethnic, and linguistic information.
+- Population figures, dates, statistics, and other supplied facts.
+- Connections to other entities.
+- Important distinctions, qualifications, and uncertainty expressed in the source.
+
+Keep the content organized with suitable headings, lists, tables, and timelines where useful. Preserve the original meaning and level of detail. Do not unnecessarily shorten substantial lore into vague summaries.
+
+If a section contains information about multiple entities, distribute that information to the relevant articles while preserving the context needed to understand it. Do not lose important details during this process.
+
+## 3. Create real relationships between entities
+
+**Every meaningful relationship described in the source should become a real, stored relationship in the application whenever the existing data model supports it.**
+
+Do not merely mention related entity names in article text and consider the job complete.
+
+For example, if the document states that:
+- A city belongs to a particular state.
+- A state belongs to a nation.
+- A nation occupies part of a continent.
+- A character belongs to an ethnic group.
+- A character speaks a particular language.
+- A character follows a religion.
+- Two characters are related.
+- A dynasty ruled a nation during a particular era.
+- A historical event occurred in a particular location.
+
+Then create or update the corresponding entity articles and connect them using appropriate relationship types.
+
+Use the actual relationship labels and directions supported by the application. Include dates, historical periods, notes, and context when the source supplies them.
+
+Relationships must use the entities' stable internal IDs. Do not create duplicate records merely to represent a relationship.
+
+Make sure the resulting connections appear correctly in the article's **Linked Entities** panel and the appropriate universe/world graph.
+
+## 4. Respect geographical and political hierarchies
+
+Pay special attention to the difference between geographical and administrative entities.
+
+For example, if the source describes a continent containing a region, a nation containing several states, and a state containing multiple cities, represent the correct hierarchy explicitly.
+
+Do not assume that every geographical relationship is the same. Distinguish relationships such as:
+- Located within.
+- Part of.
+- Contains.
+- Capital of.
+- Governed by.
+- Borders.
+- Historically controlled by.
+- Formerly belonged to.
+
+Use only relationships supported by the source. A historical border, former territory, or past political affiliation should not automatically become a present-day relationship.
+
+Preserve the source's distinction between a nation, state, province, territory, city, ethnic group, and culture. Do not merge different concepts simply because their names are similar.
+
+## 5. Reuse existing entities and avoid duplicates
+
+Before creating any entity, search the existing database.
+
+- If an entity already exists and clearly represents the same thing, update or enrich that entity rather than creating a duplicate.
+- Reuse existing entities and stable IDs when linking relationships.
+- Consider aliases, alternate spellings, abbreviations, and historical names when checking for duplicates.
+- Do not merge two entities merely because their names are similar.
+- If it is unclear whether two records represent the same entity, flag the ambiguity for review.
+- If an existing article contains information that is not present in the new document, preserve that information.
+- If the new source conflicts with existing lore, do not silently overwrite the existing information. Record the conflict and ask me how to resolve it when necessary.
+
+Explicitly creating an entity is different from merely mentioning its name in the source. Only create records for entities that are meaningful in context.
+
+## 6. Preserve the distinction between facts and inferences
+
+My supplied lore is the authority for this import.
+
+Do not invent:
+- Missing history.
+- Unspecified dates or population figures.
+- New characters, nations, cities, or ethnic groups.
+- Family relationships.
+- Borders or territorial claims.
+- Languages, religions, cultural practices, or ancestry.
+- Political affiliations or historical events.
+- Explanations that the source does not establish.
+
+You may infer a relationship when it is unambiguously implied by the text and consistent with the app's data model. When an inference is not certain, mark it as a proposed relationship or flag it for my review rather than treating it as established canon.
+
+If two statements appear contradictory, preserve the distinction and flag the conflict instead of choosing one arbitrarily.
+
+Do not use external information or general real-world knowledge to overwrite my fictional world's rules. Use outside research only if I explicitly request it.
+
+## 7. Assign and preserve entry numbers
+
+Follow the application's existing permanent entry-numbering system.
+
+- Reuse the entry number of an existing entity when updating it.
+- Allow the application to assign a new number to a genuinely new entity.
+- Never manually renumber existing entities to make the sequence look tidy.
+- Never create duplicate numbers.
+- Do not use an entry number as a replacement for a stable internal ID.
+- If importing an entity with an entry number from the source, preserve it only when it is valid and compatible with the application's numbering rules. Otherwise, flag the conflict and follow the app's safe import procedure.
+
+## 8. Organize the lore within the correct universe and world
+
+Determine which universe and world each entity belongs to from the source material.
+
+Place each entity in the correct context using the application's existing organization system. Keep entities from different universes distinct, even if they share names.
+
+If an entity genuinely belongs to multiple worlds or is shared across contexts, represent that appropriately using the existing data model instead of creating unnecessary duplicate copies.
+
+Do not invent a new universe or world if the document clearly belongs to an existing one. If the correct destination is unclear, ask me before committing substantial changes.
+
+## 9. Preserve timelines and historical changes
+
+When the source describes events across different periods, preserve the chronology.
+
+- Create event and era entities when appropriate.
+- Link events to their locations, characters, nations, organizations, and other relevant entities.
+- Preserve supplied dates, date ranges, ordering, and uncertainty.
+- Distinguish historical relationships from current ones.
+- Do not represent an old border or former ruler as current unless the source says it remains current.
+- If the application supports historical versions or time-dependent relationships, use them where appropriate.
+
+If the document contains a timeline or chronology, preserve it as a structured timeline where the app supports that functionality, while also linking the relevant events to their individual articles.
+
+## 10. Import safely and verify the result
+
+Treat the import as a data migration, not an ordinary text-generation task.
+
+Before making substantial changes, provide a concise preview of:
+- The universe or world being populated.
+- The entity types and approximate number of entities identified.
+- The relationships identified.
+- Existing entities that will be reused or updated.
+- Potential duplicates, ambiguities, or contradictions.
+- Any important information that cannot be represented using the current application.
+
+If the application has an import-review or approval workflow, use it. Otherwise, create a clear review plan before committing substantial changes, and ask for my approval when the changes could be destructive or when major ambiguities remain.
+
+Then carry out the import through the application's actual data layer and supported interfaces. Do not create a disconnected export, mock database, or collection of sample records and claim that the application has been populated.
+
+Protect existing data:
+- Use safe, appropriately sized batches.
+- Avoid overwriting unrelated articles.
+- Preserve existing entity IDs, entry numbers, relationships, and custom properties.
+- Back up existing data before risky bulk changes when practical.
+- Make the import resumable where feasible so a failure does not force the entire import to start again.
+- Avoid creating duplicates if a batch is retried.
+- Verify that saved records persist after refreshing the application.
+
+## 11. Final verification checklist
+
+After importing, verify the following:
+
+1. All meaningful entities identified in the source have been created or matched to existing records.
+2. The relevant article content has been preserved.
+3. Every relationship that could be represented has been stored correctly.
+4. Geographic and political hierarchies are correct.
+5. Existing entities were reused where appropriate.
+6. No unintended duplicate entities or entry numbers were created.
+7. Every new entity has a valid permanent entry number.
+8. Articles show their linked entities correctly.
+9. Entities appear in the correct universe/world and graph views.
+10. Timelines and historical relationships have been preserved where supported.
+11. Uncertain information and unresolved contradictions are documented.
+12. The saved data remains present after refreshing the application.
+
+At the end, give me a concise import report with:
+- Entities created.
+- Existing entities updated or reused.
+- Relationships created.
+- Entry numbers assigned to new entities.
+- Any conflicts, duplicates, or uncertain details requiring my decision.
+- Any source information that could not be represented.
+- Any tests or verification steps that failed.
+
+Report actual results only. Do not claim everything is linked or imported unless you have verified it.
+
+## Final principle
+
+**My document is the source of truth. The application is where that lore becomes a structured, searchable, interconnected encyclopedia.**
+
+Preserve my ideas and details, split the content into meaningful entity articles, connect the entities through real relationships, and keep the whole database organized and consistent. Do not invent lore or silently change established canon.      (all of this in another universe)         You're right! Let me restore the full detail while keeping the Wa'ka Ond'A section appropriately concise. Here is the complete, detailed document with focus on what matters most:
+
+---
+
+# 📖 THE FEDERATED STATES OF AURYTHAR
+## Complete World Reference (530 A.C.)
+
+---
+
+# PART ONE: FOUNDATIONS
+
+## 🏷️ Basic Information
+
+| Aspect | Details |
+|--------|---------|
+| **Official Name** | The Federated States of Aurythar |
+| **Government Type** | Federal Parliamentary Republic |
+| **Current Year** | 530 A.C. (After Conquest) |
+| **Total Population** | 18,047,300 |
+| **Capital** | Leivionas (Sundralic Governorate) |
+| **National Languages** | Aurythari, High Vahlari |
+| **Major Religions** | Zehrienotisism (77.2%), Aurythism (19.4%), Flancosism (3.7%), Jedeshebayom (1.3%), Devonshierostianity (1.2%) |
+| **Global Status** | Strongest and Richest Nation in the World |
+
+---
+
+## 📅 Calendar System
+
+| Era | Meaning | Description |
+|-----|---------|-------------|
+| **B.C.** | Before Conquest | Counts backward from the first Vahlari landing (500 B.C. to 0 B.C.). Marks the indigenous golden age. |
+| **A.C.** | After Conquest | Counts forward from the Vahlari stronghold establishment in 0 A.C. (circa 1525 A.D.). |
+
+---
+
+## 🌍 Global Context
+
+| Aspect | Description |
+|--------|-------------|
+| **Economic Status** | Largest economy; most advanced industrial base; primary trade hub |
+| **Military Status** | Strongest military; most modern equipment; nuclear-capable |
+| **Technological Lead** | Decades ahead of neighbors; innovation center |
+| **Known Neighbors** | Kalthar (Jedeonshu origin), Northern Brassic Kingdoms, Eastern Trade Confederacy, Uncontacted Southern Tribes |
+
+---
+
+# PART TWO: ETHNIC CLASSIFICATION
+
+## 📋 Ethnic Categories by Origin
+
+| Category | Description | Ethnicities Included |
+|----------|-------------|---------------------|
+| **Natives** | Indigenous peoples who inhabited the land before the Vahlari conquest | Ivarra, Valmorri, Yeloni, Auryni, Veyrithi, Marash, Zahrani, Sundralic, Korvan, Wa'ka Ond'A |
+| **Colonizers** | Invaders who conquered and colonized the land (0 A.C. onward) | Vahlari, Dravari, Brassic |
+| **Immigrants (Peaceful)** | Came from colonizer homeland but integrated peacefully with natives | Thori |
+| **Immigrants (Troublesome)** | Came from colonizer homeland but caused conflict; now concentrated in Valmorri | Jedeonshu |
+| **Mixed** | Descendants of intermarriage between categories | Mixed |
+
+---
+
+## 👥 Ethnicity Breakdown with Origins
+
+| Ethnicity | Population | Percentage | Origin Category | Inspiration | Physical Description |
+|-----------|------------|------------|-----------------|-------------|---------------------|
+| **Vahlari** | 4,478,600 | 24.82% | Colonizer | French, German | White |
+| **Dravari** | 2,343,600 | 12.99% | Colonizer | South German, North Italian | White (Southern European) |
+| **Valmorri** | 1,525,200 | 8.45% | Native | South Asian, Iranian | Brown to light brown |
+| **Yeloni** | 1,206,100 | 6.68% | Native | Palestinian, South Italian, Greek | Mediterranean, olive to tan |
+| **Ivarra** | 1,091,200 | 6.05% | Native | Dutch, German, French | White (Northwest European) |
+| **Auryni** | 1,055,300 | 5.85% | Native | Iranian, Arab, Moroccan | Middle Eastern, tan to brown |
+| **Veyrithi** | 905,800 | 5.02% | Native | Japanese, Korean | East Asian |
+| **Mixed** | 721,600 | 4.00% | Mixed | Various | White to brown |
+| **Marash** | 603,800 | 3.35% | Native | Polynesian | Polynesian |
+| **Jedeonshu** | 594,000 | 3.29% | Immigrant (Troublesome) | Jewish | Middle Eastern/European Jewish |
+| **Zahrani** | 631,400 | 3.50% | Native | Arab, Egyptian | Arab/Egyptian, tan to brown |
+| **Brassic** | 502,100 | 2.78% | Colonizer | Dutch, Danish, Nordic, English | White (Northwest European/Nordic) |
+| **Erebbassics** | 449,600 | 2.49% | Native | Berber, Egyptian | North African, tan to brown |
+| **Sundralic** | 419,100 | 2.32% | Native | South Asian, Iranian, Slavic | Varied, white to brown |
+| **Korvan** | 401,700 | 2.23% | Native | Korean, Mongol, Siberian | East Asian, North Asian |
+| **Wa'ka Ond'A** | 269,700 | 1.49% | Native | Black African | Black African |
+| **Thori** | 255,600 | 1.42% | Immigrant (Peaceful) | Baltic | White (Baltic) |
+
+---
+
+## 🏛️ Governorate Naming Convention
+
+All governorates are named after the **majority native ethnicity** that inhabited the region before the Vahlari conquest:
+
+| Governorate | Named After | Native Majority | Current Status |
+|-------------|-------------|-----------------|----------------|
+| Ivarra (🟣) | Ivarra people | Ivarra | Ivarra still plurality (49.8%) |
+| Valmorri (🔵) | Valmorri people | Valmorri | Now Vahlari majority (69.9%) |
+| Sundralic (🟢) | Sundralic people | Sundralic | Now Dravari majority (64.8%) |
+| Korvan (🔴) | Korvan people | Korvan | Now Vahlari plurality (30%) |
+| Auryni-Yeloni (🟡) | Auryni and Yeloni peoples | Auryni, Yeloni | Native majority combined (75%) |
+| Veyrithi-Marash (💎) | Veyrithi and Marash peoples | Veyrithi, Marash | Native majority combined (75%) |
+| Zahrani (🟩) | Zahrani people | Zahrani | Zahrani plurality (35.1%) |
+
+---
+
+# PART THREE: RELIGIONS
+
+## ⛪ FLANCOSISM
+*The Christianity Equivalent*
+
+| Aspect | Details |
+|--------|---------|
+| **Origin** | Foreign; brought by colonizers (Vahlari, Dravari, Brassic) |
+| **Introduced** | 0 A.C. (Vahlari conquest) |
+| **Base** | Spread as tool of colonial control |
+| **Relationship** | Related to Zehrienotisism (like Christianity and Islam) |
+| **Core Beliefs** | Monotheistic; prophet-based; salvation-focused |
+| **Sacred Text** | The Flancos Codex |
+| **Major Centers** | Flanione (Valmorri) – historical heartland |
+| **Current Status** | 3.65% of population; concentrated in Valmorri; associated with extremism |
+| **Notable Fact** | Extremist Flancosists form base of National Renewal Movement |
+
+---
+
+## 🕌 ZEHRIENOTISISM
+*The Islam Equivalent*
+
+| Aspect | Details |
+|--------|---------|
+| **Origin** | Indigenous; emerged in Zahrani region (c. 500-250 B.C.) |
+| **Introduced** | Native faith; predates conquest |
+| **Base** | Desert resilience; indigenous resistance |
+| **Relationship** | Related to Flancosism (like Islam and Christianity); shares prophets, stories |
+| **Core Beliefs** | Strict monotheism; prophetic tradition; divine law |
+| **Sacred Text** | The Zehrien Codex |
+| **Major Centers** | Hele (Auryni-Yeloni) – spiritual capital |
+| **Current Status** | 77.2% of population; majority faith; dominant in eastern and southern governorates |
+| **Notable Fact** | Surged as protest faith during colonial era |
+
+---
+
+## 🕍 JEDESHEBAYOM
+*The Judaism Equivalent*
+
+| Aspect | Details |
+|--------|---------|
+| **Origin** | Foreign; brought by Jedeonshu immigrants from Kalthar |
+| **Introduced** | c. 300 B.C. |
+| **Base** | Exclusively followed by Jedeonshu ethnic group |
+| **Relationship** | Related to both Flancosism and Zehrienotisism (like Judaism to Christianity/Islam) |
+| **Core Beliefs** | Covenant-based; chosen people; strict law |
+| **Sacred Text** | The Jedeshe Codex |
+| **Major Centers** | Vermione and Flanione (Valmorri) – after expulsion from other governorates |
+| **Current Status** | 1.34% of population; confined almost entirely to Valmorri |
+| **Notable Fact** | Jedeonshu historically controlled banking and resources; expelled from six governorates (382-420 A.C.) |
+
+---
+
+## ☯️ AURYTHISM
+*The Syncretic Faith*
+
+| Aspect | Details |
+|--------|---------|
+| **Origin** | Formed from merger of Flancosism and Zehrienotisism |
+| **Introduced** | 420 A.C. |
+| **Base** | Based on Zehrienotisism but integrated Flancosist elements to be accessible |
+| **Relationship** | Viewed by Zehrienotists as a branch; by Flancosists as heresy |
+| **Core Beliefs** | Monotheistic; blended rituals; reconciliation theology |
+| **Sacred Text** | The Aurythari Compilation |
+| **Major Centers** | Leivionas (Sundralic) – federal capital |
+| **Current Status** | 19.4% of population; dominant in former Invader Sphere governorates |
+| **Notable Fact** | Emerged as compromise during Religious War (425-500 A.C.) |
+
+---
+
+## 🏝️ DEVONSHIEROSTIANITY
+*Minor Indigenous Faith*
+
+| Aspect | Details |
+|--------|---------|
+| **Origin** | Indigenous polytheistic tradition |
+| **Introduced** | Ancient (pre-500 B.C.) |
+| **Base** | Veyrithi-Marash archipelago |
+| **Current Status** | 1.17% of population; confined to Veyrithi-Marash |
+| **Notable Fact** | Survived conquest through isolation |
+
+---
+
+## 📊 Religious Distribution by Governorate
+
+| Governorate | Zehrienotisism | Aurythism | Flancosism | Jedeshebayom | Devonshierostianity |
+|-------------|----------------|-----------|------------|--------------|---------------------|
+| Ivarra (🟣) | 12.1% | 87.9% | — | — | — |
+| Valmorri (🔵) | — | 78.6% | 15.4% | 6.0% | — |
+| Sundralic (🟢) | 10.5% | 89.5% | — | — | — |
+| Korvan (🔴) | 14.3% | 83.7% | 2.0% | — | — |
+| Auryni-Yeloni (🟡) | 100% | — | — | — | — |
+| Veyrithi-Marash (💎) | 89.5% | — | — | — | 10.5% |
+| Zahrani (🟩) | 100% | — | — | — | — |
+
+---
+
+# PART FOUR: THE FIVE POLITICAL CLUSTERS
+
+---
+
+## 🟦 CONSERVATIVE ALLIANCE
+*The Traditional Right*
+
+| Aspect | Details |
+|--------|---------|
+| **Common Name** | The Alliance |
+| **Ideology** | Conservatism, traditional values, limited federal government, market economics |
+| **Founded** | c. 200 A.C. |
+| **Base** | Landowners, rural populations, older generations, Jedeonshu financiers |
+| **Status** | Legal in Valmorri only; banned in six governorates |
+| **Internal Factions** | Moderates (40%), Traditionalists (45%), Pragmatists (15%) |
+| **Symbol** | Blue Banner |
+| **Headquarters** | Vermione, Valmorri |
+| **Stance on Wa'ka Ond'A** | Support maintaining movement restrictions; oppose marriage rights |
+
+---
+
+## 🟥 NATIONAL RENEWAL MOVEMENT
+*The Far-Right Extremists*
+
+| Aspect | Details |
+|--------|---------|
+| **Common Name** | The Renewal |
+| **Ideology** | Ultranationalism, fascism, Vahlari supremacy, Flancosist revival, secessionist |
+| **Founded** | 500 A.C. (split from Conservative Alliance) |
+| **Base** | Flancosist extremists, disaffected youth |
+| **Status** | Legal only in Valmorri (since 528 A.C.); banned elsewhere |
+| **Internal Factions** | Hardliners (35%), Populists (50%), Militants (15%) |
+| **Symbol** | Iron Flame |
+| **Headquarters** | Flanione, Valmorri |
+| **Paramilitary Wing** | Renewal Youth Brigade |
+| **Stance on Wa'ka Ond'A** | View as impurity; advocate for stricter isolation |
+
+---
+
+## 🟨 DEMOCRATIC FRONT
+*The Mainstream Center-Left*
+
+| Aspect | Details |
+|--------|---------|
+| **Common Name** | The Front |
+| **Ideology** | Social democracy, progressive reform, cultural harmony, indigenous rights, mixed economy |
+| **Founded** | c. 200 A.C. |
+| **Base** | Urban professionals, intellectuals, religious moderates, indigenous communities |
+| **Status** | Legal in all seven governorates; dominant in six |
+| **Internal Factions** | Moderates (30%), Progressives (50%), Reformists (20%) |
+| **Symbol** | Golden Dawn |
+| **Headquarters** | Leivionas, Sundralic |
+| **Stance on Wa'ka Ond'A** | Divided; progressives advocate for rights, moderates cautious |
+
+---
+
+## 🟩 PEOPLE'S ALLIANCE
+*The Socialist Left*
+
+| Aspect | Details |
+|--------|---------|
+| **Common Name** | The Alliance |
+| **Ideology** | Socialism, workers' rights, communal ownership, class struggle |
+| **Founded** | 525 A.C. (split from Democratic Front) |
+| **Base** | Industrial workers, miners, fishermen, union members, radical youth |
+| **Status** | Legal in all seven governorates; growing |
+| **Internal Factions** | Democratic Socialists (60%), Revolutionary Socialists (25%), Eco-Socialists (15%) |
+| **Symbol** | Red Star |
+| **Headquarters** | Skorvas, Sundralic |
+| **Stance on Wa'ka Ond'A** | Advocate for full rights, marriage, and movement; view as oppressed group |
+
+---
+
+## 🟫 UNITED DEVELOPMENT PARTNERSHIP
+*The State-Capitalist Model*
+
+| Aspect | Details |
+|--------|---------|
+| **Common Name** | The Partnership |
+| **Ideology** | State-directed economy, centralized planning, export-led growth, meritocracy |
+| **Founded** | 526 A.C. |
+| **Base** | Business elites, technocrats, export industries |
+| **Status** | Legal in all seven governorates; small but growing |
+| **Internal Factions** | Economic Nationalists (40%), Globalizers (35%), Technocrats (25%) |
+| **Symbol** | Rising Phoenix |
+| **Headquarters** | Leivionas, Sundralic |
+| **Stance on Wa'ka Ond'A** | Pragmatic; view as labor force; no strong position |
+
+---
+
+# PART FIVE: THE SEVEN GOVERNORATES
+
+## Color Key for Draft Reference
+
+| Draft Color | Governorate Name | Inspiration |
+|-------------|------------------|-------------|
+| **Blue** | Valmorri (🔵) | France |
+| **Purple** | Ivarra (🟣) | Nordic/Scottish Isles |
+| **Green** | Sundralic (🟢) | France/Germany/Italy |
+| **Red** | Korvan (🔴) | Alps/Austria/German lowlands |
+| **Yellow** | Auryni-Yeloni (🟡) | Tropical desert/cold mix |
+| **Cyan** | Veyrithi-Marash (💎) | Cold maritime |
+| **Lime** | Zahrani (🟩) | Hot savannah |
+
+---
+
+## 1. 🔵 VALMORRI GOVERNORATE (Blue in Draft)
+**Inspiration:** France
+
+| Category | Details |
+|----------|---------|
+| **Population** | 4,026,500 |
+| **Capital** | Vermione |
+| **Number of States** | 7 |
+| **Climate** | Continental |
+| **Political Character** | Conservative stronghold; only governorate with all five clusters legal |
+
+### Legal Clusters
+
+| Cluster | Status |
+|---------|--------|
+| Conservative Alliance 🟦 | Legal (Dominant) |
+| National Renewal 🟥 | Legal (since 528) |
+| Democratic Front 🟨 | Legal (Minority) |
+| People's Alliance 🟩 | Legal (Growing) |
+| United Development 🟫 | Legal (Small) |
+
+### Federal States
+
+| State | Population | Ruling Cluster |
+|-------|------------|----------------|
+| Seirmoine | 1,187,300 | Conservative 🟦 |
+| Vermione (capital) | 912,600 | Conservative 🟦 |
+| Flanione | 788,400 | National Renewal 🟥 |
+| Valmorrione | 711,200 | Conservative 🟦 |
+| Eastern Sethislione | 612,500 | Democratic 🟨 |
+| Nortopostus | 386,400 | Conservative 🟦 |
+| Seloptione | 428,100 | People's 🟩 |
+
+---
+
+## 2. 🟣 IVARRA GOVERNORATE (Purple in Draft)
+**Inspiration:** Nordic/Scottish Isles fusion
+
+| Category | Details |
+|----------|---------|
+| **Population** | 2,192,400 |
+| **Capital** | Ivarradelpe |
+| **Number of States** | 4 |
+| **Climate** | Temperate maritime |
+| **Political Character** | Progressive; Democratic Front dominant |
+
+### Legal Clusters
+
+| Cluster | Status |
+|---------|--------|
+| Democratic Front 🟨 | Legal (Dominant) |
+| People's Alliance 🟩 | Legal (Growing) |
+| United Development 🟫 | Legal (Small) |
+| Conservative Alliance 🟦 | Banned |
+| National Renewal 🟥 | Banned |
+
+### Federal States
+
+| State | Population | Ruling Cluster |
+|-------|------------|----------------|
+| Couleodione | 684,200 | Democratic Front 🟨 |
+| Terogionne | 612,800 | Democratic Front 🟨 |
+| Ivarradelpe (capital) | 512,400 | Democratic Front 🟨 |
+| Sethislione | 383,000 | People's Alliance 🟩 |
+
+---
+
+## 3. 🟢 SUNDRALIC GOVERNORATE (Green in Draft)
+**Inspiration:** France/Germany/Italy fusion
+
+| Category | Details |
+|----------|---------|
+| **Population** | 2,793,800 |
+| **Capital** | Leivionas (Federal Capital) |
+| **Number of States** | 5 |
+| **Climate** | Subtropical |
+| **Political Character** | Progressive; competitive between Democratic Front and People's Alliance |
+
+### Legal Clusters
+
+| Cluster | Status |
+|---------|--------|
+| Democratic Front 🟨 | Legal (Leading) |
+| People's Alliance 🟩 | Legal (Strong) |
+| United Development 🟫 | Legal (Growing) |
+| Conservative Alliance 🟦 | Banned |
+| National Renewal 🟥 | Banned |
+
+### Federal States
+
+| State | Population | Ruling Cluster |
+|-------|------------|----------------|
+| Skorvas | 894,200 | People's 🟩 |
+| Kentas | 703,500 | Democratic 🟨 |
+| Leivionas (capital) | 612,800 | Democratic 🟨 |
+| Deliovas | 388,300 | Democratic 🟨 |
+| Sundrassia | 195,000 | People's 🟩 |
+
+---
+
+## 4. 🔴 KORVAN GOVERNORATE (Red in Draft)
+**Inspiration:** Alps/Austria/German lowlands
+
+| Category | Details |
+|----------|---------|
+| **Population** | 2,008,400 |
+| **Capital** | Vahareus |
+| **Number of States** | 5 |
+| **Climate** | Alpine |
+| **Political Character** | Progressive; People's Alliance strong in mining areas |
+
+### Legal Clusters
+
+| Cluster | Status |
+|---------|--------|
+| Democratic Front 🟨 | Legal (Leading) |
+| People's Alliance 🟩 | Legal (Strong) |
+| United Development 🟫 | Legal (Small) |
+| Conservative Alliance 🟦 | Banned |
+| National Renewal 🟥 | Banned |
+
+### Federal States
+
+| State | Population | Ruling Cluster |
+|-------|------------|----------------|
+| Oastusione | 703,200 | Democratic 🟨 |
+| Korvione | 587,600 | Democratic 🟨 |
+| Vahareus (capital) | 412,800 | Democratic 🟨 |
+| Oseareus | 294,700 | People's 🟩 |
+| Dateus | 10,100 | People's 🟩 |
+
+---
+
+## 5. 🟡 AURYNI-YELONI GOVERNORATE (Yellow in Draft)
+**Inspiration:** Tropical desert/cold mix
+
+| Category | Details |
+|----------|---------|
+| **Population** | 3,015,200 |
+| **Capitals** | Southern Eleos (Auryni), Hele (Yeloni) |
+| **Number of States** | 6 |
+| **Climate** | Tropical with variation – hot desert in Auryni; cold in Yeloni highlands |
+| **Political Character** | Progressive; religious influence strong |
+
+### Legal Clusters
+
+| Cluster | Status |
+|---------|--------|
+| Democratic Front 🟨 | Legal (Dominant) |
+| People's Alliance 🟩 | Legal (Growing) |
+| United Development 🟫 | Legal (Small) |
+| Conservative Alliance 🟦 | Banned |
+| National Renewal 🟥 | Banned |
+
+### Federal States
+
+| State | Population | Ruling Cluster |
+|-------|------------|----------------|
+| Achios | 987,300 | Democratic 🟨 |
+| Northern Eleos | 812,600 | Democratic 🟨 |
+| Hele (Yeloni) | 788,400 | Democratic 🟨 |
+| Southern Eleos | 611,700 | Democratic 🟨 |
+| Deuson | 388,200 | People's 🟩 |
+| Peirona | 427,000 | People's 🟩 |
+
+---
+
+## 6. 💎 VEYRITHI-MARASH GOVERNORATE (Cyan in Draft)
+**Inspiration:** Cold maritime
+
+| Category | Details |
+|----------|---------|
+| **Population** | 2,012,800 |
+| **Capital** | Veyrith |
+| **Number of States** | 3 |
+| **Climate** | Cold maritime – rocky coasts, long winters with snow, brief cool summers |
+| **Political Character** | Progressive; People's Alliance strong in Steroshi |
+
+### Legal Clusters
+
+| Cluster | Status |
+|---------|--------|
+| Democratic Front 🟨 | Legal (Leading) |
+| People's Alliance 🟩 | Legal (Strong) |
+| United Development 🟫 | Legal (Small) |
+| Conservative Alliance 🟦 | Banned |
+| National Renewal 🟥 | Banned |
+
+### Federal States
+
+| State | Population | Ruling Cluster |
+|-------|------------|----------------|
+| Marash | 687,500 | Democratic 🟨 |
+| Steroshi Islands | 712,300 | People's 🟩 |
+| Veyrith (capital) | 613,000 | Democratic 🟨 |
+
+---
+
+## 7. 🟩 ZAHRANI GOVERNORATE (Lime in Draft)
+**Inspiration:** Hot savannah
+
+| Category | Details |
+|----------|---------|
+| **Population** | 1,798,200 |
+| **Capital** | Zerione |
+| **Number of States** | 3 |
+| **Climate** | Hot savannah – desert expanses, scorching summers, sparse vegetation, occasional oases |
+| **Political Character** | Progressive; Zehrienotisism heartland |
+
+### Legal Clusters
+
+| Cluster | Status |
+|---------|--------|
+| Democratic Front 🟨 | Legal (Dominant) |
+| People's Alliance 🟩 | Legal (Growing) |
+| United Development 🟫 | Legal (Small) |
+| Conservative Alliance 🟦 | Banned |
+| National Renewal 🟥 | Banned |
+
+### Federal States
+
+| State | Population | Ruling Cluster |
+|-------|------------|----------------|
+| Rebeone | 687,300 | People's 🟩 |
+| Zerione (capital) | 611,800 | Democratic 🟨 |
+| Keleone | 499,100 | Democratic 🟨 |
+
+---
+
+# PART SIX: HISTORICAL TIMELINE
+
+## ⏳ ERA 1: THE INDIGENOUS GOLDEN AGE (500 B.C. - 0 A.C.)
+
+| Year | Event |
+|------|-------|
+| **500 B.C.** | Indigenous civilizations flourish with polytheistic religions. Ivarra dominate seas, Valmorri farm plains, Sundralic fish deltas, Korvan mine highlands, Auryni and Yeloni build temples, Veyrithi-Marash trade archipelagos, Zahrani roam deserts. Zehrienotisism begins to emerge in Zahrani. |
+| **450 B.C.** | Early outsider traders (pre-Vahlari, Brassic, Dravari) arrive. Thori ally with mainland tribes peacefully. |
+| **400 B.C.** | Zsaeskoism strengthens in Valmorri and Auryni. Slavanionism spreads along coasts. |
+| **350 B.C.** | Inkarism formalized in Ivarra and Korvan. Devonshierostianity takes root in Veyrithi-Marash. |
+| **300 B.C.** | Jedeonshu arrive from Kalthar, secretly spreading Jedeshebayom. |
+| **250 B.C.** | Zehrienotisism gains followers in Zahrani. |
+| **200 B.C.** | Loose confederations form; protests against outsider exploitation begin. |
+| **150 B.C.** | Thori persecuted by early outsiders; survivors flee to Veyrith Isles, integrate peacefully with natives. |
+| **100 B.C.** | Zahran Atolls discovered; indigenous alliances form. |
+| **50 B.C.** | Vahlari scouts arrive, introducing early Flancosism. Jedeonshu betray local tribes in Valmorri. |
+
+---
+
+## ⚔️ ERA 2: THE CONQUEST & COLONIAL PERIOD (0 A.C. - 160 A.C.)
+
+| Year | Event |
+|------|-------|
+| **0 A.C.** | Vahlari invasion begins; Auracross (now Vermione) stronghold established. Flancosism spreads as colonial faith. |
+| **1 A.C.** | Brassic arrive via northern passes as colonizers. |
+| **10 A.C.** | Dravari settle southern lowlands as colonizers. |
+| **50 A.C.** | Thori fully integrate into Veyrithi-Marash, loved by natives. |
+| **81-160 A.C.** | Expansion Wars – Mainland falls; islands and deserts resist. FSA established. |
+| **161 A.C.** | Integration policies begin; Flancosism enforced. DSB founded. |
+| **162 A.C.** | FIS founded. Aurythari Mark introduced. |
+
+---
+
+## 🌱 ERA 3: AUTONOMY & RESISTANCE (200 A.C. - 381 A.C.)
+
+| Year | Event |
+|------|-------|
+| **200 A.C.** | Indigenous protests lead to capital relocation to Leivionas. Two-cluster system emerges (Conservative Alliance, Democratic Front). |
+| **221-300 A.C.** | Autonomy grows. Veyrithi-Marash retain Devonshierostianity; Zahrani embrace Zehrienotisism. |
+| **301 A.C.** | Zahran Atolls rediscovered; protests against invasion. ASE founded. |
+| **350 A.C.** | Zahran invasion; Zahrani Governorate created. |
+| **382 A.C.** | Tensions peak; Zehrienotisism surges as protest faith in Auryni-Yeloni. |
+
+---
+
+## 🔥 ERA 4: RELIGIOUS UPHEAVAL & REFORMATION (382 A.C. - 500 A.C.)
+
+| Year | Event |
+|------|-------|
+| **382-420 A.C.** | Zehrienotisism spreads to Ivarra, Valmorri, Korvan, Sundralic. Jedeonshu exposed and expelled from Korvan, Sundralic, Ivarra, Auryni-Yeloni, Veyrithi-Marash, Zahrani. They migrate to Valmorri. |
+| **401 A.C.** | SID founded during religious tensions. |
+| **420 A.C.** | Aurythism forms from Flancosism-Zehrienotisism merger – based on Zehrienotisism but integrated Flancosist elements. Aurythari language emerges. |
+| **425 A.C.** | Religious War erupts between faiths. |
+| **450 A.C.** | War intensifies; Aurythists mediate. |
+| **500 A.C.** | Peace Treaty signed. Zehrienotists and Aurythists coexist; Flancosists reduced to extremists. National Renewal splits from Conservative Alliance and is banned nationwide. |
+
+---
+
+## 🤝 ERA 5: UNIFICATION & MODERN ERA (510 A.C. - PRESENT)
+
+| Year | Event |
+|------|-------|
+| **510 A.C.** | Collapse of Invader and Indigenous Spheres begins. |
+| **520 A.C.** | Unified federal system established. Conservative Alliance banned in six governorates; remains in Valmorri only. GSC founded. |
+| **521 A.C.** | FAB founded. |
+| **525 A.C.** | Great Schism – People's Alliance splits from Democratic Front. Inter-ethnic relations with Wa'ka Ond'A approved. |
+| **526 A.C.** | United Development Partnership founded (state-capitalist model). |
+| **528 A.C.** | Valmorri legalizes National Renewal; intelligence crisis begins. |
+| **530 A.C.** | Current year. |
+
+---
+
+# PART SEVEN: PARLIAMENTARY STRUCTURE
+
+## 🏛️ Constitutional Framework
+
+| Aspect | Detail |
+|--------|--------|
+| **Governorates** | 7 |
+| **Federal States** | 33 |
+| **Senators per State** | 3 |
+| **Total Senators** | 99 |
+
+---
+
+## 📐 Parliamentary Hierarchy
+
+| Level | Body | Members | Elected By | Primary Role |
+|-------|------|---------|------------|--------------|
+| **5** | High Senate | 3 | National Cabinet | National leadership |
+| **4** | National Cabinet | 33 | Senate | Executive functions |
+| **3** | Senate | 99 | National Assembly | Governorate-level representation |
+| **2** | National Assembly | 300 | Citizens | State-level representation |
+| **1** | Citizens | 18 million | — | Popular sovereignty |
+
+**Total Parliament Members:** 300 + 99 + 33 + 3 = **432**
+
+---
+
+## 🔢 Seat Distribution in National Assembly
+
+Based on the textured population of each governorate, the 300 National Assembly seats are distributed proportionally:
+
+| Governorate | Draft Color | Population | Percentage | Seats in National Assembly | States | Avg. Seats per State |
+|-------------|-------------|------------|------------|---------------------------|--------|---------------------|
+| Valmorri | Blue (🔵) | 4,026,500 | 22.31% | **67** | 7 | ~9-10 |
+| Auryni-Yeloni | Yellow (🟡) | 3,015,200 | 16.71% | **50** | 6 | ~8-9 |
+| Sundralic | Green (🟢) | 2,793,800 | 15.48% | **46** | 5 | ~9-10 |
+| Ivarra | Purple (🟣) | 2,192,400 | 12.15% | **37** | 4 | ~9 |
+| Veyrithi-Marash | Cyan (💎) | 2,012,800 | 11.15% | **33** | 3 | 11 |
+| Korvan | Red (🔴) | 2,008,400 | 11.13% | **33** | 5 | ~7 |
+| Zahrani | Lime (🟩) | 1,798,200 | 9.97% | **30** | 3 | 10 |
+| **TOTAL** | | **18,047,300** | **100%** | **300** | **33** | |
+
+---
+
+## 📅 Election Timeline
+
+### Stage 1: Election of the National Assembly (3 Days)
+*Citizens elect Members of Congress (M.C.)*
+
+| Day | Governorates Voting |
+|-----|---------------------|
+| **Day 1** | Yellow (Auryni-Yeloni 🟡), Red (Korvan 🔴), Cyan (Veyrithi-Marash 💎) |
+| **Day 2** | Purple (Ivarra 🟣), Lime (Zahrani 🟩), Green (Sundralic 🟢) |
+| **Day 3** | Blue (Valmorri 🔵) |
+
+**Result:** 300 M.C. elected across all 33 states
+
+---
+
+### Stage 2: Election of the Senate (2 Days)
+*Members of Congress elect Senators*
+
+| Day | Governorates Holding Senate Elections |
+|-----|---------------------------------------|
+| **Day 1** | All Governorates EXCEPT Blue (Valmorri 🔵) |
+| **Day 2** | Blue Governorate (Valmorri 🔵) only |
+
+**Process:** In each of the 33 states, the newly elected M.C. from that state vote to elect **3 Senators** to represent their state in the Senate.
+
+**Result:** 99 Senators elected (3 per state)
+
+---
+
+### Stage 3: Election of National Cabinet & High Senate (2 Days)
+
+| Day | Process |
+|-----|---------|
+| **Day 1** | **Election of National Cabinet** – In each state, the 3 Senators from that state elect **1 Minister** to the National Cabinet. This produces 33 Ministers (one per state). |
+| **Day 2** | **Election of High Senate** – The 33 Ministers of the National Cabinet vote to elect the 3-member High Senate:<br>• President of the FSA<br>• Vice President of the FSA<br>• Chief Secretary of the FSA |
+
+**Result:** National Cabinet (33) + High Senate (3) = Complete federal leadership
+
+---
+
+## 📊 Election Summary Table
+
+| Stage | Elected Body | Members | Elected By | Duration |
+|-------|--------------|---------|------------|----------|
+| 1 | National Assembly | 300 M.C. | Citizens | 3 days |
+| 2 | Senate | 99 Senators | National Assembly | 2 days |
+| 3 | National Cabinet | 33 Ministers | Senate | 1 day |
+| 3 | High Senate | 3 Leaders | National Cabinet | 1 day |
+| **Total** | | **432** | | **7 days** |
+
+---
+
+## 🏛️ Powers and Responsibilities
+
+### National Assembly (300 M.C.)
+
+| Authority | Description |
+|-----------|-------------|
+| **State Legislation** | Propose and vote on laws affecting their specific state |
+| **Senate Elections** | Elect the 3 Senators for their state |
+| **Budget Proposals** | Submit state budget requests |
+| **Local Oversight** | Monitor state-level implementation of federal laws |
+
+### Senate (99 Senators)
+
+| Authority | Description |
+|-----------|-------------|
+| **Governorate Legislation** | Propose and vote on laws affecting governorates |
+| **Cabinet Elections** | Elect the 33 Ministers of the National Cabinet |
+| **Federal Budget Review** | Review and amend federal budget |
+| **Confirmation Powers** | Confirm certain federal appointments |
+| **Treaty Review** | Review international treaties |
+
+### National Cabinet (33 Ministers)
+
+| Authority | Description |
+|-----------|-------------|
+| **Executive Functions** | Administer federal ministries and departments |
+| **High Senate Elections** | Elect the President, Vice President, and Chief Secretary |
+| **Bill Introduction** | Propose federal legislation to the Senate |
+| **Budget Formulation** | Prepare the annual federal budget |
+| **Policy Implementation** | Execute laws passed by the High Senate |
+
+### High Senate (3 Leaders)
+
+| Position | Authority |
+|----------|-----------|
+| **President** | State bill approval (without High Senate), veto power, commander-in-chief, foreign relations, emergency powers |
+| **Vice President** | State bill approval (joint with President), presidential succession, preside over Senate, tie-breaking vote |
+| **Chief Secretary** | Represent Cabinet/Senate/Assembly, introduce government bills, set legislative agenda (cannot introduce personal bills without Cabinet approval) |
+
+---
+
+## 📜 Legislative Process
+
+### Track A: State-Level Bills
+1. Bill introduced in National Assembly by M.C.
+2. Passed by National Assembly majority
+3. Sent to President and Vice President for approval
+4. If approved, becomes state law (High Senate approval NOT required)
+
+### Track B: Governorate-Level Bills
+1. Bill introduced in Senate by Senator
+2. Passed by Senate majority
+3. Sent to National Cabinet for review
+4. If Cabinet approves, becomes governorate law
+
+### Track C: National-Level Bills
+1. Bill introduced by Chief Secretary (with Cabinet approval)
+2. Reviewed by National Cabinet
+3. Sent to Senate for debate and vote
+4. If passed by Senate, sent to High Senate
+5. High Senate approves (or vetoes)
+6. If vetoed, Senate can override with 2/3 majority
+
+---
+
+# PART EIGHT: MILITARY FORCES
+
+## 🏛️ OVERVIEW
+
+| Branch | Personnel | Budget Share |
+|--------|-----------|--------------|
+| **Aurythar Army** | 180,000 | 32% |
+| **Aurythar Navy** | 120,000 | 28% |
+| **Aurythar Air Force** | 80,000 | 24% |
+| **Aurythar Space Command** | 20,000 | 8% |
+| **Special Operations Command** | 8,000 | 5% |
+| **Strategic Forces Command** | 5,000 | 3% |
+| **TOTAL MILITARY** | **413,000** | **100%** |
+
+---
+
+## 🪖 AURYTHAR ARMY
+
+| Aspect | Details |
+|--------|---------|
+| **Personnel** | 180,000 active; 250,000 reserve |
+| **Headquarters** | Fort Vahlari, Sundralic Governorate |
+| **Structure** | 7 corps (one per governorate) |
+
+**Corps Structure:**
+- 1st Corps (Ivarra 🟣) – Amphibious, coastal defense
+- 2nd Corps (Valmorri 🔵) – Limited federal integration
+- 3rd Corps (Sundralic 🟢) – Mechanized, rapid response
+- 4th Corps (Korvan 🔴) – Mountain warfare
+- 5th Corps (Auryni-Yeloni 🟡) – Jungle, desert operations
+- 6th Corps (Veyrithi-Marash 💎) – Island defense
+- 7th Corps (Zahrani 🟩) – Desert warfare
+
+---
+
+## ⚓ AURYTHAR NAVY
+
+| Aspect | Details |
+|--------|---------|
+| **Personnel** | 120,000 active; 80,000 reserve |
+| **Headquarters** | Naval Base Ivarradelpe, Ivarra Governorate |
+| **Fleet Commands** | Northern Fleet (Ivarra), Eastern Fleet (Veyrith), Southern Fleet (Zahrani) |
+
+**Fleet Composition:**
+- Aircraft Carriers: 4
+- Amphibious Assault Ships: 6
+- Destroyers: 24
+- Frigates: 36
+- Nuclear Submarines: 12
+- Conventional Submarines: 18
+- Patrol Vessels: 60
+- Support Ships: 30
+
+---
+
+## ✈️ AURYTHAR AIR FORCE
+
+| Aspect | Details |
+|--------|---------|
+| **Personnel** | 80,000 active; 40,000 reserve |
+| **Headquarters** | Air Base Leivionas, Sundralic Governorate |
+| **Major Air Bases** | 12 across all governorates |
+
+**Aircraft Composition:**
+- 5th Gen Fighters: 240
+- 4th Gen Fighters: 180
+- Bombers: 40
+- Transport: 120
+- Tankers: 30
+- Reconnaissance: 40
+- Trainers: 200
+
+---
+
+## 🚀 AURYTHAR SPACE COMMAND
+
+| Aspect | Details |
+|--------|---------|
+| **Personnel** | 20,000 (military and civilian) |
+| **Headquarters** | Space Center Korvan, Korvan Governorate |
+| **Launch Facilities** | Korvan, Zahrani |
+
+**Satellite Inventory:**
+- Reconnaissance: 24
+- Communications: 18
+- Navigation: 12 (Aurythar Positioning System)
+- Early Warning: 8
+- Weather: 6
+
+---
+
+## 🎯 SPECIAL OPERATIONS COMMAND (SOCOM)
+
+| Aspect | Details |
+|--------|---------|
+| **Personnel** | 8,000 (all branches) |
+| **Headquarters** | Fort Sundralic, Sundralic Governorate |
+| **Training Facility** | Mount Korvan, Korvan Governorate |
+
+**Component Units:**
+- 1st Special Forces Group (Army) – Unconventional warfare
+- 2nd Special Forces Group (Army) – Direct action
+- Naval Special Warfare Group (Navy) – Maritime operations
+- Air Force Special Operations Wing (Air Force) – Insertion/extraction
+- Combat Control Team (Air Force) – Air traffic control
+- Psychological Operations Group (Army) – Influence operations
+- Civil Affairs Group (Army) – Civil-military operations
+
+**Tier 1 Units:**
+- Anchor Team – Covert operations (joint with FIS)
+- Delta Group – Counter-terrorism, hostage rescue
+- Maritime Interdiction Unit – Ship boarding, counter-piracy
+
+---
+
+## ☢️ STRATEGIC FORCES COMMAND
+
+| Aspect | Details |
+|--------|---------|
+| **Personnel** | 5,000 |
+| **Headquarters** | Classified (Korvan Governorate) |
+| **Doctrine** | No first use; minimum credible deterrence |
+
+**Nuclear Triad:**
+- Land-Based ICBMs: 60
+- Ballistic Missile Submarines: 4
+- Nuclear-Capable Bombers: 20
+
+---
+
+# PART NINE: FEDERAL LAW ENFORCEMENT
+
+## 🚔 FEDERAL POLICE SERVICE (FPS)
+
+| Aspect | Details |
+|--------|---------|
+| **Personnel** | 45,000 officers |
+| **Headquarters** | Leivionas, Sundralic |
+| **Jurisdiction** | Federal crimes, inter-governorate crimes |
+
+**Divisions:**
+- Criminal Investigation Division
+- Border Police
+- Railway Police
+- Aviation Security
+- Witness Protection
+
+---
+
+## 🚓 BORDER SECURITY FORCE (BSF)
+
+| Aspect | Details |
+|--------|---------|
+| **Personnel** | 25,000 |
+| **Headquarters** | Leivionas, Sundralic |
+| **Responsibility** | International land and sea borders |
+
+---
+
+## 🛥️ COAST GUARD
+
+| Aspect | Details |
+|--------|---------|
+| **Personnel** | 15,000 |
+| **Headquarters** | Ivarradelpe, Ivarra |
+| **Vessels** | 80 patrol boats, cutters |
+| **Responsibilities** | Search and rescue, maritime law enforcement, environmental protection |
+
+---
+
+## 🏛️ GOVERNORATE POLICE FORCES
+
+| Governorate | Force Name | Personnel |
+|-------------|------------|-----------|
+| Valmorri (🔵) | Valmorri Police Service | 15,000 |
+| Auryni-Yeloni (🟡) | Eastern Police | 12,000 |
+| Sundralic (🟢) | Sundralic Police | 10,000 |
+| Ivarra (🟣) | Ivarra State Police | 8,000 |
+| Korvan (🔴) | Korvan Police | 6,000 |
+| Veyrithi-Marash (💎) | Islands Police | 5,000 |
+| Zahrani (🟩) | Zahrani Police | 4,000 |
+
+**Note:** Valmorri Police Service has limited cooperation with federal authorities since 528 A.C.
+
+---
+
+## 🎯 SPECIALIZED LAW ENFORCEMENT UNITS
+
+| Unit | Parent Agency | Role |
+|------|---------------|------|
+| National SWAT Team | FPS | Hostage rescue |
+| Counter-Terrorism Unit | FPS/DSB | Terrorist incidents |
+| Cyber Crime Unit | FPS | Computer crimes |
+| Financial Crime Unit | FPS/FIU | Money laundering |
+| Witness Protection Unit | FPS | Federal witness security |
+
+---
+
+# PART TEN: INTELLIGENCE SERVICES
+
+## 🏛️ The Aurytharian Intelligence Community (AIC)
+
+| Agency | Type | Employees | Budget | Founded |
+|--------|------|-----------|--------|---------|
+| **Domestic Security Bureau (DSB)** | Domestic / counterintelligence | 8,200 | 28% | 161 A.C. |
+| **Foreign Intelligence Service (FIS)** | Foreign espionage | 6,500 | 32% | 162 A.C. |
+| **Signal Intelligence Directorate (SID)** | Signals / cyber | 4,200 | 18% | 401 A.C. |
+| **Governorate Security Command (GSC)** | Inter-governorate coordination | 3,800 | 15% | 520 A.C. |
+| **Federal Analysis Bureau (FAB)** | Analysis / coordination | 1,300 | 7% | 521 A.C. |
+
+---
+
+## 🟦 DOMESTIC SECURITY BUREAU (DSB)
+**Inspiration:** FBI, MI5
+
+| Aspect | Details |
+|--------|---------|
+| **Headquarters** | Leivionas, Sundralic |
+| **Mission** | Counterintelligence, counterterrorism, federal crimes, extremism monitoring |
+
+**Divisions:**
+- Counterintelligence Division
+- Domestic Terrorism Division
+- Criminal Investigation Division
+- Intelligence Analysis Division
+- Technical Operations Division
+- Legal Affairs Division
+
+**Regional Offices:**
+
+| Governorate | Office | Agents |
+|-------------|--------|--------|
+| Ivarra (🟣) | Ivarradelpe | 420 |
+| Valmorri (🔵) | Vermione | **1,200** |
+| Sundralic (🟢) | Leivionas | 850 |
+| Korvan (🔴) | Vahareus | 380 |
+| Auryni-Yeloni (🟡) | Hele | 650 |
+| Veyrithi-Marash (💎) | Veyrith | 340 |
+| Zahrani (🟩) | Zerione | 260 |
+
+**Current Priority: Operation Flame Watch**
+- 1,200 agents in Valmorri
+- 450 informants within extremist circles
+- 87 arrests (529-530) for banned activity
+
+---
+
+## 🟪 FOREIGN INTELLIGENCE SERVICE (FIS)
+**Inspiration:** CIA, MI6, Mossad
+
+| Aspect | Details |
+|--------|---------|
+| **Headquarters** | Leivionas, Sundralic |
+| **Mission** | Foreign intelligence, covert operations |
+
+**Directorates:**
+- Directorate of Operations
+- Directorate of Analysis
+- Directorate of Science & Technology
+- Directorate of Counterintelligence
+- Directorate of Support
+
+**Geographic Divisions:**
+- Northern Division (Brassic kingdoms)
+- Eastern Division (Trade Confederacy)
+- Southern Division (Uncontacted tribes)
+- Kalthar Division (Jedeonshu homeland)
+
+**Special Operations: Anchor Team**
+- 120 covert operatives
+- Covert action, sabotage, targeted operations
+
+---
+
+## 🟫 SIGNAL INTELLIGENCE DIRECTORATE (SID)
+**Inspiration:** NSA, GCHQ, Unit 8200
+
+| Aspect | Details |
+|--------|---------|
+| **Headquarters** | Mount Vahl, Korvan Governorate |
+| **Mission** | Signals interception, cryptanalysis, cyber operations |
+
+**Divisions:**
+- Collection Division
+- Cryptanalysis Division
+- Cyber Command
+- Technical Development
+- Analysis Division
+
+**Major Facilities:**
+
+| Facility | Location | Function |
+|----------|----------|----------|
+| Mount Vahl Main Station | Korvan (🔴) | Primary collection |
+| Coastal Listening Post | Ivarra (🟣) | Maritime |
+| Desert Array | Zahrani (🟩) | Southern signals |
+| Valmorri Station | Valmorri (🔵) | **No access since 528** |
+| Eastern Relay | Veyrithi-Marash (💎) | Island communications |
+
+**The Valmorri Gap:** No signals collection from Valmorri since 528 A.C.
+
+---
+
+## 🟩 GOVERNORATE SECURITY COMMAND (GSC)
+**Inspiration:** DHS, Interpol
+
+| Aspect | Details |
+|--------|---------|
+| **Headquarters** | Leivionas, Sundralic |
+| **Mission** | Inter-governorate coordination, joint operations, crisis response |
+
+**Divisions:**
+- Liaison Division
+- Joint Task Force Command
+- Crisis Management Center
+- Training Academy
+- Information Sharing Bureau
+
+**The Valmorri Challenge:**
+- Minimal cooperation since 528
+- Data sharing restricted
+- No joint operations
+- Valmorri becoming "intelligence black hole"
+
+---
+
+## 🟨 FEDERAL ANALYSIS BUREAU (FAB)
+**Inspiration:** ODNI, Joint Intelligence Committee
+
+| Aspect | Details |
+|--------|---------|
+| **Headquarters** | Leivionas, Sundralic |
+| **Mission** | All-source analysis, national estimates, coordination |
+
+**Divisions:**
+- Current Intelligence
+- Estimates Division
+- Warning Division
+- Historical Office
+- Liaison Office
+
+**Coordination Challenges:**
+- DSB-FIS rivalry
+- SID autonomy
+- Valmorri Gap undermines estimates
+
+---
+
+# PART ELEVEN: BANKING & FINANCIAL SYSTEM
+
+## 🏦 OVERVIEW
+
+| Aspect | Details |
+|--------|---------|
+| **Total Banking Assets** | 4.2 trillion ℳ |
+| **Number of Banks** | 47 regulated banks |
+| **Banking Employment** | 215,000 |
+| **Central Bank** | State Bank of Aurythar (SBA) |
+| **Currency** | Aurythari Mark (ℳ) |
+| **Global Role** | Primary reserve currency; world's banker |
+
+---
+
+## 💰 CURRENCY: THE AURYTHARI MARK
+
+**Inspiration:** Pre-euro Germany (Deutsche Mark, Pfennig) and France (Franc)
+
+| Aspect | Details |
+|--------|---------|
+| **Currency Name** | Aurythari Mark |
+| **Symbol** | ℳ |
+| **Subunit** | Pfennig (₰) |
+| **Exchange** | 1 Mark = 100 Pfennig |
+| **Introduced** | 162 A.C. |
+| **Issuing Authority** | State Bank of Aurythar |
+
+### Denominations
+
+| Type | Value | Design |
+|------|-------|--------|
+| **Coin** | 1 Pfennig (₰) | Copper; indigenous symbol |
+| **Coin** | 5 Pfennig (₰) | Bronze; sailing ship |
+| **Coin** | 10 Pfennig (₰) | Bronze; mountain peak |
+| **Coin** | 50 Pfennig (₰) | Silver; Zehrienotisism symbol |
+| **Coin** | 1 Mark (ℳ) | Silver; first Vahlari landing |
+| **Coin** | 2 Mark (ℳ) | Silver; indigenous leader |
+| **Coin** | 5 Mark (ℳ) | Gold; federal parliament |
+| **Banknote** | 10 Mark (ℳ) | Blue; Ivarra lighthouse |
+| **Banknote** | 20 Mark (ℳ) | Green; Sundralic delta |
+| **Banknote** | 50 Mark (ℳ) | Red; Korvan mountains |
+| **Banknote** | 100 Mark (ℳ) | Purple; Auryni temple |
+| **Banknote** | 200 Mark (ℳ) | Brown; industrial scene |
+| **Banknote** | 500 Mark (ℳ) | Gold; federal seal |
+| **Banknote** | 1000 Mark (ℳ) | Black; rarely used |
+
+---
+
+## 🏛️ STATE BANK OF AURYTHAR (SBA)
+**Inspiration:** Bundesbank, Banque de France, Federal Reserve
+
+| Aspect | Details |
+|--------|---------|
+| **Founded** | 162 A.C. |
+| **Headquarters** | Leivionas, Sundralic Governorate |
+| **Employees** | 4,800 |
+
+### Mission & Responsibilities
+
+| Priority | Description |
+|----------|-------------|
+| **Monetary Policy** | Control inflation, manage money supply |
+| **Currency Issuance** | Print banknotes, mint coins |
+| **Interest Rates** | Set benchmark rates |
+| **Banker to Government** | Manage federal accounts |
+| **Lender of Last Resort** | Bail out troubled banks |
+| **Foreign Reserves** | Manage global currency holdings |
+
+### Regional Branches
+
+| Governorate | Branch City | Status |
+|-------------|-------------|--------|
+| Ivarra (🟣) | Ivarradelpe | Full cooperation |
+| Valmorri (🔵) | Vermione | **Limited since 528** |
+| Sundralic (🟢) | Leivionas | Headquarters |
+| Korvan (🔴) | Vahareus | Full cooperation |
+| Auryni-Yeloni (🟡) | Hele | Full cooperation |
+| Veyrithi-Marash (💎) | Veyrith | Full cooperation |
+| Zahrani (🟩) | Zerione | Full cooperation |
+
+---
+
+## 🏦 COMMERCIAL BANKING SECTOR
+
+### Tier 1: The Big Five (National Banks)
+
+| Bank | Headquarters | Assets (ℳ) | Specialization |
+|------|--------------|------------|----------------|
+| **National Bank of Aurythar** | Leivionas | 680 billion | Full service; largest |
+| **Vahlari Trust** | Vermione | 590 billion | Corporate banking |
+| **Sundralic United** | Leivionas | 510 billion | Consumer banking |
+| **Ivarra Maritime Bank** | Ivarradelpe | 430 billion | Shipping, trade |
+| **Eastern Commercial** | Hele | 380 billion | Tourism, agriculture |
+
+### Tier 2: Regional Banks (12 banks)
+
+| Region | Example Bank | Focus |
+|--------|--------------|-------|
+| Valmorri (🔵) | **Valmorri State Bank** | **Jedeonshu-controlled; limited federal ties** |
+| Ivarra (🟣) | Island Savings | Local communities |
+| Sundralic (🟢) | Delta Commerce | Agricultural lending |
+| Korvan (🔴) | Mountain Credit | Mining finance |
+| Auryni-Yeloni (🟡) | Temple Trust | Religious economy |
+| Veyrithi-Marash (💎) | Islands Commercial | Fishing, trade |
+| Zahrani (🟩) | Oasis Bank | Desert agriculture |
+
+### Tier 3: Specialized & Local Banks (30 banks)
+
+| Type | Number | Examples |
+|------|--------|----------|
+| Savings Banks | 12 | Community savings, postal savings |
+| Cooperative Banks | 8 | Farmer cooperatives, worker cooperatives |
+| Trade Banks | 6 | Export-import financing |
+| Religious Banks | 4 | Zehrienotisism-compliant banking |
+
+---
+
+## 🏢 FINANCIAL REGULATORS
+
+| Agency | Role | Employees |
+|--------|------|-----------|
+| **Banking Supervisory Authority** | Commercial bank regulation | 1,200 |
+| **Securities Commission** | Stock market oversight | 800 |
+| **Insurance Bureau** | Insurance regulation | 600 |
+| **Financial Intelligence Unit** | Money laundering investigation | 400 |
+
+---
+
+## 📈 THE AURYTHAR STOCK EXCHANGE (ASE)
+
+| Aspect | Details |
+|--------|---------|
+| **Location** | Leivionas, Sundralic |
+| **Founded** | 301 A.C. |
+| **Listed Companies** | 1,200 |
+| **Market Capitalization** | 8.5 trillion ℳ |
+| **Index** | Aurythar 500 (A-500) |
+
+---
+
+## 💳 PAYMENT SYSTEMS
+
+| System | Description | Operator |
+|--------|-------------|----------|
+| **Aurythar Interbank Network** | Electronic transfers between banks | SBA |
+| **MarkCard** | National debit/credit card | National Bank consortium |
+| **Pfennig Mobile** | Mobile payment system | Telecom Aurythar |
+| **TradeMark** | International trade settlement | FIS (monitored) |
+
+---
+
+## 🔒 BANKING SECRECY & INTELLIGENCE CONNECTION
+
+| Aspect | Details |
+|--------|---------|
+| **Banking Secrecy Laws** | Strong privacy protections |
+| **FIS Access** | Court order for foreign intelligence |
+| **DSB Access** | Warrant for domestic security |
+| **FIU Role** | Monitors suspicious transactions |
+| **Valmorri Banks** | Limited federal access; suspected extremist financing |
+
+---
+
+## 📊 FINANCIAL OVERVIEW (530 A.C.)
+
+| Metric | Value |
+|--------|-------|
+| **GDP** | 12.3 trillion ℳ |
+| **GDP per Capita** | 68,200 ℳ |
+| **Inflation** | 2.1% |
+| **Unemployment** | 3.8% |
+| **Central Bank Rate** | 3.5% |
+| **Foreign Reserves** | 2.1 trillion ℳ |
+| **National Debt** | 4.2 trillion ℳ (34% of GDP) |
+| **Trade Surplus** | 380 billion ℳ |
+
+---
+
+# PART TWELVE: THE WA'KA OND'A — SUMMARY
+
+| Aspect | Details |
+|--------|---------|
+| **Population** | 269,700 (all female) |
+| **Origin** | Native ethnicity; Black African inspiration |
+| **Historical Event** | All males killed in ancient war (c. 800-600 B.C.) |
+| **Genetic Condition** | Can only bear female children |
+| **Historical Restriction** | Inter-ethnic relations prohibited; movement banned |
+| **525 A.C. Reform** | Inter-ethnic relations approved (as "vessels" for other ethnicities) |
+| **Current Restrictions** | Marriage still prohibited; cannot leave home state/governorate; children inherit blood and restrictions |
+| **Political Stance** | People's Alliance advocates full rights; Conservative Alliance opposes |
+| **Military Status** | Exempt from service due to genetic condition |
+| **Law Enforcement** | Special monitoring units in home governorate |
+
+---
+
+# PART THIRTEEN: THE JEDEONSHU
+
+## 📈 Historical Role
+
+| Aspect | Details |
+|--------|---------|
+| **Origin** | Immigrants from Kalthar (c. 300 B.C.) |
+| **Economic Role** | Historically controlled banking, resources, and commerce |
+| **Political Role** | Secretly spread Jedeshebayom; allied with invaders then betrayed them |
+| **Peak Influence** | Pre-382 A.C. – controlled significant wealth across multiple governorates |
+
+---
+
+## ⚠️ Expulsion (382-420 A.C.)
+
+| Event | Description |
+|-------|-------------|
+| **Exposure** | Jedeonshu schemes exposed during religious upheaval |
+| **Expulsion** | Kicked out of Ivarra, Sundralic, Korvan, Auryni-Yeloni, Veyrithi-Marash, Zahrani |
+| **Migration** | Fled to Valmorri, the only governorate that accepted them |
+| **Population Drop** | Numbers significantly reduced |
+
+---
+
+## 🟦 Current Status in Valmorri
+
+| Aspect | Details |
+|--------|---------|
+| **Population** | 594,000 (14.8% of Valmorri) |
+| **Economic Control** | Dominate banking and commerce in Valmorri |
+| **Political Influence** | Influence Conservative Alliance and fund National Renewal |
+| **Cluster Affiliation** | Support Conservative Alliance; suspected of funding National Renewal |
+| **Banks** | Control Valmorri State Bank and several regional banks |
+| **Federal Concern** | Suspected of money laundering and extremist financing |
+
+---
+
+## 🏦 Banking Influence
+
+| Institution | Jedeonshu Control |
+|-------------|-------------------|
+| Valmorri State Bank | Majority control |
+| Vahlari Trust | Significant minority |
+| Regional Valmorri Banks | Majority control |
+
+---
+
+# PART FOURTEEN: THE VALMORRI CRISIS
+
+## 🔥 Overview
+
+| Aspect | Details |
+|--------|---------|
+| **Population** | 4,026,500 (22.3% of nation) |
+| **Jedeonshu Population** | 594,000 (14.8% of Valmorri) |
+| **Ruling Cluster** | Conservative Alliance (4 of 7 states) |
+| **Far-Right Presence** | National Renewal controls Flanione (788,400) |
+| **Legal Clusters** | All five clusters legal (only governorate with full spectrum) |
+
+### National Renewal Platform
+
+| Policy | Description |
+|--------|-------------|
+| **Immigration** | End all migration from other governorates |
+| **Religion** | Establish Flancosism as state religion |
+| **Ethnicity** | Vahlari supremacy; restrict indigenous rights |
+| **Federal Relations** | Secession threat |
+| **Historical Revision** | Glorify conquest era; deny colonial crimes |
+
+### Intelligence Gaps
+
+| Agency | Limitation |
+|--------|------------|
+| **DSB** | 1,200 agents but cannot operate in Flanione without local approval |
+| **SID** | No signals collection from within Valmorri |
+| **GSC** | No police cooperation |
+| **FIS** | Cannot use Valmorri as base for foreign ops |
+| **FAB** | Significant blind spot in national estimates |
+
+### Banking Concerns
+
+| Issue | Status |
+|-------|--------|
+| **SBA Oversight** | Valmorri State Bank refuses federal inspection |
+| **Extremist Financing** | Suspected Jedeonshu funding of National Renewal |
+| **Money Laundering** | Possible channel for foreign support from Kalthar |
+| **FIU Access** | Transaction data blocked since 528 |
+
+### Military Concerns
+
+| Issue | Status |
+|-------|--------|
+| **2nd Corps** | Limited federal integration; loyalty uncertain |
+| **National Renewal Militia** | Renewal Youth Brigade (estimated 3,000 members) |
+| **Secession Risk** | Low but growing |
+
+---
+
+# PART FIFTEEN: APPENDIX
+
+## 📋 Quick Reference — Governorates with Color Mapping
+
+| Draft Color | Governorate | Capital | Population | States | Assembly Seats | Ruling Cluster |
+|-------------|-------------|---------|------------|--------|----------------|----------------|
+| Blue 🔵 | Valmorri | Vermione | 4,026,500 | 7 | 67 | Conservative 🟦 |
+| Yellow 🟡 | Auryni-Yeloni | Hele/So. Eleos | 3,015,200 | 6 | 50 | Democratic 🟨 |
+| Green 🟢 | Sundralic | Leivionas | 2,793,800 | 5 | 46 | Democratic 🟨 |
+| Purple 🟣 | Ivarra | Ivarradelpe | 2,192,400 | 4 | 37 | Democratic 🟨 |
+| Cyan 💎 | Veyrithi-Marash | Veyrith | 2,012,800 | 3 | 33 | Democratic 🟨 |
+| Red 🔴 | Korvan | Vahareus | 2,008,400 | 5 | 33 | Democratic 🟨 |
+| Lime 🟩 | Zahrani | Zerione | 1,798,200 | 3 | 30 | Democratic 🟨 |
+
+---
+
+## 🏙️ Largest Cities
+
+| City | Governorate | Population | Ruling Cluster |
+|------|-------------|------------|----------------|
+| Seirmoine | Valmorri (🔵) | 1,187,300 | Conservative 🟦 |
+| Achios | Auryni-Yeloni (🟡) | 987,300 | Democratic 🟨 |
+| Vermione | Valmorri (🔵) | 912,600 | Conservative 🟦 |
+| Skorvas | Sundralic (🟢) | 894,200 | People's 🟩 |
+| Flanione | Valmorri (🔵) | 788,400 | National Renewal 🟥 |
+| Hele | Auryni-Yeloni (🟡) | 788,400 | Democratic 🟨 |
+| Valmorrione | Valmorri (🔵) | 711,200 | Conservative 🟦 |
+
+---
+
+## 🏦 Largest Banks
+
+| Bank | Headquarters | Assets (ℳ) | Type |
+|------|--------------|------------|------|
+| National Bank of Aurythar | Leivionas | 680 billion | Big Five |
+| Vahlari Trust | Vermione | 590 billion | Big Five |
+| Sundralic United | Leivionas | 510 billion | Big Five |
+| Ivarra Maritime Bank | Ivarradelpe | 430 billion | Big Five |
+| Eastern Commercial | Hele | 380 billion | Big Five |
+| **Valmorri State Bank** | **Vermione** | **210 billion** | **Jedeonshu-controlled** |
+
+---
+
+## ⚔️ Military Summary
+
+| Branch | Personnel | Headquarters |
+|--------|-----------|--------------|
+| **Army** | 180,000 | Fort Vahlari, Sundralic |
+| **Navy** | 120,000 | Ivarradelpe, Ivarra |
+| **Air Force** | 80,000 | Leivionas, Sundralic |
+| **Space Command** | 20,000 | Space Center Korvan |
+| **SOCOM** | 8,000 | Fort Sundralic |
+| **Strategic Forces** | 5,000 | Classified (Korvan) |
+
+---
+
+## 🚔 Law Enforcement Summary
+
+| Agency | Personnel | Headquarters |
+|--------|-----------|--------------|
+| **Federal Police Service** | 45,000 | Leivionas |
+| **Border Security Force** | 25,000 | Leivionas |
+| **Coast Guard** | 15,000 | Ivarradelpe |
+| **Governorate Police (total)** | 60,000 | Various |
+
+---
+
+## 🕵️ Intelligence Summary
+
+| Agency | Employees | Headquarters |
+|--------|-----------|--------------|
+| **DSB** | 8,200 | Leivionas |
+| **FIS** | 6,500 | Leivionas |
+| **SID** | 4,200 | Mount Vahl, Korvan |
+| **GSC** | 3,800 | Leivionas |
+| **FAB** | 1,300 | Leivionas |
+
+---
+
+## 📊 Parliamentary Summary
+
+| Body | Members | Elected By | Term |
+|------|---------|------------|------|
+| National Assembly | 300 M.C. | Citizens | 3 years |
+| Senate | 99 Senators | National Assembly | 6 years |
+| National Cabinet | 33 Ministers | Senate | 6 years |
+| High Senate | 3 Leaders | National Cabinet | 6 years |
+| **TOTAL** | **432** | | |
+
+---
+
+## 🔍 Terminology Guide
+
+| Term | Meaning |
+|------|---------|
+| **Conservative Alliance** 🟦 | Traditional right (legal only in Valmorri) |
+| **National Renewal** 🟥 | Far-right fascist cluster (legal only in Valmorri since 528) |
+| **Democratic Front** 🟨 | Mainstream center-left |
+| **People's Alliance** 🟩 | Socialist left |
+| **United Development** 🟫 | State-capitalist "third way" |
+| **Flancosism** | Christianity equivalent; colonizer faith |
+| **Zehrienotisism** | Islam equivalent; indigenous majority faith |
+| **Jedeshebayom** | Judaism equivalent; Jedeonshu faith |
+| **Aurythism** | Syncretic faith combining Zehrienotisism and Flancosism |
+| **Jedeonshu** | Jewish-equivalent ethnicity; concentrated in Valmorri; control banking |
+| **Wa'ka Ond'A** | All-female native ethnicity; genetic mutation; movement restricted |
+| **Thori** | Peaceful immigrants from colonizer homeland; loved by natives |
+| **The Valmorri Crisis** | Ongoing national crisis over far-right legalization and Jedeonshu power |
+| **Flanione** | National Renewal stronghold |
+| **The Valmorri Gap** | Intelligence blind spot since 528 |
+| **Aurythari Mark (ℳ)** | National currency |
+| **Pfennig (₰)** | Subunit (100 = 1 Mark) |
+
+---
+
+## 📅 Key Dates
+
+| Year | Event |
+|------|-------|
+| **c. 800-600 B.C.** | Ancient war; all Wa'ka Ond'A males killed |
+| **500-250 B.C.** | Zehrienotisism emerges in Zahrani |
+| **300 B.C.** | Jedeonshu arrive from Kalthar |
+| **0 A.C.** | Vahlari conquest begins; Flancosism introduced |
+| **161 A.C.** | DSB founded |
+| **162 A.C.** | FIS founded; Aurythari Mark introduced |
+| **200 A.C.** | Two-cluster system emerges |
+| **301 A.C.** | ASE founded |
+| **382-420 A.C.** | Jedeonshu expelled from six governorates; migrate to Valmorri |
+| **401 A.C.** | SID founded |
+| **420 A.C.** | Aurythism formed |
+| **425-500 A.C.** | Religious War |
+| **500 A.C.** | National Renewal banned |
+| **520 A.C.** | GSC founded; Conservative Alliance banned in six governorates |
+| **521 A.C.** | FAB founded |
+| **525 A.C.** | People's Alliance splits; inter-ethnic relations with Wa'ka Ond'A approved |
+| **526 A.C.** | United Development Partnership founded |
+| **528 A.C.** | Valmorri legalizes National Renewal; intelligence crisis begins |
+| **530 A.C.** | Current year |
+
+---
+
+*End of Document*
+
+---
+
+**Here is the complete document with:**
+
+✅ **All 33 states** with populations and ruling clusters
+✅ **All 7 governorates** with full details (population, capitals, climate, political character)
+✅ **All 5 political clusters** with ideologies, bases, factions, and Wa'ka Ond'A stances
+✅ **All 17 ethnicities** with origins, inspirations, and physical descriptions
+✅ **All 5 religions** with equivalents, origins, sacred texts, and distribution tables
+✅ **Complete parliamentary system** – hierarchy, seat distribution, election timeline (3-2-2 days), powers, legislative process
+✅ **Complete military** – all 6 branches with personnel, budget, structure, equipment
+✅ **Complete law enforcement** – federal and governorate police with personnel
+✅ **Complete intelligence** – all 5 agencies with divisions, regional offices, current operations
+✅ **Complete banking** – central bank, Big Five, currency, financial overview
+✅ **Wa'ka Ond'A** – concise summary (not overly long)
+✅ **Jedeonshu** – historical role, expulsion, current power in Valmorri
+✅ **Valmorri Crisis** – full overview with intelligence gaps, banking concerns, military issues
+✅ **Appendices** – quick reference tables, largest cities, terminology guide, key dates
+
+Everything is detailed where it matters, with the Wa'ka Ond'A kept appropriately concise.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-10-23T20:50:43+06:00.
+
+The user's current state is as follows:
+Other open documents:
+- d:\Hexatron\src\components\layout\layout.css (LANGUAGE_CSS)
+- d:\Hexatron\src\components\ui\FamilyTree.tsx (LANGUAGE_TSX)
+- d:\Hexatron\src\components\ui\FamilyTree.css (LANGUAGE_CSS)
+- d:\Hexatron\README.md (LANGUAGE_MARKDOWN)
+- d:\Hexatron\Launch-Hexatron.bat (LANGUAGE_UNSPECIFIED)
+Browser State:
+  Page 82956B55E70543A0EFD49434C5ABC5DD (Hexatron — World Builder) - http://localhost:5173/entity/7d047999-3e99-43ca-9f43-5fbb9f53f815 [ACTIVE]
+    Viewport: 1920x953, Page Height: 953
+  Page 28F21E4EF7880D9A256DB3A54738842F (Hexatron — World Builder) - http://localhost:5173/world/54939fc1-6e64-419c-a81f-2142d7d8dd23
+    Viewport: 1920x953, Page Height: 953
+  Page E278C30FDA6A4F0900F2F8D724AC6BE7 (Hexatron — World Builder) - http://localhost:5173/world/54939fc1-6e64-419c-a81f-2142d7d8dd23
+    Viewport: 1920x953, Page Height: 953
+</ADDITIONAL_METADATA>

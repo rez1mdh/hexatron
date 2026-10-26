@@ -1,0 +1,238 @@
+/* src/pages/HelpPage.css */
+
+.help-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.help-header {
+  margin-bottom: 24px;
+}
+
+.help-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.help-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text);
+}
+
+.help-subtitle {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.help-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.help-toc-sidebar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 80px;
+}
+
+.help-toc-heading {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  padding: 6px 12px;
+}
+
+.help-toc-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.86rem;
+  transition: all 0.15s ease;
+}
+
+.help-toc-item:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.help-toc-item.active {
+  background: rgba(124, 106, 247, 0.12);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.help-content-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+}
+
+.help-section-title {
+  margin: 0 0 16px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.help-section-body {
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+.help-section-body p {
+  margin: 0 0 14px;
+}
+
+.help-section-body ul,
+.help-section-body ol {
+  margin: 0 0 16px;
+  padding-left: 20px;
+}
+
+.help-section-body li {
+  margin-bottom: 8px;
+}
+
+.help-section-body h4 {
+  margin: 20px 0 10px;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.callout-note {
+  background: var(--surface-2);
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin: 16px 0;
+  font-size: 0.88rem;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+.help-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.help-table th,
+.help-table td {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.help-table th {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+.cmd-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 6px 12px;
+  margin-bottom: 16px;
+}
+
+.cmd-search-box input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  outline: none;
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+.command-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.cmd-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cmd-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cmd-card-name {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.cmd-card-syntax {
+  background: rgba(124, 106, 247, 0.12);
+  color: var(--accent);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.cmd-card-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.cmd-card-meta {
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+@media (max-width: 768px) {
+  .help-layout {
+    grid-template-columns: 1fr;
+  }
+  .help-toc-sidebar {
+    position: static;
+  }
+}

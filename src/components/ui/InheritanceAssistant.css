@@ -1,0 +1,124 @@
+/* src/components/ui/InheritanceAssistant.css */
+
+.inheritance-assistant-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.15rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.inheritance-assistant-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.inheritance-assistant-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.inheritance-badge-estimate {
+  font-size: 0.68rem;
+  font-weight: 500;
+  background: var(--accent-glow);
+  color: var(--accent-text);
+  border: 1px solid var(--accent);
+  padding: 1px 6px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.inheritance-parents-row {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.inheritance-ancestry-preview {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.inheritance-ancestry-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0.6rem;
+}
+
+.inheritance-ancestry-chip {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px 7px;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.inheritance-ancestry-chip strong {
+  color: var(--accent-text);
+}
+
+.inheritance-notice {
+  font-size: 0.72rem;
+  color: var(--warning);
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.inheritance-suggestions-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.inheritance-suggestion-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.inheritance-suggestion-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  min-width: 90px;
+}
+
+.inheritance-suggestion-btn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.inheritance-suggestion-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent-text);
+  background: var(--bg-hover);
+}

@@ -3,7 +3,8 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { db, type StatisticalDataset, type Entity, type Relationship } from './schema';
-import { getNextEntryNumber } from './operations';
+import { getNextEntryNumber, extractLinkedEntityIds } from './operations';
+import { linkMentionsInArticleString } from '../utils/entityLinker';
 
 // Helper to create valid TipTap ProseMirror document JSON strings
 function makeDoc(sections: { heading?: string; paragraphs?: string[]; list?: string[] }[]): string {
@@ -259,7 +260,8 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
       currentYear: '530 A.C.',
       eras: 'B.C. (Before Conquest) / A.C. (After Conquest)',
     },
-    ['calendar', 'chronology', 'dating', 'epochs']
+    ['calendar', 'chronology', 'dating', 'epochs'],
+    ['Continental Calendar', 'A.C.', 'B.C.', 'After Conquest', 'Before Conquest']
   );
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -710,7 +712,8 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
         isCapital: !!st.isCap,
         status: 'Active',
       },
-      ['federal-state', 'fsa-member', st.govKey]
+      ['federal-state', 'fsa-member', st.govKey],
+      [st.name, `State of ${st.name}`]
     );
   }
 
@@ -719,19 +722,19 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
   // ─────────────────────────────────────────────────────────────────────────
 
   const majorCities = [
-    { key: 'city-seirmoine', name: 'City of Seirmoine', pop: '1,187,300', gov: 'Valmorri', state: 'State of Seirmoine', desc: 'Largest city by population in the Federation; heavy chemical, railway engineering, and steel foundries.' },
-    { key: 'city-achios', name: 'City of Achios', pop: '987,300', gov: 'Auryni-Yeloni', state: 'State of Achios', desc: 'Ancient cultural city with terraced gardens, amphitheaters, and stone masonry guilds.' },
-    { key: 'city-vermione', name: 'City of Vermione', pop: '912,600', gov: 'Valmorri', state: 'State of Vermione', isCap: true, desc: 'Financial capital of Aurythar, capital of Valmorri, and headquarters of the Valmorri State Bank.' },
-    { key: 'city-skorvas', name: 'City of Skorvas', pop: '894,200', gov: 'Sundralic', state: 'State of Skorvas', desc: 'Agricultural manufacturing hub and political headquarters of the socialist People’s Alliance.' },
-    { key: 'city-flanione', name: 'City of Flanione', pop: '788,400', gov: 'Valmorri', state: 'State of Flanione', desc: 'Historic industrial city along the Flan River; cradle of Flancosism and headquarters of the National Renewal Movement.' },
-    { key: 'city-hele', name: 'Holy City of Hele', pop: '788,400', gov: 'Auryni-Yeloni', state: 'State of Hele', isCap: true, desc: 'The spiritual capital of Aurythar and supreme holy city of Zehrienotisism, home to the Golden Dome.' },
-    { key: 'city-valmorrione', name: 'City of Valmorrione', pop: '711,200', gov: 'Valmorri', state: 'State of Valmorrione', desc: 'Ancestral seat of native Valmorri nobility, high textile design houses, and river barge harbors.' },
-    { key: 'city-leivionas', name: 'Federal City of Leivionas', pop: '612,800', gov: 'Sundralic', state: 'State of Leivionas', isCap: true, desc: 'Federal Capital of the Federation; host of Parliament, Supreme Court, High Senate, and ASE.' },
-    { key: 'city-southern-eleos', name: 'City of Southern Eleos', pop: '611,700', gov: 'Auryni-Yeloni', state: 'State of Southern Eleos', isCap: true, desc: 'Administrative capital of Auryni-Yeloni housing the regional legislative assembly.' },
-    { key: 'city-veyrith', name: 'City of Veyrith', pop: '613,000', gov: 'Veyrithi-Marash', state: 'State of Veyrith', isCap: true, desc: 'Northern maritime port capital; cold-weather ship fitting, dry docks, and timber export wharves.' },
-    { key: 'city-zerione', name: 'Citadel of Zerione', pop: '611,800', gov: 'Zahrani', state: 'State of Zerione', isCap: true, desc: 'Oasis desert capital surrounded by sandstone ramparts and ancient cistern networks.' },
-    { key: 'city-ivarradelpe', name: 'City of Ivarradelpe', pop: '512,400', gov: 'Ivarra', state: 'State of Ivarradelpe', isCap: true, desc: 'Naval admiralty capital and commercial maritime hub of the western shores.' },
-    { key: 'city-vahareus', name: 'City of Vahareus', pop: '412,800', gov: 'Korvan', state: 'State of Vahareus', isCap: true, desc: 'High alpine fortress capital housing the Federal Gold Bullion Mint and alpine division barracks.' },
+    { key: 'city-seirmoine', name: 'City of Seirmoine', pop: '1,187,300', gov: 'Valmorri', state: 'State of Seirmoine', desc: 'Largest city by population in the Federation; heavy chemical, railway engineering, and steel foundries.', aliases: ['Seirmoine'] },
+    { key: 'city-achios', name: 'City of Achios', pop: '987,300', gov: 'Auryni-Yeloni', state: 'State of Achios', desc: 'Ancient cultural city with terraced gardens, amphitheaters, and stone masonry guilds.', aliases: ['Achios'] },
+    { key: 'city-vermione', name: 'City of Vermione', pop: '912,600', gov: 'Valmorri', state: 'State of Vermione', isCap: true, desc: 'Financial capital of Aurythar, capital of Valmorri, and headquarters of the Valmorri State Bank.', aliases: ['Vermione', 'Auracross', 'Auracross Fortress', 'Vermione City'] },
+    { key: 'city-skorvas', name: 'City of Skorvas', pop: '894,200', gov: 'Sundralic', state: 'State of Skorvas', desc: 'Agricultural manufacturing hub and political headquarters of the socialist People’s Alliance.', aliases: ['Skorvas'] },
+    { key: 'city-flanione', name: 'City of Flanione', pop: '788,400', gov: 'Valmorri', state: 'State of Flanione', desc: 'Historic industrial city along the Flan River; cradle of Flancosism and headquarters of the National Renewal Movement.', aliases: ['Flanione'] },
+    { key: 'city-hele', name: 'Holy City of Hele', pop: '788,400', gov: 'Auryni-Yeloni', state: 'State of Hele', isCap: true, desc: 'The spiritual capital of Aurythar and supreme holy city of Zehrienotisism, home to the Golden Dome.', aliases: ['Hele', 'City of Hele'] },
+    { key: 'city-valmorrione', name: 'City of Valmorrione', pop: '711,200', gov: 'Valmorri', state: 'State of Valmorrione', desc: 'Ancestral seat of native Valmorri nobility, high textile design houses, and river barge harbors.', aliases: ['Valmorrione', 'Western Valmorrione'] },
+    { key: 'city-leivionas', name: 'Federal City of Leivionas', pop: '612,800', gov: 'Sundralic', state: 'State of Leivionas', isCap: true, desc: 'Federal Capital of the Federation; host of Parliament, Supreme Court, High Senate, and ASE.', aliases: ['Leivionas'] },
+    { key: 'city-southern-eleos', name: 'City of Southern Eleos', pop: '611,700', gov: 'Auryni-Yeloni', state: 'State of Southern Eleos', isCap: true, desc: 'Administrative capital of Auryni-Yeloni housing the regional legislative assembly.', aliases: ['Southern Eleos'] },
+    { key: 'city-veyrith', name: 'City of Veyrith', pop: '613,000', gov: 'Veyrithi-Marash', state: 'State of Veyrith', isCap: true, desc: 'Northern maritime port capital; cold-weather ship fitting, dry docks, and timber export wharves.', aliases: ['Veyrith'] },
+    { key: 'city-zerione', name: 'Citadel of Zerione', pop: '611,800', gov: 'Zahrani', state: 'State of Zerione', isCap: true, desc: 'Oasis desert capital surrounded by sandstone ramparts and ancient cistern networks.', aliases: ['Zerione'] },
+    { key: 'city-ivarradelpe', name: 'City of Ivarradelpe', pop: '512,400', gov: 'Ivarra', state: 'State of Ivarradelpe', isCap: true, desc: 'Naval admiralty capital and commercial maritime hub of the western shores.', aliases: ['Ivarradelpe'] },
+    { key: 'city-vahareus', name: 'City of Vahareus', pop: '412,800', gov: 'Korvan', state: 'State of Vahareus', isCap: true, desc: 'High alpine fortress capital housing the Federal Gold Bullion Mint and alpine division barracks.', aliases: ['Vahareus'] },
   ];
 
   for (const c of majorCities) {
@@ -756,7 +759,8 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
         isCapital: !!c.isCap,
         status: 'Active',
       },
-      ['city', 'urban-center', 'settlement']
+      ['city', 'urban-center', 'settlement'],
+      c.aliases || []
     );
   }
 
@@ -924,7 +928,8 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
         population: eth.pop,
         status: 'Active',
       },
-      ['ethnicity', 'demographics', 'peoples']
+      ['ethnicity', 'demographics', 'peoples'],
+      [eth.title, `${eth.title}s`, `${eth.title} People`]
     );
   }
 
@@ -1321,7 +1326,478 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // P. REBUILD COMPREHENSIVE HIERARCHICAL RELATIONSHIPS (~200+)
+  // P. THE BATTLE OF TRAFLORIEDE & HISTORICAL LORE (50 A.C.)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  registerOrAuditEntity(
+    'event-battle-of-trafloriede',
+    'The Battle of Trafloriede',
+    'et-event',
+    makeDoc([
+      {
+        heading: 'Overview & Historical Significance',
+        paragraphs: [
+          'The Battle of Trafloriede is a decisive historic battle fought between the invading Vahlaris and the native Sundralics at the start of 50 A.C.',
+          'The battle is named after the rare Trafloriede flower, which was originally native to the Sundralic Western Plains—encompassing lands today organized as the federal states of Valmorrione, Skorvas, and Kentas.',
+          'The Vahlaris had already conquered the Central Valmorri Plains (present-day western Valmorrione) and sought to push their expansion eastwards. Flaheh Deshtz Zheikhengeurum, a Vahlari village chief from Auracross (present-day Vermione) notorious for his visceral hatred towards native peoples like the Valmorris, Ivarras, and Sundralics, gathered an army of 3,056 untrained soldiers to launch an unprovoked surprise assault.',
+          'Meanwhile, the native Sundralic inhabitants of Trafloriede were completely unaware of the sudden attack. At the time of the invasion, there were only about 350 people in the settlement, most of whom were women, children, and elderly. Gorhe lapa, chief of the Lea Treofleradion tribe (now extinct), commanded his roughly 70-man trained army to defend their ancestral land, women, and children.',
+        ],
+      },
+      {
+        heading: 'The Five-Hour Stand & Sorivinsenzio Intervention',
+        paragraphs: [
+          'The battle raged for five continuous hours as Chief Gorhe lapa and his warriors mounted a heroic defense against insurmountable odds. Observers from a rival tribe, the Sorivinsenzio, witnessed the combat and dispatched scouts to their chief, Hannik Debalak.',
+          'The Sorivinsenzio and Lea Treofleradion had harbored a bitter generational land feud over territorial boundaries. Debalak saw the invasion as an opportunity to eliminate his rivals and dispatched his son Hannik Lonko, younger brother of Hannik Armanas, with 400 trained warriors to intervene.',
+          'Lonko led the Sorivinsenzio army into the fray against both the Vahlaris and the Lea Treofleradion tribe without coordinating with Flaheh Deshtz Zheikhengeurum. Flaheh mistook Lonko\'s host for hostile reinforcements and ordered his army to attack, causing the battle to degenerate into a chaotic three-way deathmatch.',
+        ],
+      },
+      {
+        heading: 'The Slaying of Lonko & Destruction of the Plains',
+        paragraphs: [
+          'Amidst the bloody chaos, Korkins Duklois Tabaleshu, the nephew of Flaheh Deshtz Zheikhengeurum and commander of a small wing, killed Hannik Lonko by hurling a fallen Sorivinsenzio warrior\'s spear from behind.',
+          'Following Lonko\'s death, the Vahlaris emerged temporarily victorious, massacring every defender of the Lea Treofleradion, slaughtering the women and children, and burning the settlement and its blooming Trafloriede flower fields to ash.',
+          'The conflagration caused the complete extinction of the Trafloriede flower in its native Sundralic Western Plains. Its miraculous survival and arrival in the distant lands of Marash is the celebrated aftermath of the battle.',
+        ],
+      },
+      {
+        heading: 'The Retaliation of Hannik Armanas',
+        paragraphs: [
+          'A lone surviving soldier from Lonko\'s army escaped the carnage to inform Chief Hannik Debalak of the vanguard\'s destruction and Lonko\'s death. Debalak executed the soldier on the spot for abandoning the field.',
+          'Debalak then commanded his eldest son and heir, Hannik Armanas, to annihilate the Vahlari forces. Hannik Armanas, the greatest son of the Sorivinsenzio tribe and a devout follower of Inkarism, mobilized 2,000 disciplined warriors and launched a crushing counter-offensive.',
+          'Armanas utterly destroyed Flaheh Deshtz Zheikhengeurum\'s remaining 980-man army, emerging as the supreme hero of The Battle of Trafloriede and the undisputed winner of Trafloriede. Armanas captured Flaheh and two senior commanders; following three days of interrogation and torture under Hannik Debalak, Armanas executed Flaheh.',
+          'Through this victory, Hannik Armanas became the cultural hero and savior of the Sundralic people, an immortal symbol of Indigenous struggle, and the foundational symbol of the Indigenous Sphere.',
+        ],
+      },
+      {
+        heading: 'Escape of Korkins & The Migration of Stars',
+        paragraphs: [
+          'Korkins Duklois Tabaleshu escaped capture during Armanas\' counter-attack, fleeing northward with harvested Trafloriede cuttings and sparking The Migration of Stars.',
+        ],
+      },
+    ]),
+    {
+      startDate: '50 A.C.',
+      endDate: '50 A.C.',
+      location: 'Trafloriede (Sundralic Western Plains / Valmorrione, Skorvas, Kentas)',
+      outcome: 'Decisive victory of Hannik Armanas; execution of Flaheh Deshtz Zheikhengeurum; extinction of Lea Treofleradion; extinction of the flower in the plains and refuge in Marash',
+      belligerents: 'Vahlari Invaders vs. Lea Treofleradion vs. Sorivinsenzio Army',
+      status: 'Decisive Historical Engagement',
+    },
+    ['battle', 'history', 'valmorri', 'sundralic', 'vahlari', '50-ac', 'conflict', 'trafloriede'],
+    ['Battle of Trafloriede', 'Trafloriede Massacre', 'The Battle of Trafloriede']
+  );
+
+  registerOrAuditEntity(
+    'loc-trafloriede',
+    'Trafloriede',
+    'et-location',
+    makeDoc([
+      {
+        heading: 'The Rare Flower & Botanical Description',
+        paragraphs: [
+          'Trafloriede is the name of a legendary rare flower, violet and yellowy in color and almond in shape, renowned across the continent.',
+          'The flower was originally found in the Sundralic Western Plains, corresponding to the modern-day federal states of Valmorrione, Skorvas, and Kentas, where it grew in radiant alluvial meadows tended by indigenous Sundralic tribes.',
+          'Trafloriede is also the historical name of the settlement and river plain where The Battle of Trafloriede occurred in 50 A.C.',
+        ],
+      },
+      {
+        heading: 'Extinction in the Western Plains & Refuge in Marash',
+        paragraphs: [
+          'During the devastation of The Battle of Trafloriede, the settlement and surrounding flower fields were burned to ash, causing the flower to become extinct in the Sundralic Western Plains.',
+          'Its survival and finding its way to the distant lands of Marash is the celebrated aftermath of the battle. Cuttings and seeds preserved during subsequent migrations found a protected refuge along the mist-shrouded Green Coast of Marash, where the rare flower continues to blossom in secluded wild colonies under the stewardship of local clans.',
+        ],
+      },
+      {
+        heading: 'Symbol of Indigenous Struggle & Cultural Pride',
+        paragraphs: [
+          'Trafloriede is a revered symbol of indigenous struggles, embodying Auryni and Sundralic pride.',
+          'Its dual legacy—rooted in the ancestral plains of the west and blossoming in the boreal coast of Marash—serves as an enduring cultural emblem for native peoples resisting colonization and celebrating their shared identity.',
+        ],
+      },
+    ]),
+    {
+      flowerColor: 'Violet and yellowy in color',
+      flowerShape: 'Almond in shape',
+      originalHabitat: 'Sundralic Western Plains (modern Valmorrione, Skorvas, Kentas)',
+      currentHabitat: 'The Green Coast of Marash',
+      status: 'Extinct in Sundralic Western Plains; critically preserved on the Green Coast of Marash',
+      culturalSignificance: 'Symbol of indigenous struggles, Auryni pride, and Sundralic pride',
+    },
+    ['location', 'valmorri', 'trafloriede', 'flower', 'flora', 'marash', 'sundralic', 'auryni', 'indigenous-symbol'],
+    ['Trafloriede', 'Trafloriede Flower', 'The Trafloriede', 'Trafloriede Blossom', 'Trafloriede Fields', 'Trafloriede Valley']
+  );
+
+  registerOrAuditEntity(
+    'loc-green-coast',
+    'The Green Coast of Marash',
+    'et-location',
+    makeDoc([
+      {
+        heading: 'Coastal Biome & Botanical Refuge',
+        paragraphs: [
+          'The Green Coast of Marash (commonly known as the Green Coast) is a temperate, mist-covered maritime coastal strip in the State of Marash in northern Aurythar.',
+          'Renowned for its persistent ocean fog and sheltered maritime valleys, the Green Coast became the sole surviving refuge of the rare Trafloriede flower after it became extinct in the Sundralic Western Plains following the conflagration of 50 A.C.',
+          'Local native Marash clans hold the coastal flower colonies in sacred trust, fiercely protecting the almond-shaped violet and yellowy blooms against commercial intrusion and preserving an unbroken botanical link to the ancient Sundralic heartland.',
+        ],
+      },
+    ]),
+    {
+      region: 'State of Marash (Governorate of Veyrithi-Marash)',
+      climate: 'Maritime Temperate / Boreal Littoral',
+      terrain: 'Coastal Cliffs, Mist Forests & Floral Meadows',
+      flora: 'Trafloriede Flower',
+      status: 'Active Protected Sanctuary',
+    },
+    ['location', 'marash', 'coast', 'sanctuary', 'trafloriede', 'flora'],
+    ['Green Coast', 'Green Coast of Marash', 'The Green Coast', 'Marash Coast']
+  );
+
+  registerOrAuditEntity(
+    'loc-sundralic-western-plains',
+    'Sundralic Western Plains',
+    'et-location',
+    makeDoc([
+      {
+        heading: 'Geography & Historical Territory',
+        paragraphs: [
+          'The Sundralic Western Plains are an expansive historical prairie region that once stretched across the fertile lowlands of western Aurythar, encompassing lands modernly divided into the federal member states of Valmorrione, Skorvas, and Kentas.',
+          'For centuries, these plains served as the ancestral heartland of indigenous Sundralic tribes, including the peaceful Lea Treofleradion and the martial Sorivinsenzio.',
+          'It was the original native habitat of the famous Trafloriede flower, which blanketed the river valleys with radiant almond-shaped violet and yellowy blooms before becoming extinct across the plains during the devastation of The Battle of Trafloriede in 50 A.C.',
+        ],
+      },
+    ]),
+    {
+      modernDivisions: 'Valmorrione, Skorvas, Kentas',
+      climate: 'Temperate Prairie & Alluvial Basin',
+      terrain: 'Rolling Grasslands & River Valleys',
+      status: 'Historically Partitioned across Modern States',
+    },
+    ['location', 'plains', 'sundralic', 'western-plains', 'valmorrione', 'skorvas', 'kentas'],
+    ['Sundralic Western Plains', 'Western Plains', 'Sundralic Plains']
+  );
+
+  registerOrAuditEntity(
+    'loc-central-valmorri-plains',
+    'Central Valmorri Plains',
+    'et-location',
+    makeDoc([
+      {
+        heading: 'Geographical & Historical Context',
+        paragraphs: [
+          'The Central Valmorri Plains comprise the expansive prairie lowlands of the central Valmorri basin, corresponding in modern federal geography to western Valmorrione.',
+          'Subjugated early in the colonial era following the 0 A.C. Vahlari landfall at Auracross, the plains served as the military staging area from which Chief Flaheh Deshtz Zheikhengeurum launched the 50 A.C. eastward invasion toward Trafloriede.',
+        ],
+      },
+    ]),
+    {
+      climate: 'Temperate Agricultural Plains',
+      terrain: 'Fertile Prairie',
+      status: 'Active (Western Valmorrione)',
+    },
+    ['location', 'valmorri', 'plains', 'prairie'],
+    ['Central Valmorri', 'Western Valmorrione Plains']
+  );
+
+  registerOrAuditEntity(
+    'event-migration-of-stars',
+    'The Migration of Stars',
+    'et-event',
+    makeDoc([
+      {
+        heading: 'Origin & Historical Catalysis',
+        paragraphs: [
+          'The Migration of Stars was a legendary historical exodus catalyzed in 50 A.C. following the catastrophic conclusion of the Battle of Trafloriede.',
+          'Evading capture by Hannik Armanas\' vengeful Sorivinsenzio warriors, the Vahlari commander Korkins Duklois Tabaleshu escaped carrying surviving blossoms of the Trafloriede flower, journeying far into the northern boreal ranges and planting the botanical and cultural roots of northern star lore.',
+        ],
+      },
+    ]),
+    {
+      startDate: '50 A.C.',
+      outcome: 'Northern introduction of Trafloriede flora and early botanical migration',
+      status: 'Historical Era Event',
+    },
+    ['history', 'event', 'migration', 'stars', '50-ac'],
+    ['Migration of Stars', 'The Star Migration']
+  );
+
+  registerOrAuditEntity(
+    'char-flaheh-deshtz',
+    'Flaheh Deshtz Zheikhengeurum',
+    'et-character',
+    makeDoc([
+      {
+        heading: 'Colonial Chieftaincy & Anti-Native Hatred',
+        paragraphs: [
+          'Flaheh Deshtz Zheikhengeurum was an ambitious early Vahlari village chief from the settlement of Auracross (present-day Vermione).',
+          'He was the main coordinator and supreme commander of the invading army in The Battle of Trafloriede in 50 A.C.',
+          'Flaheh was well known throughout the frontier for his virulent hatred towards native peoples, particularly the Valmorris, Ivarras, and Sundralics, whom he viewed with deep contempt and actively sought to subjugate.',
+          'He was the uncle of wing commander Korkins Duklois Tabaleshu.',
+        ],
+      },
+      {
+        heading: 'The Invasion of Trafloriede & Death',
+        paragraphs: [
+          'Seeking eastward territorial conquest across the Central Valmorri Plains, Flaheh gathered an army of 3,056 untrained soldiers to launch a surprise attack on the peaceful Sundralic settlement of Trafloriede.',
+          'Although his host overwhelmed Chief Gorhe lapa\'s defenders and destroyed Hannik Lonko\'s 400-man vanguard, Flaheh was completely routed when Hannik Armanas arrived with 2,000 warriors.',
+          'Flaheh was captured alive and, following three days of interrogation and torture under Chief Hannik Debalak, was executed by Hannik Armanas.',
+        ],
+      },
+    ]),
+    {
+      birthplace: 'Auracross (modern-day Vermione)',
+      ethnicity: 'Vahlari',
+      occupation: 'Village Chief & Expeditionary Commander',
+      status: 'Deceased (Killed by Hannik Armanas in 50 A.C.)',
+      kinship: 'Uncle of Korkins Duklois Tabaleshu',
+      notableTraits: 'Well known for hatred towards Valmorris, Ivarras, and Sundralics',
+    },
+    ['character', 'vahlari', 'warlord', 'auracross', 'historical', 'flaheh'],
+    ['Chief Flaheh', 'Flaheh of Auracross', 'Flaheh Zheikhengeurum', 'Flaheh Deshtz', 'Flaheh']
+  );
+
+  registerOrAuditEntity(
+    'char-gorhe-lapa',
+    'Gorhe lapa',
+    'et-character',
+    makeDoc([
+      {
+        heading: 'Chieftaincy & Last Stand of Trafloriede',
+        paragraphs: [
+          'Gorhe lapa was the respected chieftain of the Lea Treofleradion, an ancient Sundralic tribe who inhabited the Trafloriede valley.',
+          'When over 3,000 Vahlari invaders struck Trafloriede without warning in 50 A.C., Chief Gorhe rallied his roughly 70 trained warriors to mount an heroic five-hour defensive stand, shielding 350 women, children, and elderly until he and his warriors fell on the battlefield.',
+        ],
+      },
+    ]),
+    {
+      ethnicity: 'Sundralic (Lea Treofleradion)',
+      occupation: 'Tribal Chieftain',
+      status: 'Deceased (Killed in battle 50 A.C.)',
+    },
+    ['character', 'sundralic', 'chieftain', 'trafloriede', 'hero'],
+    ['Chief Gorhe', 'Gorhe of Trafloriede', 'Gorhe Lapa', 'Gorhe']
+  );
+
+  registerOrAuditEntity(
+    'char-hannik-debalak',
+    'Hannik Debalak',
+    'et-character',
+    makeDoc([
+      {
+        heading: 'Chieftain of the Sorivinsenzio',
+        paragraphs: [
+          'Hannik Debalak was the stern, unforgiving chieftain of the Sorivinsenzio, an indigenous Sundralic tribe who held a generational blood feud with the Lea Treofleradion over land disputes.',
+          'Seeing the Vahlari attack as an opportunity to crush his rivals, Debalak dispatched his son Hannik Lonko with 400 warriors to fight as Vahlari allies. When a fleeing soldier reported the vanguard\'s destruction and Lonko\'s death, Debalak executed him for abandoning the field.',
+          'Debalak then commanded his eldest son and heir, Hannik Armanas, to raise 2,000 warriors and obliterate the Vahlari host, subsequently presiding over the three-day torture and execution of Flaheh Deshtz Zheikhengeurum.',
+        ],
+      },
+    ]),
+    {
+      ethnicity: 'Sundralic (Sorivinsenzio)',
+      occupation: 'High Chieftain',
+      status: 'Deceased',
+    },
+    ['character', 'sundralic', 'chieftain', 'sorivinsenzio'],
+    ['Chief Debalak', 'Debalak', 'Hannik Debalak']
+  );
+
+  registerOrAuditEntity(
+    'char-hannik-lonko',
+    'Hannik Lonko',
+    'et-character',
+    makeDoc([
+      {
+        heading: 'Sorivinsenzio Vanguard Leader',
+        paragraphs: [
+          'Hannik Lonko was the son of Chief Hannik Debalak and the younger brother of Hannik Armanas.',
+          'During The Battle of Trafloriede in 50 A.C., Lonko led the 400-strong Sorivinsenzio army into the clash against the Vahlaris and the Lea Treofleradion tribe.',
+          'Entering the engagement without prior coordination with the invaders, Lonko found himself fighting a three-way battle against both hostile factions.',
+          'Lonko was killed in action by Korkins Duklois Tabaleshu, the nephew of Flaheh Deshtz Zheikhengeurum, who pierced him from behind with a thrown spear.',
+        ],
+      },
+    ]),
+    {
+      ethnicity: 'Sundralic (Sorivinsenzio)',
+      father: 'Hannik Debalak',
+      brother: 'Hannik Armanas (elder brother)',
+      occupation: 'Sorivinsenzio Vanguard Army Commander',
+      status: 'Deceased (Killed in action 50 A.C.)',
+    },
+    ['character', 'sundralic', 'commander', 'sorivinsenzio', 'lonko'],
+    ['Lonko', 'Commander Lonko', 'Hannik Lonko']
+  );
+
+  registerOrAuditEntity(
+    'char-hannik-armanas',
+    'Hannik Armanas',
+    'et-character',
+    makeDoc([
+      {
+        heading: 'Son, Heir & Greatest Son of Sorivinsenzio',
+        paragraphs: [
+          'Hannik Armanas was the son and designated heir of Chief Hannik Debalak, and the elder brother of Hannik Lonko.',
+          'He is revered throughout history as the greatest son of the Sorivinsenzio tribe, celebrated for his peerless military genius and unwavering devotion.',
+          'He was a devout follower of Inkarism, adhering to the sacred ancestral teachings of righteous native defense and martial spiritual strength.',
+        ],
+      },
+      {
+        heading: 'Hero of Trafloriede & Execution of Flaheh',
+        paragraphs: [
+          'Hannik Armanas is the supreme hero of The Battle of Trafloriede and the undisputed winner of Trafloriede.',
+          'To avenge his younger brother Hannik Lonko, Armanas raised 2,000 disciplined warriors and launched a ferocious counter-offensive, annihilating Flaheh Deshtz Zheikhengeurum\'s remaining army.',
+          'Armanas captured Flaheh and two senior commanders alive and, following three days of torture under Hannik Debalak, Armanas personally executed Flaheh.',
+        ],
+      },
+      {
+        heading: 'Savior of the Sundralic & Symbol of the Indigenous Sphere',
+        paragraphs: [
+          'By destroying the invading army, Hannik Armanas became the cultural hero and savior of the Sundralic people, halting uninhibited colonial conquest across the plains.',
+          'He stands as an immortal symbol of Indigenous struggle and the living symbol of the Indigenous Sphere, representing the defiance and solidarity of native peoples.',
+        ],
+      },
+    ]),
+    {
+      ethnicity: 'Sundralic (Sorivinsenzio)',
+      father: 'Hannik Debalak',
+      brother: 'Hannik Lonko (younger brother)',
+      religion: 'Inkarism',
+      occupation: 'Supreme War Commander & Tribal Heir',
+      status: 'Historical Cultural Hero & Savior',
+      honors: 'Hero of The Battle of Trafloriede, Winner of Trafloriede, Savior of the Sundralic, Symbol of Indigenous Struggle, Symbol of the Indigenous Sphere',
+    },
+    ['character', 'sundralic', 'war-leader', 'hero', 'savior', 'inkarism', 'indigenous-sphere', 'armanas'],
+    ['Armanas', 'Hannik Armanas', 'Commander Armanas', 'Hero of Trafloriede', 'Savior of the Sundralic']
+  );
+
+  registerOrAuditEntity(
+    'char-korkins-duklois',
+    'Korkins Duklois Tabaleshu',
+    'et-character',
+    makeDoc([
+      {
+        heading: 'Wing Commander & Catalyst of the Stars',
+        paragraphs: [
+          'Korkins Duklois Tabaleshu was a Vahlari wing commander and the nephew of Village Chief Flaheh Deshtz Zheikhengeurum.',
+          'During the Battle of Trafloriede, Korkins killed Hannik Lonko by throwing a dead Sorivinsenzio warrior\'s spear from behind. Evading capture when Hannik Armanas destroyed the Vahlari army, Korkins harvested Trafloriede flowers from the burning fields and fled north, instigating The Migration of Stars.',
+        ],
+      },
+    ]),
+    {
+      birthplace: 'Auracross (modern-day Vermione)',
+      ethnicity: 'Vahlari',
+      occupation: 'Wing Commander & Explorer',
+      status: 'Deceased',
+      kinship: 'Nephew of Flaheh Deshtz Zheikhengeurum',
+    },
+    ['character', 'vahlari', 'commander', 'migration-of-stars'],
+    ['Korkins', 'Korkins Tabaleshu', 'Korkins Duklois', 'Korkins Duklois Tabaleshu']
+  );
+
+  registerOrAuditEntity(
+    'eth-lea-treofleradion',
+    'Lea Treofleradion Tribe',
+    'et-ethnicity',
+    makeDoc([
+      {
+        heading: 'The Extinct Sundralic Clan',
+        paragraphs: [
+          'The Lea Treofleradion were an ancient indigenous tribe of the Sundralic people who inhabited the Trafloriede valley.',
+          'Known for peaceful agrarian life and tending the sacred Trafloriede flower meadows, the tribe was rendered entirely extinct in 50 A.C. during the Battle of Trafloriede when Vahlari invaders massacred all 350 inhabitants.',
+        ],
+      },
+    ]),
+    {
+      homeland: 'Trafloriede (Central Valmorri Plains)',
+      status: 'Extinct (Eradicated 50 A.C.)',
+      associatedLanguage: 'Sundralic',
+    },
+    ['ethnicity', 'tribe', 'sundralic', 'extinct', 'trafloriede'],
+    ['Lea Treofleradion', 'Lea Treofleradion Tribe', 'Treofleradion']
+  );
+
+  registerOrAuditEntity(
+    'eth-sorivinsenzio',
+    'Sorivinsenzio Tribe',
+    'et-ethnicity',
+    makeDoc([
+      {
+        heading: 'Martial Clan of the Sundralics',
+        paragraphs: [
+          'The Sorivinsenzio were a martial, disciplined tribe of the indigenous Sundralic people led by Chief Hannik Debalak.',
+          'Fierce rivals of the Lea Treofleradion over land disputes, their intervention in the Battle of Trafloriede led by Hannik Lonko resulted in Lonko\'s death, followed by Hannik Armanas\' total retribution against the Vahlari invaders.',
+        ],
+      },
+    ]),
+    {
+      homeland: 'Eastern Valmorri Borderlands',
+      status: 'Active / Historical Clan',
+      associatedLanguage: 'Sundralic',
+    },
+    ['ethnicity', 'tribe', 'sundralic', 'sorivinsenzio'],
+    ['Sorivinsenzio', 'Sorivinsenzio Tribe', 'Sorivinsenzio Clan']
+  );
+
+  registerOrAuditEntity(
+    'rel-inkarism',
+    'Inkarism',
+    'et-religion',
+    makeDoc([
+      {
+        heading: 'Theological Tenets & Ancestral Devotion',
+        paragraphs: [
+          'Inkarism is an ancient, revered indigenous faith originating among the Sundralic peoples of the western plains.',
+          'Centered on deep communion with ancestral spirits, righteous stewardship of native lands, and sacred resistance against unprovoked invasion, Inkarism stood in staunch contrast to foreign colonial theologies.',
+          'Its tenets emphasize spiritual purification before battle, moral discipline, and profound veneration for the living earth and native botanical wonders like the sacred Trafloriede flower.',
+        ],
+      },
+      {
+        heading: 'Cultural Role & Hannik Armanas',
+        paragraphs: [
+          'The most renowned historic adherent of Inkarism was Hannik Armanas, the supreme war commander of the Sorivinsenzio and savior of the Sundralic people.',
+          'Armanas credited the steadfast moral guidance of Inkarism for delivering victory at Trafloriede, cementing the faith as an enduring spiritual pillar of the Indigenous Sphere.',
+        ],
+      },
+    ]),
+    {
+      tradition: 'Indigenous Sundralic Polytheism & Ancestral Devotion',
+      notableAdherents: 'Hannik Armanas',
+      holySite: 'Ancestral Groves of the Sundralic Basin',
+    },
+    ['religion', 'faith', 'inkarism', 'sundralic', 'indigenous'],
+    ['Inkarism', 'Inkarist Faith', 'Inkarist Tradition', 'Inkarist']
+  );
+
+  registerOrAuditEntity(
+    'sphere-indigenous',
+    'The Indigenous Sphere',
+    'et-organization',
+    makeDoc([
+      {
+        heading: 'Origins & Geopolitical Mission',
+        paragraphs: [
+          'The Indigenous Sphere is the continental historical and geopolitical coalition of native peoples—prominently the Sundralics, Auryni, Valmorris, and Ivarras—united against colonial subjugation and territorial dispossession.',
+          'Originating from mutual defense pacts during the first century A.C. wars of resistance against Vahlari colonization, the Sphere champions indigenous self-determination, territorial sovereignty, and cultural preservation.',
+        ],
+      },
+      {
+        heading: 'Symbols & Cultural Hero',
+        paragraphs: [
+          'Hannik Armanas, the champion of The Battle of Trafloriede and slayer of Flaheh Deshtz Zheikhengeurum, is venerated as the premier historical hero and symbol of the Indigenous Sphere.',
+          'The rare Trafloriede flower, with its almond shape and vibrant violet and yellowy hues, serves as the sacred living emblem of indigenous struggle and unbroken native pride across both Auryni and Sundralic communities.',
+        ],
+      },
+    ]),
+    {
+      historicalLeader: 'Hannik Armanas',
+      emblem: 'Trafloriede Flower',
+      associatedPeoples: 'Sundralic, Auryni, Valmorri, Ivarra',
+      status: 'Historical & Contemporary Cultural Alliance',
+    },
+    ['organization', 'faction', 'indigenous', 'sphere', 'resistance', 'native'],
+    ['Indigenous Sphere', 'The Indigenous Sphere', 'Indigenous Alliance', 'Native Sphere', 'Indigenous']
+  );
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Q. REBUILD COMPREHENSIVE HIERARCHICAL RELATIONSHIPS (~200+)
   // ─────────────────────────────────────────────────────────────────────────
 
   // 1. Cosmological & Geographical Containment
@@ -1439,6 +1915,82 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
   addRel('event-waka-onda-war', 'theory-waka-onda', 'rt-involved-in', 'Investigated Subject');
   addRel('event-jedeonshu-expulsion', 'theory-jedeonshu-compact', 'rt-involved-in', 'Historical Focal Point');
   addRel('event-aurythism-formation', 'theory-aurythism-origin', 'rt-involved-in', 'Theological Dispute Subject');
+
+  // 11. The Battle of Trafloriede & Trafloriede Lore Network
+  addRel('event-battle-of-trafloriede', 'era-conquest', 'rt-occurred-in', 'Conquest Era Battle (50 A.C.)');
+  addRel('event-battle-of-trafloriede', 'loc-trafloriede', 'rt-located-in', 'Battlefield Location');
+  addRel('event-battle-of-trafloriede', 'loc-sundralic-western-plains', 'rt-located-in', 'Regional Plains Basin');
+  addRel('event-battle-of-trafloriede', 'char-flaheh-deshtz', 'rt-involved-in', 'Invading Vahlari Commander');
+  addRel('event-battle-of-trafloriede', 'char-gorhe-lapa', 'rt-involved-in', 'Defender Chieftain');
+  addRel('event-battle-of-trafloriede', 'char-hannik-lonko', 'rt-involved-in', 'Sorivinsenzio Vanguard Leader');
+  addRel('event-battle-of-trafloriede', 'char-hannik-armanas', 'rt-involved-in', 'Hero & Winner of Trafloriede');
+  addRel('event-battle-of-trafloriede', 'char-korkins-duklois', 'rt-involved-in', 'Vahlari Wing Commander');
+  addRel('event-battle-of-trafloriede', 'eth-lea-treofleradion', 'rt-involved-in', 'Massacred Native Tribe');
+  addRel('event-battle-of-trafloriede', 'eth-sorivinsenzio', 'rt-involved-in', 'Intervening Native Tribe');
+  addRel('event-battle-of-trafloriede', 'event-migration-of-stars', 'rt-involved-in', 'Direct Precursor');
+
+  // Trafloriede Flower, Geography & Symbolism
+  addRel('loc-trafloriede', 'loc-sundralic-western-plains', 'rt-located-in', 'Original Native Habitat');
+  addRel('loc-trafloriede', 'loc-central-valmorri-plains', 'rt-located-in', 'Plains River Basin');
+  addRel('loc-trafloriede', 'loc-green-coast', 'rt-located-in', 'Post-Battle Surviving Refuge');
+  addRel('loc-green-coast', 'state-marash', 'rt-located-in', 'Boreal Coastline of Marash');
+  addRel('loc-sundralic-western-plains', 'state-valmorrione', 'rt-located-in', 'Western Valmorrione Lowlands');
+  addRel('loc-sundralic-western-plains', 'state-skorvas', 'rt-located-in', 'Skorvas Agricultural Plain');
+  addRel('loc-sundralic-western-plains', 'state-kentas', 'rt-located-in', 'Kentas Prairie Margins');
+  addRel('loc-central-valmorri-plains', 'city-valmorrione', 'rt-located-in', 'Western Valmorrione Lowlands');
+  addRel('loc-trafloriede', 'eth-auryni', 'rt-involved-in', 'Symbol of Cultural Pride');
+  addRel('loc-trafloriede', 'eth-sundralic', 'rt-involved-in', 'Symbol of Indigenous Pride');
+  addRel('loc-trafloriede', 'sphere-indigenous', 'rt-involved-in', 'Living Botanical Emblem');
+
+  // Flaheh Deshtz Zheikhengeurum
+  addRel('char-flaheh-deshtz', 'city-vermione', 'rt-located-in', 'Auracross Village Chief');
+  addRel('char-flaheh-deshtz', 'eth-vahlari', 'rt-member-of', 'Vahlari Colonizer');
+  addRel('char-flaheh-deshtz', 'char-korkins-duklois', 'rt-parent-of', 'Uncle of Korkins');
+  addRel('char-flaheh-deshtz', 'eth-valmorri', 'rt-enemy-of', 'Known Hatred towards Valmorris');
+  addRel('char-flaheh-deshtz', 'eth-ivarra', 'rt-enemy-of', 'Known Hatred towards Ivarras');
+  addRel('char-flaheh-deshtz', 'eth-sundralic', 'rt-enemy-of', 'Known Hatred towards Sundralics');
+  addRel('char-flaheh-deshtz', 'char-hannik-armanas', 'rt-enemy-of', 'Executed by Armanas');
+
+  // Korkins Duklois Tabaleshu
+  addRel('char-korkins-duklois', 'char-flaheh-deshtz', 'rt-child-of', 'Nephew of Flaheh');
+  addRel('char-korkins-duklois', 'event-migration-of-stars', 'rt-created', 'Star Migration Initiator');
+  addRel('char-korkins-duklois', 'char-hannik-lonko', 'rt-enemy-of', 'Slain Lonko with Thrown Spear');
+
+  // Gorhe Lapa & Lea Treofleradion
+  addRel('char-gorhe-lapa', 'eth-lea-treofleradion', 'rt-member-of', 'Chieftain of the Clan');
+  addRel('eth-lea-treofleradion', 'eth-sundralic', 'rt-descended-from', 'Sundralic Native People');
+  addRel('eth-lea-treofleradion', 'eth-sorivinsenzio', 'rt-enemy-of', 'Generational Land Feud');
+
+  // Hannik Debalak & Sons
+  addRel('char-hannik-debalak', 'eth-sorivinsenzio', 'rt-member-of', 'High Chieftain');
+  addRel('char-hannik-debalak', 'char-hannik-lonko', 'rt-parent-of', 'Father of Lonko');
+  addRel('char-hannik-debalak', 'char-hannik-armanas', 'rt-parent-of', 'Father of Armanas');
+
+  // Hannik Lonko
+  addRel('char-hannik-lonko', 'char-hannik-armanas', 'rt-sibling-of', 'Younger Brother of Armanas');
+  addRel('char-hannik-lonko', 'eth-sorivinsenzio', 'rt-member-of', 'Vanguard Commander');
+  addRel('char-hannik-lonko', 'eth-lea-treofleradion', 'rt-enemy-of', 'Fought in Three-Way Battle');
+  addRel('char-hannik-lonko', 'char-flaheh-deshtz', 'rt-enemy-of', 'Fought Against Vahlari Army');
+
+  // Hannik Armanas
+  addRel('char-hannik-armanas', 'eth-sorivinsenzio', 'rt-member-of', 'Greatest Son & Tribal Heir');
+  addRel('char-hannik-armanas', 'rel-inkarism', 'rt-follows-faith', 'Devout Follower of Inkarism');
+  addRel('char-hannik-armanas', 'eth-sundralic', 'rt-member-of', 'Cultural Hero and Savior');
+  addRel('char-hannik-armanas', 'sphere-indigenous', 'rt-involved-in', 'Symbol of Indigenous Sphere');
+  addRel('char-hannik-armanas', 'event-battle-of-trafloriede', 'rt-involved-in', 'Winner of Trafloriede');
+  addRel('eth-sorivinsenzio', 'eth-sundralic', 'rt-descended-from', 'Sundralic Native People');
+
+  // Auto-link all entity articles across the audited world
+  console.log(`[importAurythar] Resolving and auto-linking inline mentions across ${entitiesToUpsert.length} entities...`);
+  for (const ent of entitiesToUpsert) {
+    if (ent.article) {
+      const linked = linkMentionsInArticleString(ent.article, entitiesToUpsert, ent.id);
+      if (linked) {
+        ent.article = linked;
+        ent.linkedEntityIds = extractLinkedEntityIds(linked);
+      }
+    }
+  }
 
   // Write all changes into IndexedDB
   console.log(`[importAurythar] Executing audit update: ${entitiesToUpsert.length} entities (${updatedCount} updated, ${newCount} new) and ${relationshipsToInsert.length} relationships.`);

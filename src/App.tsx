@@ -32,18 +32,26 @@ function AppInit({ children }: { children: React.ReactNode }) {
     seedBuiltIns()
       .then(() => ensureEntityEntryNumbers())
       .then(async () => {
+        const AURYTHAR_DATA_VERSION = 'v4-trafloriede-extended';
+        const importedVersion = localStorage.getItem('hexatron-aurythar-version');
+
         if (isCloudConfigured()) {
           // Cloud mode: fetch published encyclopedia data for any device/visitor
           const res = await syncPublishedDataFromCloud();
           if (res.entitiesSynced > 0) {
             bumpUniverseVersion();
+          } else if (importedVersion !== AURYTHAR_DATA_VERSION) {
+            await importAurytharData(true);
+            localStorage.setItem('hexatron-aurythar-version', AURYTHAR_DATA_VERSION);
+            bumpUniverseVersion();
           }
         } else {
           // Local offline fallback
-          const alreadyImported = localStorage.getItem('hexatron-aurythar-imported');
-          if (!alreadyImported) {
-            await importAurytharData();
+          if (importedVersion !== AURYTHAR_DATA_VERSION) {
+            await importAurytharData(true);
+            localStorage.setItem('hexatron-aurythar-version', AURYTHAR_DATA_VERSION);
             localStorage.setItem('hexatron-aurythar-imported', 'true');
+            bumpUniverseVersion();
           }
         }
         await autoLinkEntitiesInWorld();

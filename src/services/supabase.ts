@@ -13,8 +13,8 @@ export function getStoredCloudConfig(): { url: string; key: string } {
   const localKey = localStorage.getItem(STORAGE_KEY_ANON) || '';
 
   return {
-    url: (localUrl || envUrl).trim(),
-    key: (localKey || envKey).trim(),
+    url: (envUrl || localUrl).trim(),
+    key: (envKey || localKey).trim(),
   };
 }
 

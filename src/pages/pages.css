@@ -1253,6 +1253,89 @@
 .text-muted { color: var(--text-muted); }
 .text-accent { color: var(--accent); }
 
+/* ── Wikipedia Nav Arrows & Article Pager ────────────────────────────── */
+.wiki-nav-arrows {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: 4px;
+}
+
+.wiki-nav-arrow-btn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.wiki-nav-arrow-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.wiki-article-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.wiki-pager-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition);
+  max-width: 48%;
+}
+
+.wiki-pager-btn:hover {
+  background: var(--bg-elevated);
+  border-color: var(--accent);
+}
+
+.wiki-pager-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wiki-pager-text.align-right {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.wiki-pager-sub {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.wiki-pager-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
 @media (max-width: 768px) {
   .page-container { padding: 1rem; }
   .world-page-header { padding: 1.2rem 1rem 1rem; }
@@ -1265,4 +1348,7 @@
   .edit-meta-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
   .infobox { float: none; margin: 0 0 1.5rem; max-width: 100%; }
   .page-hero-title { font-size: 2rem; }
+  .wiki-article-pager { flex-direction: column; }
+  .wiki-pager-btn { max-width: 100%; width: 100%; }
 }
+

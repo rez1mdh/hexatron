@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Search, Sun, Moon, PanelRight, Download, Upload, Terminal, HelpCircle, Compass, User as UserIcon, Cloud } from 'lucide-react';
+import { Menu, Search, Sun, Moon, PanelRight, Download, Upload, Terminal, HelpCircle, Compass, User as UserIcon, Cloud, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { useAppStore } from '../../store/appStore';
 import { getCurrentUser, subscribeToAuthState, isCloudConfigured } from '../../services/supabase';
@@ -40,6 +40,14 @@ export default function TopBar() {
         <button className="icon-btn" onClick={toggleLeftSidebar} title="Toggle navigation">
           <Menu size={18} />
         </button>
+        <div className="topbar-nav-arrows">
+          <button className="icon-btn" onClick={() => navigate(-1)} title="Go back (Alt+Left)">
+            <ChevronLeft size={16} />
+          </button>
+          <button className="icon-btn" onClick={() => navigate(1)} title="Go forward (Alt+Right)">
+            <ChevronRight size={16} />
+          </button>
+        </div>
         <span className="app-wordmark" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
           Hexatron
         </span>

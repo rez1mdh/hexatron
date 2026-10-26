@@ -9,7 +9,7 @@ export default function GraphPage() {
   const { worldId, entityId } = useParams<{ worldId?: string; entityId?: string }>();
 
   return (
-    <div style={{ height: 'calc(100vh - var(--header-h))', width: '100%', position: 'relative' }}>
+    <div style={{ height: '100%', width: '100%', position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <GraphView worldId={worldId} initialSelectedEntityId={entityId} />
     </div>
   );

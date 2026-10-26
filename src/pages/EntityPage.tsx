@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Edit2, Trash2, Image as ImageIcon, GitBranch, Compass, FileText } from 'lucide-react';
+import { Edit2, Trash2, Image as ImageIcon, GitBranch, Compass, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   getEntity, getEntityTypes, getImages, softDeleteEntity,
   getWorld, getEntities, formatEntryNumber
@@ -147,12 +147,45 @@ export default function EntityPage() {
 
   const hasProperties = entity.properties && Object.keys(entity.properties).length > 0;
 
+  // Adjacent entities navigation
+  const { prevEntity, nextEntity } = useMemo(() => {
+    if (!entity || availableEntities.length <= 1) return { prevEntity: null, nextEntity: null };
+    const sorted = [...availableEntities].sort((a, b) => {
+      if (a.entryNumber !== undefined && b.entryNumber !== undefined) {
+        return a.entryNumber - b.entryNumber;
+      }
+      return a.title.localeCompare(b.title);
+    });
+    const idx = sorted.findIndex(e => e.id === entity.id);
+    if (idx === -1) return { prevEntity: null, nextEntity: null };
+    return {
+      prevEntity: idx > 0 ? sorted[idx - 1] : null,
+      nextEntity: idx < sorted.length - 1 ? sorted[idx + 1] : null,
+    };
+  }, [entity, availableEntities]);
+
   return (
     <div className="wiki-article-page">
       {/* ── 1. Wikipedia Article Header & Meta ─────────────────────────────── */}
       <header className="wiki-header">
         <div className="wiki-header-meta">
           <div className="wiki-breadcrumbs">
+            <div className="wiki-nav-arrows">
+              <button
+                className="wiki-nav-arrow-btn"
+                onClick={() => prevEntity ? navigate(`/entity/${prevEntity.id}`) : navigate(-1)}
+                title={prevEntity ? `Previous: ${prevEntity.title}` : 'Go back'}
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <button
+                className="wiki-nav-arrow-btn"
+                onClick={() => nextEntity ? navigate(`/entity/${nextEntity.id}`) : navigate(1)}
+                title={nextEntity ? `Next: ${nextEntity.title}` : 'Go forward'}
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
             {worldTitle && <span className="wiki-breadcrumb-item">{worldTitle}</span>}
             {worldTitle && <span className="wiki-breadcrumb-sep">/</span>}
             {entityType && (
@@ -377,7 +410,39 @@ export default function EntityPage() {
         </section>
       )}
 
-      {/* ── 4. Categories & Technical Metadata Details Footer ─────────────── */}
+      {/* ── 4. Adjacent Article Pager (Wikipedia Style) ─────────────────── */}
+      {(prevEntity || nextEntity) && (
+        <nav className="wiki-article-pager" aria-label="Adjacent articles">
+          {prevEntity ? (
+            <button
+              className="wiki-pager-btn prev"
+              onClick={() => navigate(`/entity/${prevEntity.id}`)}
+              title={`Read previous: ${prevEntity.title}`}
+            >
+              <ChevronLeft size={16} />
+              <div className="wiki-pager-text">
+                <span className="wiki-pager-sub">Previous</span>
+                <span className="wiki-pager-title truncate">{prevEntity.title}</span>
+              </div>
+            </button>
+          ) : <div />}
+          {nextEntity ? (
+            <button
+              className="wiki-pager-btn next"
+              onClick={() => navigate(`/entity/${nextEntity.id}`)}
+              title={`Read next: ${nextEntity.title}`}
+            >
+              <div className="wiki-pager-text align-right">
+                <span className="wiki-pager-sub">Next</span>
+                <span className="wiki-pager-title truncate">{nextEntity.title}</span>
+              </div>
+              <ChevronRight size={16} />
+            </button>
+          ) : <div />}
+        </nav>
+      )}
+
+      {/* ── 5. Categories & Technical Metadata Details Footer ─────────────── */}
       <footer className="wiki-footer">
         {entity.tags.length > 0 && (
           <div className="wiki-categories-box">

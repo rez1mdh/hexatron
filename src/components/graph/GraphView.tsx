@@ -134,6 +134,14 @@ export default function GraphView({ worldId: propWorldId, initialSelectedEntityI
     init();
   }, [propWorldId]);
 
+  // Sync selected entity ID if prop changes
+  useEffect(() => {
+    if (initialSelectedEntityId) {
+      setSelectedNodeId(initialSelectedEntityId);
+      setScopeMode('local');
+    }
+  }, [initialSelectedEntityId]);
+
   // Lookup Maps
   const entityMap = useMemo(() => new Map(allEntities.map(e => [e.id, e])), [allEntities]);
   const entityTypeMap = useMemo(() => new Map(entityTypes.map(t => [t.id, t])), [entityTypes]);
@@ -232,31 +240,37 @@ export default function GraphView({ worldId: propWorldId, initialSelectedEntityI
       });
     }
 
-    // Filter by explicit individual entity types if modified
-    scopedEntities = scopedEntities.filter(e => selectedEntityTypes.has(e.typeId));
+    // Filter by explicit individual entity types if modified (only when user selected a strict subset)
+    if (selectedEntityTypes.size > 0 && selectedEntityTypes.size < entityTypes.length) {
+      scopedEntities = scopedEntities.filter(e => selectedEntityTypes.has(e.typeId));
+    }
     const activeEntityIds = new Set(scopedEntities.map(e => e.id));
 
     // C. Filter Edges
-    const activeEdges: EdgeData[] = allRelationships
-      .filter(r => activeEntityIds.has(r.fromEntityId) && activeEntityIds.has(r.toEntityId))
-      .filter(r => selectedRelTypes.has(r.typeId))
-      .map(r => {
-        const rt = relTypeMap.get(r.typeId);
-        const fromEnt = entityMap.get(r.fromEntityId);
-        const toEnt = entityMap.get(r.toEntityId);
-        const isCrossWorld = Boolean(fromEnt && toEnt && fromEnt.worldId !== toEnt.worldId);
+    let rawEdges = allRelationships
+      .filter(r => activeEntityIds.has(r.fromEntityId) && activeEntityIds.has(r.toEntityId));
 
-        return {
-          id: r.id,
-          fromId: r.fromEntityId,
-          toId: r.toEntityId,
-          typeId: r.typeId,
-          label: rt?.name || 'related to',
-          reverseLabel: rt?.reverseName || 'related to',
-          color: rt?.color || '#6366f1',
-          isCrossWorld,
-        };
-      });
+    if (selectedRelTypes.size > 0 && selectedRelTypes.size < relTypes.length) {
+      rawEdges = rawEdges.filter(r => selectedRelTypes.has(r.typeId));
+    }
+
+    const activeEdges: EdgeData[] = rawEdges.map(r => {
+      const rt = relTypeMap.get(r.typeId);
+      const fromEnt = entityMap.get(r.fromEntityId);
+      const toEnt = entityMap.get(r.toEntityId);
+      const isCrossWorld = Boolean(fromEnt && toEnt && fromEnt.worldId !== toEnt.worldId);
+
+      return {
+        id: r.id,
+        fromId: r.fromEntityId,
+        toId: r.toEntityId,
+        typeId: r.typeId,
+        label: rt?.name || 'related to',
+        reverseLabel: rt?.reverseName || 'related to',
+        color: rt?.color || '#6366f1',
+        isCrossWorld,
+      };
+    });
 
     // D. Calculate unique connections count (prevent multi-edges from inflating node size)
     const connectionCounts = new Map<string, Set<string>>();
@@ -283,6 +297,9 @@ export default function GraphView({ worldId: propWorldId, initialSelectedEntityI
         ? Math.min(22, Math.max(9, 9 + Math.sqrt(uniqueConn) * 2.2))
         : 10;
 
+      const initX = Math.cos(idx * angleStep) * initialSpreadRadius + (Math.random() - 0.5) * 40;
+      const initY = Math.sin(idx * angleStep) * initialSpreadRadius + (Math.random() - 0.5) * 40;
+
       return {
         id: e.id,
         title: e.title,
@@ -290,15 +307,24 @@ export default function GraphView({ worldId: propWorldId, initialSelectedEntityI
         typeId: e.typeId,
         worldId: e.worldId,
         color: t?.color || '#6366f1',
-        x: existing ? existing.x : Math.cos(idx * angleStep) * initialSpreadRadius + (Math.random() - 0.5) * 40,
-        y: existing ? existing.y : Math.sin(idx * angleStep) * initialSpreadRadius + (Math.random() - 0.5) * 40,
-        vx: existing ? existing.vx * 0.4 : 0,
-        vy: existing ? existing.vy * 0.4 : 0,
+        x: existing && isFinite(existing.x) ? existing.x : initX,
+        y: existing && isFinite(existing.y) ? existing.y : initY,
+        vx: existing && isFinite(existing.vx) ? existing.vx * 0.4 : 0,
+        vy: existing && isFinite(existing.vy) ? existing.vy * 0.4 : 0,
         radius,
         pinned: existing ? existing.pinned : false,
         uniqueConnections: uniqueConn,
       };
     });
+
+    // Center camera on selected node if present
+    if (selectedNodeId) {
+      const target = activeNodes.find(n => n.id === selectedNodeId);
+      if (target && isFinite(target.x) && isFinite(target.y)) {
+        transformRef.current.x = -target.x * transformRef.current.k;
+        transformRef.current.y = -target.y * transformRef.current.k;
+      }
+    }
 
     setNodes(activeNodes);
     setEdges(activeEdges);
@@ -430,14 +456,18 @@ export default function GraphView({ worldId: propWorldId, initialSelectedEntityI
 
   // 4. Render Network onto High-DPI Canvas
   function renderCanvas(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
-    const width = canvas.width;
-    const height = canvas.height;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const logicalW = rect.width || (canvas.width / dpr) || 800;
+    const logicalH = rect.height || (canvas.height / dpr) || 600;
     const { x: panX, y: panY, k: zoom } = transformRef.current;
 
     ctx.save();
-    ctx.clearRect(0, 0, width, height);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.translate(width / 2 + panX, height / 2 + panY);
+    ctx.scale(dpr, dpr);
+    ctx.translate(logicalW / 2 + panX, logicalH / 2 + panY);
     ctx.scale(zoom, zoom);
 
     const nodeMap = new Map(nodes.map(n => [n.id, n]));
@@ -560,21 +590,35 @@ export default function GraphView({ worldId: propWorldId, initialSelectedEntityI
     ctx.restore();
   }
 
-  // Handle Resize
+  // Handle Resize with ResizeObserver & DPR
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !canvas.parentElement) return;
+
     function resize() {
       if (!canvas || !canvas.parentElement) return;
-      canvas.width = canvas.parentElement.clientWidth || 800;
-      canvas.height = canvas.parentElement.clientHeight || 600;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(rect.width, 320);
+      const h = Math.max(rect.height, 320);
+
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
     }
+
     resize();
+    const ro = new ResizeObserver(() => resize());
+    ro.observe(canvas.parentElement);
     window.addEventListener('resize', resize);
-    return () => window.removeEventListener('resize', resize);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', resize);
+    };
   }, []);
 
-  // Coordinate Conversion Helper
+  // Coordinate Conversion Helper (matches CSS logical pixels)
   function getCanvasCoords(clientX: number, clientY: number) {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0, clientX: 0, clientY: 0 };
@@ -582,8 +626,11 @@ export default function GraphView({ worldId: propWorldId, initialSelectedEntityI
     const cX = clientX - rect.left;
     const cY = clientY - rect.top;
     const { x: panX, y: panY, k: zoom } = transformRef.current;
-    const x = (cX - canvas.width / 2 - panX) / zoom;
-    const y = (cY - canvas.height / 2 - panY) / zoom;
+    // Logical center of the canvas in CSS pixels
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const x = (cX - centerX - panX) / zoom;
+    const y = (cY - centerY - panY) / zoom;
     return { x, y, clientX: cX, clientY: cY };
   }
 
@@ -644,12 +691,42 @@ export default function GraphView({ worldId: propWorldId, initialSelectedEntityI
   }
 
   function handleFit() {
-    transformRef.current = { x: 0, y: 0, k: 0.9 };
-    alphaRef.current = 0.5;
+    if (nodes.length === 0) {
+      transformRef.current = { x: 0, y: 0, k: 0.9 };
+      return;
+    }
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    nodes.forEach(n => {
+      minX = Math.min(minX, n.x);
+      maxX = Math.max(maxX, n.x);
+      minY = Math.min(minY, n.y);
+      maxY = Math.max(maxY, n.y);
+    });
+
+    const graphW = Math.max(maxX - minX + 160, 200);
+    const graphH = Math.max(maxY - minY + 160, 200);
+    const rect = canvas.getBoundingClientRect();
+    const w = rect.width || 800;
+    const h = rect.height || 600;
+
+    const scale = Math.min(w / graphW, h / graphH, 1.4);
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    transformRef.current = {
+      x: -centerX * scale,
+      y: -centerY * scale,
+      k: Math.max(scale, 0.25)
+    };
+    alphaRef.current = 0.3;
   }
 
   function handleResetLayout() {
     const count = nodes.length;
+    if (count === 0) return;
     const angleStep = (2 * Math.PI) / count;
     const spreadRadius = Math.min(360, 48 * Math.sqrt(Math.max(count, 1)));
 
@@ -908,6 +985,28 @@ export default function GraphView({ worldId: propWorldId, initialSelectedEntityI
           onTouchEnd={handlePointerUp}
           onWheel={onWheel}
         />
+
+        {nodes.length === 0 && (
+          <div className="graph-empty-state">
+            <div className="graph-empty-msg">
+              <p style={{ fontWeight: 600, fontSize: '0.95rem', margin: '0 0 6px 0' }}>No entities match current graph filters</p>
+              <p style={{ margin: 0, opacity: 0.8, fontSize: '0.82rem' }}>
+                Reset category filters or change scope to view your interconnected world.
+              </p>
+              <button
+                className="btn btn-secondary btn-sm"
+                style={{ marginTop: '12px' }}
+                onClick={() => {
+                  setCategoryFilter('all');
+                  setScopeMode('all');
+                  setSelectedEntityTypes(new Set());
+                }}
+              >
+                Reset Filters
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Selected Entity Inspector Panel */}
         {selectedEntity && (

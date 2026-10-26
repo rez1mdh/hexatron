@@ -123,6 +123,23 @@ export default function EntityPage() {
 
   const tocItems = useMemo(() => extractTocItems(entity?.article), [entity?.article]);
 
+  // Adjacent entities navigation
+  const { prevEntity, nextEntity } = useMemo(() => {
+    if (!entity || availableEntities.length <= 1) return { prevEntity: null, nextEntity: null };
+    const sorted = [...availableEntities].sort((a, b) => {
+      if (a.entryNumber !== undefined && b.entryNumber !== undefined) {
+        return a.entryNumber - b.entryNumber;
+      }
+      return (a.title || '').localeCompare(b.title || '');
+    });
+    const idx = sorted.findIndex(e => e.id === entity.id);
+    if (idx === -1) return { prevEntity: null, nextEntity: null };
+    return {
+      prevEntity: idx > 0 ? sorted[idx - 1] : null,
+      nextEntity: idx < sorted.length - 1 ? sorted[idx + 1] : null,
+    };
+  }, [entity, availableEntities]);
+
   async function handleDelete() {
     if (!entity) return;
     if (!confirm(`Delete "${entity.title}"?`)) return;
@@ -151,23 +168,6 @@ export default function EntityPage() {
   }
 
   const hasProperties = entity.properties && Object.keys(entity.properties).length > 0;
-
-  // Adjacent entities navigation
-  const { prevEntity, nextEntity } = useMemo(() => {
-    if (!entity || availableEntities.length <= 1) return { prevEntity: null, nextEntity: null };
-    const sorted = [...availableEntities].sort((a, b) => {
-      if (a.entryNumber !== undefined && b.entryNumber !== undefined) {
-        return a.entryNumber - b.entryNumber;
-      }
-      return (a.title || '').localeCompare(b.title || '');
-    });
-    const idx = sorted.findIndex(e => e.id === entity.id);
-    if (idx === -1) return { prevEntity: null, nextEntity: null };
-    return {
-      prevEntity: idx > 0 ? sorted[idx - 1] : null,
-      nextEntity: idx < sorted.length - 1 ? sorted[idx + 1] : null,
-    };
-  }, [entity, availableEntities]);
 
   return (
     <div className="wiki-article-page">

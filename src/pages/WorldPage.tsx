@@ -54,8 +54,8 @@ export default function WorldPage() {
   const filtered = entities.filter(e => {
     const matchType = filterType ? e.typeId === filterType : true;
     const matchSearch = search ? (
-      e.title.toLowerCase().includes(search.toLowerCase()) ||
-      e.aliases.some(a => a.toLowerCase().includes(search.toLowerCase()))
+      (e.title || '').toLowerCase().includes(search.toLowerCase()) ||
+      (Array.isArray(e.aliases) ? e.aliases.some(a => (a || '').toLowerCase().includes(search.toLowerCase())) : false)
     ) : true;
     return matchType && matchSearch;
   });

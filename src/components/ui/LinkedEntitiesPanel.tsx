@@ -65,7 +65,7 @@ export default function LinkedEntitiesPanel({ entityId, onNavigate, compact = fa
         // Convert backlinks that aren't already represented into details
         const existingTargetIds = new Set(relDetails.map(d => d.otherEntity?.id).filter(Boolean));
         const backlinkDetails: EntityRelationshipDetail[] = (backlinks || [])
-          .filter(be => !existingTargetIds.has(be.id) && be.id !== entityId)
+          .filter(be => be && be.id && !existingTargetIds.has(be.id) && be.id !== entityId)
           .map(be => ({
             relationship: {
               id: `backlink-${be.id}`,
@@ -148,10 +148,10 @@ export default function LinkedEntitiesPanel({ entityId, onNavigate, compact = fa
       const e = item.detail.otherEntity;
       if (!e) return false;
       if (!q) return true;
-      const titleMatch = e.title.toLowerCase().includes(q);
+      const titleMatch = (e.title || '').toLowerCase().includes(q);
       const numMatch = formatEntryNumber(e.entryNumber).toLowerCase().includes(q);
-      const aliasMatch = e.aliases?.some(a => a.toLowerCase().includes(q)) ?? false;
-      const verbMatch = item.verbs.some(v => v.label.toLowerCase().includes(q));
+      const aliasMatch = Array.isArray(e.aliases) ? e.aliases.some(a => (a || '').toLowerCase().includes(q)) : false;
+      const verbMatch = item.verbs.some(v => (v.label || '').toLowerCase().includes(q));
       return titleMatch || numMatch || aliasMatch || verbMatch;
     });
 

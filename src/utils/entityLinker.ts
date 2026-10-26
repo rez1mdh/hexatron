@@ -40,9 +40,10 @@ export function buildEntityNameIndex(entities: Entity[], currentEntityId?: strin
   for (const ent of entities) {
     if (!ent || ent.deletedAt) continue;
 
-    const namesToAdd: { text: string; isAlias: boolean }[] = [
-      { text: ent.title, isAlias: false }
-    ];
+    const namesToAdd: { text: string; isAlias: boolean }[] = [];
+    if (ent.title && typeof ent.title === 'string') {
+      namesToAdd.push({ text: ent.title, isAlias: false });
+    }
 
     if (Array.isArray(ent.aliases)) {
       for (const alias of ent.aliases) {

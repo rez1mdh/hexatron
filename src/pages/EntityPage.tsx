@@ -79,28 +79,33 @@ export default function EntityPage() {
     setCurrentEntity(entityId);
     pushRecentEntity(entityId);
 
-    getEntity(entityId).then(async e => {
-      if (!e || e.deletedAt) { setNotFound(true); return; }
-      setEntity(e);
-      if (e.typeId === 'et-family') {
-        setShowFamilyTree(true);
-      }
+    getEntity(entityId)
+      .then(async e => {
+        if (!e || e.deletedAt) { setNotFound(true); return; }
+        setEntity(e);
+        if (e.typeId === 'et-family') {
+          setShowFamilyTree(true);
+        }
 
-      // Load type
-      const types = await getEntityTypes();
-      const t = types.find(x => x.id === e.typeId) ?? null;
-      setEntityType(t);
+        // Load type
+        const types = await getEntityTypes();
+        const t = types.find(x => x.id === e.typeId) ?? null;
+        setEntityType(t);
 
-      // Load world title
-      const w = await getWorld(e.worldId);
-      setWorldTitle(w?.title ?? '');
+        // Load world title
+        const w = await getWorld(e.worldId);
+        setWorldTitle(w?.title ?? '');
 
-      // Load all entities for backlinks and cross-references
-      const allEnts = await getEntities(e.worldId);
-      setAvailableEntities(allEnts);
-    });
+        // Load all entities for backlinks and cross-references
+        const allEnts = await getEntities(e.worldId);
+        setAvailableEntities(allEnts);
+      })
+      .catch(err => {
+        console.error('Failed to load entity:', err);
+        setNotFound(true);
+      });
 
-    getImages(entityId).then(setImages);
+    getImages(entityId).then(setImages).catch(() => {});
   }, [entityId, setCurrentEntity, pushRecentEntity]);
 
   // Assign IDs to rendered headings in ArticleEditor for smooth TOC jump links
@@ -154,7 +159,7 @@ export default function EntityPage() {
       if (a.entryNumber !== undefined && b.entryNumber !== undefined) {
         return a.entryNumber - b.entryNumber;
       }
-      return a.title.localeCompare(b.title);
+      return (a.title || '').localeCompare(b.title || '');
     });
     const idx = sorted.findIndex(e => e.id === entity.id);
     if (idx === -1) return { prevEntity: null, nextEntity: null };
@@ -257,7 +262,7 @@ export default function EntityPage() {
           From Hexatron, the encyclopedia{worldTitle ? ` of ${worldTitle}` : ''}
         </p>
 
-        {entity.aliases.length > 0 && (
+        {entity.aliases && entity.aliases.length > 0 && (
           <p className="wiki-aliases">
             (Also known as: <em>{entity.aliases.join(', ')}</em>)
           </p>
@@ -444,7 +449,7 @@ export default function EntityPage() {
 
       {/* ── 5. Categories & Technical Metadata Details Footer ─────────────── */}
       <footer className="wiki-footer">
-        {entity.tags.length > 0 && (
+        {entity.tags && entity.tags.length > 0 && (
           <div className="wiki-categories-box">
             <span className="wiki-categories-label">Categories:</span>
             <div className="wiki-categories-list">

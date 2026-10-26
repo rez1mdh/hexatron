@@ -294,7 +294,7 @@ export async function deleteEntityPermanently(id: string) {
 
 export async function getBacklinks(entityId: string): Promise<Entity[]> {
   return db.entities
-    .filter(e => !e.deletedAt && e.linkedEntityIds.includes(entityId))
+    .filter(e => !e.deletedAt && Array.isArray(e.linkedEntityIds) && e.linkedEntityIds.includes(entityId))
     .toArray();
 }
 

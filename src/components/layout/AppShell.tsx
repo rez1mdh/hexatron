@@ -9,6 +9,7 @@ import RightSidebar from './RightSidebar';
 import TopBar from './TopBar';
 import ManageUniversesModal from '../ui/ManageUniversesModal';
 import BackupModal from '../ui/BackupModal';
+import ErrorBoundary from '../ui/ErrorBoundary';
 import './layout.css';
 
 export default function AppShell() {
@@ -28,7 +29,9 @@ export default function AppShell() {
       <div className="app-main-col">
         <TopBar />
         <main className="app-main">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
       <RightSidebar />

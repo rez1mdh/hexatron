@@ -3,6 +3,7 @@
 // slash command menu, quick entity creation, and reliable auto-linking
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -67,6 +68,7 @@ export default function ArticleEditor({
   readOnly = false,
   placeholder,
 }: Props) {
+  const navigate = useNavigate();
   const [availableEntities, setAvailableEntities] = useState<Entity[]>([]);
   const [suggestions, setSuggestions] = useState<Entity[]>([]);
   const [suggestionQuery, setSuggestionQuery] = useState('');
@@ -132,7 +134,19 @@ export default function ArticleEditor({
     content: (() => {
       try {
         const toLoad = processedContent || content;
-        return toLoad ? JSON.parse(toLoad) : undefined;
+        if (!toLoad) return undefined;
+        if (typeof toLoad === 'string' && (toLoad.startsWith('{') || toLoad.startsWith('['))) {
+          return JSON.parse(toLoad);
+        }
+        return {
+          type: 'doc',
+          content: [
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: String(toLoad) }],
+            },
+          ],
+        };
       } catch {
         return undefined;
       }
@@ -194,13 +208,23 @@ export default function ArticleEditor({
   useEffect(() => {
     if (!editor) return;
     const targetContent = processedContent || content;
-    const current = JSON.stringify(editor.getJSON());
-    if (targetContent && targetContent !== current) {
-      try {
-        const parsed = JSON.parse(targetContent);
+    if (!targetContent) return;
+
+    try {
+      let parsed: any;
+      if (typeof targetContent === 'string' && (targetContent.startsWith('{') || targetContent.startsWith('['))) {
+        parsed = JSON.parse(targetContent);
+      } else {
+        parsed = {
+          type: 'doc',
+          content: [{ type: 'paragraph', content: [{ type: 'text', text: String(targetContent) }] }],
+        };
+      }
+      const current = JSON.stringify(editor.getJSON());
+      if (JSON.stringify(parsed) !== current) {
         editor.commands.setContent(parsed, { emitUpdate: false });
-      } catch { /* ignore */ }
-    }
+      }
+    } catch { /* ignore */ }
   }, [processedContent, content, editor]);
 
   // Global dismiss for context menus and floating toolbar on outside click
@@ -556,6 +580,19 @@ export default function ArticleEditor({
     }
   }
 
+  // Handle clicking on inline entity links to navigate directly to their article
+  const handleEditorClick = (e: React.MouseEvent) => {
+    const target = (e.target as HTMLElement).closest('.entity-link');
+    if (target) {
+      const entityId = target.getAttribute('data-entity-id') || target.getAttribute('href')?.replace(/^\/entity\//, '');
+      if (entityId) {
+        e.preventDefault();
+        e.stopPropagation();
+        navigate(`/entity/${entityId}`);
+      }
+    }
+  };
+
   if (!editor) return null;
 
   return (
@@ -572,7 +609,7 @@ export default function ArticleEditor({
         />
       )}
 
-      <div className="editor-content-wrapper">
+      <div className="editor-content-wrapper" onClick={handleEditorClick}>
         <EditorContent editor={editor} className="tiptap-content" />
       </div>
 

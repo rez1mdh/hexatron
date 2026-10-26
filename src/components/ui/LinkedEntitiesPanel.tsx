@@ -8,7 +8,7 @@ import {
   Users, User, Clock, Star, Compass
 } from 'lucide-react';
 import {
-  getEntity, getEntityTypes, getEntityRelationshipsWithDetails,
+  getEntity, getEntityTypes, getEntityRelationshipsWithDetails, getBacklinks,
   formatEntryNumber, type EntityRelationshipDetail
 } from '../../db/operations';
 import { useAppStore } from '../../store/appStore';
@@ -55,12 +55,42 @@ export default function LinkedEntitiesPanel({ entityId, onNavigate, compact = fa
       getEntity(entityId),
       getEntityTypes(),
       getEntityRelationshipsWithDetails(entityId),
+      getBacklinks(entityId),
     ])
-      .then(([ent, types, relDetails]) => {
+      .then(([ent, types, relDetails, backlinks]) => {
         if (!isMounted) return;
         setCurrentEntity(ent ?? null);
         setEntityTypes(types);
-        setDetails(relDetails);
+
+        // Convert backlinks that aren't already represented into details
+        const existingTargetIds = new Set(relDetails.map(d => d.otherEntity?.id).filter(Boolean));
+        const backlinkDetails: EntityRelationshipDetail[] = (backlinks || [])
+          .filter(be => !existingTargetIds.has(be.id) && be.id !== entityId)
+          .map(be => ({
+            relationship: {
+              id: `backlink-${be.id}`,
+              worldId: be.worldId,
+              fromEntityId: be.id,
+              toEntityId: entityId,
+              typeId: 'rt-mentioned-in',
+              canonStatus: be.canonStatus,
+              createdAt: be.createdAt,
+              updatedAt: be.updatedAt,
+            },
+            relType: {
+              id: 'rt-mentioned-in',
+              name: 'mentions',
+              reverseName: 'mentioned in article',
+              inverseTypeId: undefined,
+              isDirected: true,
+              isBuiltIn: true,
+              color: '#38bdf8',
+            },
+            direction: 'incoming',
+            otherEntity: be,
+          }));
+
+        setDetails([...relDetails, ...backlinkDetails]);
         setLoading(false);
       })
       .catch(err => {

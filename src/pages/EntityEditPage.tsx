@@ -58,6 +58,8 @@ export default function EntityEditPage({ mode }: Props) {
   const [aliasInput, setAliasInput] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+  const [isDirty, setIsDirty] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'details' | 'properties' | 'demographics' | 'relationships'>('details');
@@ -103,7 +105,20 @@ export default function EntityEditPage({ mode }: Props) {
 
   function setField<K extends keyof typeof form>(key: K, val: typeof form[K]) {
     setForm(f => ({ ...f, [key]: val }));
+    setIsDirty(true);
   }
+
+  // Warn user before leaving page if unsaved changes exist
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
   const currentType = entityTypes.find(t => t.id === form.typeId);
 
@@ -131,6 +146,7 @@ export default function EntityEditPage({ mode }: Props) {
   async function handleSave() {
     if (!form.title.trim()) return alert('Title is required.');
     setSaving(true);
+    setSaveStatus('saving');
     try {
       let wId = worldId ?? (isEdit ? (await getEntity(entityId!))?.worldId : undefined);
       if (!wId) {
@@ -199,8 +215,11 @@ export default function EntityEditPage({ mode }: Props) {
         });
       }
 
+      setIsDirty(false);
+      setSaveStatus('saved');
       navigate(`/entity/${savedId}`);
     } catch (err) {
+      setSaveStatus('failed');
       alert('Save failed: ' + (err as Error).message);
     } finally {
       setSaving(false);
@@ -257,6 +276,26 @@ export default function EntityEditPage({ mode }: Props) {
       <div className="edit-header">
         <h2 className="edit-title">{isEdit ? 'Edit Entity' : 'New Entity'}</h2>
         <div className="edit-actions">
+          {/* Save Status Feedback */}
+          {saveStatus === 'saving' && (
+            <span className="editor-save-status saving">
+              <span className="lep-status-dot" style={{ background: '#f59e0b', width: 6, height: 6, borderRadius: '50%', display: 'inline-block' }} />
+              Saving…
+            </span>
+          )}
+          {saveStatus === 'saved' && (
+            <span className="editor-save-status saved">
+              <span className="lep-status-dot" style={{ background: '#10b981', width: 6, height: 6, borderRadius: '50%', display: 'inline-block' }} />
+              Saved
+            </span>
+          )}
+          {saveStatus === 'failed' && (
+            <span className="editor-save-status failed">
+              <span className="lep-status-dot" style={{ background: '#ef4444', width: 6, height: 6, borderRadius: '50%', display: 'inline-block' }} />
+              Save Failed
+            </span>
+          )}
+
           {isEdit && (
             <button
               type="button"
@@ -273,7 +312,7 @@ export default function EntityEditPage({ mode }: Props) {
             <X size={14} /> Cancel
           </button>
           <button className="btn-primary small" onClick={handleSave} disabled={saving}>
-            <Save size={14} /> {saving ? 'Saving…' : 'Save Entity'}
+            <Save size={14} /> {saving ? 'Saving…' : (saveStatus === 'failed' ? 'Retry Save' : 'Save Entity')}
           </button>
         </div>
       </div>

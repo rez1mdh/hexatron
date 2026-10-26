@@ -13,6 +13,7 @@ declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     entityLink: {
       insertEntityLink: (attrs: { entityId: string; label: string }) => ReturnType;
+      unlinkEntity: (pos?: number) => ReturnType;
     };
   }
 }
@@ -55,6 +56,18 @@ export const EntityLinkExtension = Node.create<EntityLinkOptions>({
         return chain()
           .insertContent({ type: this.name, attrs })
           .run();
+      },
+      unlinkEntity: (pos) => ({ tr, dispatch, state }) => {
+        const targetPos = pos !== undefined ? pos : state.selection.from;
+        const node = state.doc.nodeAt(targetPos);
+        if (node && node.type.name === this.name) {
+          const label = node.attrs.label || '';
+          if (dispatch) {
+            tr.replaceWith(targetPos, targetPos + node.nodeSize, state.schema.text(label));
+          }
+          return true;
+        }
+        return false;
       },
     };
   },

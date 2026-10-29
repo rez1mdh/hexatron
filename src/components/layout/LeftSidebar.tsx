@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { clearCacheAndReload } from '../../utils/clearCache';
 import { useAppStore } from '../../store/appStore';
+import { usePetStore } from '../../store/petStore';
 import {
   getUniverses, getWorlds, getUniverseStats, getWorldStats,
   type Universe, type World
@@ -260,13 +261,13 @@ export default function LeftSidebar() {
         <button
           className="sidebar-nav-item"
           onClick={() => {
-            window.dispatchEvent(new CustomEvent('hexatron-open-dog-settings'));
+            usePetStore.getState().setPetsModalOpen(true);
             if (window.innerWidth <= 900) setLeftSidebarOpen(false);
           }}
-          title="Pixel Dog Companion Settings"
+          title="Companions & Pets Settings"
         >
           <Sparkles size={14} className="text-accent" />
-          <span>Pixel Dog Companion</span>
+          <span>Companions & Pets</span>
         </button>
 
         <button className="sidebar-nav-item" onClick={() => { setOfflineMediaOpen(true); if (window.innerWidth <= 900) setLeftSidebarOpen(false); }}>

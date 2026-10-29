@@ -13,7 +13,9 @@ import BackupModal from '../ui/BackupModal';
 import QuickActionsDrawer from '../ui/QuickActionsDrawer';
 import OfflineMediaModal from '../ui/OfflineMediaModal';
 import FavoritesModal from '../ui/FavoritesModal';
-import PixelDogCompanion from '../ui/PixelDogCompanion';
+import OnekoEngine from '../pets/OnekoEngine';
+import PetsModal from '../pets/PetsModal';
+import { usePetStore } from '../../store/petStore';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import './layout.css';
 
@@ -29,6 +31,10 @@ export default function AppShell() {
     isOfflineMediaOpen, setOfflineMediaOpen,
     isFavoriteModalOpen, setFavoriteModalOpen
   } = useAppStore();
+
+  const {
+    isPetsModalOpen, setPetsModalOpen
+  } = usePetStore();
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -176,8 +182,13 @@ export default function AppShell() {
         onClose={() => setFavoriteModalOpen(false)}
       />
 
-      {/* Interactive Violet Pixel-Dog Companion */}
-      <PixelDogCompanion />
+      {/* Interactive Oneko-style Mascot Companions */}
+      <OnekoEngine />
+
+      <PetsModal
+        isOpen={isPetsModalOpen}
+        onClose={() => setPetsModalOpen(false)}
+      />
     </div>
   );
 }

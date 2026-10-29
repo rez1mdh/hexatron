@@ -11,6 +11,7 @@ import {
   Search as SearchIcon, Sparkles, Star
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
+import { usePetStore } from '../../store/petStore';
 import { clearCacheAndReload } from '../../utils/clearCache';
 import './QuickActionsDrawer.css';
 
@@ -165,12 +166,12 @@ export default function QuickActionsDrawer() {
     },
     'pixel-dog': {
       id: 'pixel-dog',
-      name: 'Pixel Dog Companion',
-      description: 'Configure and interact with the violet pixel companion',
+      name: 'Companions & Pets',
+      description: 'Oneko cats, shiba dog & pixel mascots gallery',
       category: 'tools',
       icon: Sparkles,
       run: () => {
-        window.dispatchEvent(new CustomEvent('hexatron-open-dog-settings'));
+        usePetStore.getState().setPetsModalOpen(true);
       }
     },
     'export-backup': {

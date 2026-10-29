@@ -2,13 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Menu, Terminal, ChevronLeft, ChevronRight,
-  User as UserIcon, Network, Zap, Edit3, Star
+  Network, Zap, Edit3, Star
 } from 'lucide-react';
-import type { User } from '@supabase/supabase-js';
 import { useAppStore } from '../../store/appStore';
-import { getCurrentUser, subscribeToAuthState, isCloudConfigured } from '../../services/supabase';
 import CommandPalette from '../ui/CommandPalette';
 import AuthModal from '../auth/AuthModal';
+import AccountMenu from './AccountMenu';
 
 export default function TopBar() {
   const navigate = useNavigate();
@@ -28,7 +27,6 @@ export default function TopBar() {
 
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Global Ctrl+K / Cmd+K listener & hexatron-open-palette listener
   useEffect(() => {
@@ -49,13 +47,6 @@ export default function TopBar() {
     };
   }, []);
 
-  useEffect(() => {
-    getCurrentUser().then(setCurrentUser);
-    const sub = subscribeToAuthState(user => setCurrentUser(user));
-    return () => sub.unsubscribe();
-  }, []);
-
-  const cloudConfigured = isCloudConfigured();
   const isEntityView = location.pathname.startsWith('/entity/') && !location.pathname.includes('/edit') && currentEntityId;
 
   return (
@@ -167,28 +158,8 @@ export default function TopBar() {
           </button>
         )}
 
-        {/* Owner Account / Cloud Sync Pill */}
-        <button
-          type="button"
-          className="topbar-account-btn"
-          onClick={() => setIsAuthOpen(true)}
-          title={currentUser ? `Signed in as Owner (${currentUser.email})` : (cloudConfigured ? 'Owner Sign In' : 'Cloud Setup & Sync')}
-          aria-label="Account and Cloud Sync"
-        >
-          {currentUser ? (
-            <>
-              <span className="status-dot online" />
-              <span className="account-email-desktop truncate">{currentUser.email?.split('@')[0]}</span>
-              <span className="account-badge-owner">Owner</span>
-            </>
-          ) : (
-            <>
-              <UserIcon size={14} className={cloudConfigured ? 'text-accent' : 'text-muted'} />
-              <span className="account-text-desktop">{cloudConfigured ? 'Owner Sign In' : 'Cloud Setup'}</span>
-              <span className="account-text-mobile">{cloudConfigured ? 'Sign In' : 'Cloud'}</span>
-            </>
-          )}
-        </button>
+        {/* Dedicated Responsive Account & Access Menu */}
+        <AccountMenu onOpenAuth={() => setIsAuthOpen(true)} />
       </div>
 
       <CommandPalette isOpen={isPaletteOpen} onClose={() => setIsPaletteOpen(false)} />

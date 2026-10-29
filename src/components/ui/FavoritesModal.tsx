@@ -257,3 +257,4 @@ export default function FavoritesModal({ isOpen, onClose }: Props) {
     </div>
   );
 }
+

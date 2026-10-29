@@ -1,0 +1,104 @@
+/* src/components/pets/OnekoEngine.css */
+/* Multi-Instance Oneko Companion Engine Styles */
+
+.oneko-viewport-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9990;
+  overflow: hidden;
+  user-select: none;
+}
+
+.oneko-pet-instance {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  transform-origin: center center;
+  transition: filter 0.2s ease;
+  will-change: transform, left, top;
+}
+
+.oneko-pet-instance:hover {
+  filter: drop-shadow(0 2px 8px rgba(139, 92, 246, 0.45));
+}
+
+.oneko-pet-instance.dragging {
+  cursor: grabbing;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
+}
+
+.oneko-sprite-layer {
+  width: 32px;
+  height: 32px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  pointer-events: none;
+}
+
+.oneko-name-tag {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.oneko-pet-instance:hover .oneko-name-tag {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
+}
+
+/* Reaction heart / sparkles pop */
+.oneko-reaction-pop {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1rem;
+  pointer-events: none;
+  animation: reactionFloat 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  z-index: 10;
+}
+
+@keyframes reactionFloat {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.5) translateY(4px);
+  }
+  20% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.2) translateY(-4px);
+  }
+  80% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1) translateY(-14px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.8) translateY(-22px);
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .oneko-pet-instance {
+    transition: none !important;
+  }
+}

@@ -107,67 +107,6 @@
   margin-left: auto;
 }
 
-.topbar-account-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  height: 28px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all var(--transition);
-  max-width: 180px;
-  flex-shrink: 0;
-}
-
-.topbar-account-btn:hover {
-  background: var(--bg-hover);
-  border-color: var(--accent-dim);
-  color: var(--text-primary);
-}
-
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-muted);
-  flex-shrink: 0;
-}
-
-.status-dot.online {
-  background: #22c55e;
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
-}
-
-.account-email,
-.account-email-desktop {
-  font-weight: 500;
-  max-width: 90px;
-}
-
-.account-badge-owner {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: rgba(139, 92, 246, 0.18);
-  color: var(--accent-text);
-  border: 1px solid rgba(139, 92, 246, 0.35);
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
-.account-text-mobile {
-  display: none;
-}
-
 /* ── Icon buttons ──────────────────────────────────────────────────────── */
 .topbar-action-pill {
   display: inline-flex;
@@ -199,26 +138,6 @@
     padding: 4px;
     width: 28px;
     justify-content: center;
-  }
-  .topbar-account-btn {
-    padding: 3px 6px;
-    gap: 4px;
-    max-width: none;
-    height: 28px;
-  }
-  .account-email-desktop {
-    display: none;
-  }
-  .account-text-desktop {
-    display: none;
-  }
-  .account-text-mobile {
-    display: inline;
-    font-size: 0.72rem;
-  }
-  .account-badge-owner {
-    font-size: 0.62rem;
-    padding: 1px 4px;
   }
 }
 

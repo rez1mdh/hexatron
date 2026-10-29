@@ -5,8 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   Globe, Plus, ChevronRight, ChevronDown, Clock, Star,
   Settings, HelpCircle, Compass, Trash2, Sliders, X,
-  FolderTree, PanelLeftClose
+  FolderTree, PanelLeftClose, RotateCw
 } from 'lucide-react';
+import { clearCacheAndReload } from '../../utils/clearCache';
 import { useAppStore } from '../../store/appStore';
 import {
   getUniverses, getWorlds, getUniverseStats, getWorldStats,
@@ -253,6 +254,11 @@ export default function LeftSidebar() {
         <button className="sidebar-nav-item" onClick={() => { setBackupModalOpen(true, 'export'); if (window.innerWidth <= 900) setLeftSidebarOpen(false); }}>
           <Settings size={14} />
           <span>Export Backup</span>
+        </button>
+
+        <button className="sidebar-nav-item" onClick={clearCacheAndReload} title="Clear browser cache and force reload">
+          <RotateCw size={14} />
+          <span>Clear Cache & Reload</span>
         </button>
       </div>
 

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Search, Sun, Moon, PanelRight, Download, Upload, Terminal, HelpCircle, Compass, User as UserIcon, Cloud, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Menu, Search, Sun, Moon, PanelRight, Download, Upload, Terminal, HelpCircle, Compass, User as UserIcon, Cloud, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { useAppStore } from '../../store/appStore';
 import { getCurrentUser, subscribeToAuthState, isCloudConfigured } from '../../services/supabase';
+import { clearCacheAndReload } from '../../utils/clearCache';
 import CommandPalette from '../ui/CommandPalette';
 import AuthModal from '../auth/AuthModal';
 
@@ -102,6 +103,14 @@ export default function TopBar() {
         )}
         <button className="icon-btn" onClick={toggleTheme} title="Toggle theme">
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
+        <button
+          className="icon-btn"
+          onClick={clearCacheAndReload}
+          title="Clear cache and force reload latest version"
+          aria-label="Clear cache and reload"
+        >
+          <RotateCw size={15} />
         </button>
         <button className="icon-btn" onClick={toggleRightSidebar} title="Toggle Entity Browser & Linked Entities">
           <PanelRight size={16} />

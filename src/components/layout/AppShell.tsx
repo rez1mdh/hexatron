@@ -12,6 +12,7 @@ import ManageUniversesModal from '../ui/ManageUniversesModal';
 import BackupModal from '../ui/BackupModal';
 import QuickActionsDrawer from '../ui/QuickActionsDrawer';
 import OfflineMediaModal from '../ui/OfflineMediaModal';
+import FavoritesModal from '../ui/FavoritesModal';
 import PixelDogCompanion from '../ui/PixelDogCompanion';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import './layout.css';
@@ -25,7 +26,8 @@ export default function AppShell() {
     leftSidebarOpen, setLeftSidebarOpen, toggleLeftSidebar,
     rightSidebarOpen, toggleRightSidebar,
     isQuickActionsOpen, toggleQuickActions, setQuickActionsOpen,
-    isOfflineMediaOpen, setOfflineMediaOpen
+    isOfflineMediaOpen, setOfflineMediaOpen,
+    isFavoriteModalOpen, setFavoriteModalOpen
   } = useAppStore();
 
   useEffect(() => {
@@ -167,6 +169,11 @@ export default function AppShell() {
       <OfflineMediaModal
         isOpen={isOfflineMediaOpen}
         onClose={() => setOfflineMediaOpen(false)}
+      />
+
+      <FavoritesModal
+        isOpen={isFavoriteModalOpen}
+        onClose={() => setFavoriteModalOpen(false)}
       />
 
       {/* Interactive Violet Pixel-Dog Companion */}

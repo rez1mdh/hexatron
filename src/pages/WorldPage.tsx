@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, Compass, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Compass, Trash2, Star } from 'lucide-react';
 import { getWorld, getEntities, getEntityTypes, softDeleteEntity, formatEntryNumber, getWorldStats } from '../db/operations';
 import { useAppStore } from '../store/appStore';
 import type { World, Entity, EntityType } from '../db/schema';
@@ -15,7 +15,10 @@ import './pages.css';
 export default function WorldPage() {
   const { worldId } = useParams<{ worldId: string }>();
   const navigate = useNavigate();
-  const { setCurrentWorld, setCurrentEntity, bumpUniverseVersion, isOwner } = useAppStore();
+  const {
+    setCurrentWorld, setCurrentEntity, bumpUniverseVersion, isOwner,
+    favoriteWorldIds, toggleFavoriteWorld
+  } = useAppStore();
   const [world, setWorld] = useState<World | null>(null);
   const [entities, setEntities] = useState<Entity[]>([]);
   const [entityTypes, setEntityTypes] = useState<Map<string, EntityType>>(new Map());
@@ -78,6 +81,20 @@ export default function WorldPage() {
         <div className="world-page-title-row">
           <h1 className="world-page-title">{world.title}</h1>
           <div className="world-header-btns">
+            {isOwner && (
+              <button
+                className={`btn-ghost ${favoriteWorldIds.includes(world.id) ? 'active' : ''}`}
+                onClick={() => toggleFavoriteWorld(world.id)}
+                title={favoriteWorldIds.includes(world.id) ? 'Remove from favorites' : 'Pin to favorites'}
+              >
+                <Star
+                  size={14}
+                  fill={favoriteWorldIds.includes(world.id) ? '#f59e0b' : 'none'}
+                  color={favoriteWorldIds.includes(world.id) ? '#f59e0b' : 'currentColor'}
+                />
+                <span>{favoriteWorldIds.includes(world.id) ? 'Favorited' : 'Favorite'}</span>
+              </button>
+            )}
             <button className="btn-ghost" onClick={() => navigate(`/world/${worldId}/graph`)} title="View world network graph">
               <Compass size={14} /> Graph View
             </button>

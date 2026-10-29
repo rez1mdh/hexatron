@@ -70,3 +70,4 @@ export function formatArticleDates(createdAt?: number, updatedAt?: number): {
     fullEditedTooltip,
   };
 }
+

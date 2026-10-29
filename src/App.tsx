@@ -77,6 +77,14 @@ function AppInit({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function FavoritesRouteHandler() {
+  const { setFavoriteModalOpen } = useAppStore();
+  useEffect(() => {
+    setFavoriteModalOpen(true);
+  }, [setFavoriteModalOpen]);
+  return <Navigate to="/" replace />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -96,7 +104,7 @@ export default function App() {
             <Route path="new-world" element={<NewWorldPage />} />
             <Route path="help" element={<HelpPage />} />
             <Route path="recent" element={<Navigate to="/" />} />
-            <Route path="favorites" element={<Navigate to="/" />} />
+            <Route path="favorites" element={<FavoritesRouteHandler />} />
             <Route path="settings" element={<Navigate to="/" />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Route>

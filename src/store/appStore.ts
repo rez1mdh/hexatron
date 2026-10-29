@@ -25,6 +25,23 @@ interface AppStore {
   // Recent history (entity IDs)
   recentEntityIds: string[];
 
+  // Favorites (entity IDs and world IDs)
+  favoriteEntityIds: string[];
+  favoriteWorldIds: string[];
+  isFavoriteModalOpen: boolean;
+
+  // Workspace Multi-Article Tabs
+  tabs: Array<{ id: string; title: string; typeId?: string; isDirty?: boolean }>;
+  activeTabId: string | null;
+
+  // Split-View
+  splitViewEnabled: boolean;
+  splitSecondaryId: string | null;
+  splitRatio: number;
+
+  // Reader Mode
+  readerMode: boolean;
+
   // Manage Universes & Worlds Modal
   isManageUniversesOpen: boolean;
   universeVersion: number;
@@ -49,6 +66,19 @@ interface AppStore {
   setOfflineMediaOpen: (open: boolean) => void;
   toggleTheme: () => void;
   pushRecentEntity: (id: string) => void;
+  toggleFavoriteEntity: (id: string) => void;
+  toggleFavoriteWorld: (id: string) => void;
+  setFavoriteModalOpen: (open: boolean) => void;
+  openTab: (tab: { id: string; title: string; typeId?: string }) => void;
+  closeTab: (id: string) => void;
+  closeAllTabs: () => void;
+  setTabDirty: (id: string, isDirty: boolean) => void;
+  setActiveTabId: (id: string | null) => void;
+  setSplitViewEnabled: (enabled: boolean) => void;
+  setSplitSecondaryId: (id: string | null) => void;
+  setSplitRatio: (ratio: number) => void;
+  toggleReaderMode: () => void;
+  setReaderMode: (enabled: boolean) => void;
   setManageUniversesOpen: (open: boolean) => void;
   bumpUniverseVersion: () => void;
   setBackupModalOpen: (open: boolean, tab?: 'export' | 'import') => void;
@@ -66,6 +96,15 @@ export const useAppStore = create<AppStore>((set) => ({
   isOfflineMediaOpen: false,
   theme: (localStorage.getItem('hexatron-theme') as 'dark' | 'light') ?? 'dark',
   recentEntityIds: JSON.parse(localStorage.getItem('hexatron-recent') ?? '[]'),
+  favoriteEntityIds: JSON.parse(localStorage.getItem('hexatron-favorite-entities') ?? '[]'),
+  favoriteWorldIds: JSON.parse(localStorage.getItem('hexatron-favorite-worlds') ?? '[]'),
+  isFavoriteModalOpen: false,
+  tabs: JSON.parse(sessionStorage.getItem('hexatron-workspace-tabs') ?? '[]'),
+  activeTabId: null,
+  splitViewEnabled: false,
+  splitSecondaryId: null,
+  splitRatio: 50,
+  readerMode: false,
   isManageUniversesOpen: false,
   universeVersion: 0,
   backupModalOpen: false,
@@ -96,6 +135,60 @@ export const useAppStore = create<AppStore>((set) => ({
     return { recentEntityIds: next };
   }),
 
+  toggleFavoriteEntity: (id) => set((s) => {
+    const exists = s.favoriteEntityIds.includes(id);
+    const next = exists ? s.favoriteEntityIds.filter(x => x !== id) : [...s.favoriteEntityIds, id];
+    localStorage.setItem('hexatron-favorite-entities', JSON.stringify(next));
+    return { favoriteEntityIds: next };
+  }),
+
+  toggleFavoriteWorld: (id) => set((s) => {
+    const exists = s.favoriteWorldIds.includes(id);
+    const next = exists ? s.favoriteWorldIds.filter(x => x !== id) : [...s.favoriteWorldIds, id];
+    localStorage.setItem('hexatron-favorite-worlds', JSON.stringify(next));
+    return { favoriteWorldIds: next };
+  }),
+
+  setFavoriteModalOpen: (open) => set({ isFavoriteModalOpen: open }),
+
+  openTab: (tab) => set((s) => {
+    const existingIdx = s.tabs.findIndex(t => t.id === tab.id);
+    let nextTabs = s.tabs;
+    if (existingIdx === -1) {
+      nextTabs = [...s.tabs, { ...tab, isDirty: false }];
+    } else {
+      nextTabs = s.tabs.map((t, idx) => idx === existingIdx ? { ...t, title: tab.title, typeId: tab.typeId ?? t.typeId } : t);
+    }
+    sessionStorage.setItem('hexatron-workspace-tabs', JSON.stringify(nextTabs));
+    return { tabs: nextTabs, activeTabId: tab.id };
+  }),
+
+  closeTab: (id) => set((s) => {
+    const nextTabs = s.tabs.filter(t => t.id !== id);
+    let nextActive = s.activeTabId;
+    if (s.activeTabId === id) {
+      nextActive = nextTabs.length > 0 ? nextTabs[nextTabs.length - 1].id : null;
+    }
+    sessionStorage.setItem('hexatron-workspace-tabs', JSON.stringify(nextTabs));
+    return { tabs: nextTabs, activeTabId: nextActive };
+  }),
+
+  closeAllTabs: () => set(() => {
+    sessionStorage.removeItem('hexatron-workspace-tabs');
+    return { tabs: [], activeTabId: null, splitViewEnabled: false, splitSecondaryId: null };
+  }),
+
+  setTabDirty: (id, isDirty) => set((s) => {
+    const nextTabs = s.tabs.map(t => t.id === id ? { ...t, isDirty } : t);
+    return { tabs: nextTabs };
+  }),
+
+  setActiveTabId: (id) => set({ activeTabId: id }),
+  setSplitViewEnabled: (enabled) => set({ splitViewEnabled: enabled }),
+  setSplitSecondaryId: (id) => set({ splitSecondaryId: id }),
+  setSplitRatio: (ratio) => set({ splitRatio: ratio }),
+  toggleReaderMode: () => set((s) => ({ readerMode: !s.readerMode })),
+  setReaderMode: (enabled) => set({ readerMode: enabled }),
   setManageUniversesOpen: (open) => set({ isManageUniversesOpen: open }),
   bumpUniverseVersion: () => set((s) => ({ universeVersion: s.universeVersion + 1 })),
   setBackupModalOpen: (open, tab = 'export') => set({ backupModalOpen: open, backupModalTab: tab }),

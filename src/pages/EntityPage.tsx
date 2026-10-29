@@ -1,8 +1,12 @@
 // src/pages/EntityPage.tsx — Wikipedia-style article-first encyclopedia layout
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Edit2, Trash2, Image as ImageIcon, GitBranch, Compass, FileText, ChevronLeft, ChevronRight, Film, Clock } from 'lucide-react';
+import {
+  Edit2, Trash2, Image as ImageIcon, GitBranch, Compass, FileText,
+  ChevronLeft, ChevronRight, Film, Clock, Star, BookOpen, List,
+  Minimize2, Columns, ZoomIn, ZoomOut
+} from 'lucide-react';
 import {
   getEntity, getEntityTypes, getImages, softDeleteEntity,
   getWorld, getEntities, formatEntryNumber
@@ -15,14 +19,14 @@ import CanonBadge from '../components/ui/CanonBadge';
 import MediaGallery from '../components/ui/MediaGallery';
 import InteractiveChart from '../components/ui/InteractiveChart';
 import FamilyTree from '../components/ui/FamilyTree';
+import TableOfContents, { type TocItem } from '../components/ui/TableOfContents';
+import MultiArticleWorkspace from '../components/workspace/MultiArticleWorkspace';
 import { formatFullDate, formatRelativeTime, formatDateTime } from '../utils/dateFormatter';
 import './pages.css';
 
-interface TocItem {
-  id: string;
-  number: string;
-  text: string;
-  level: number;
+interface Props {
+  overrideEntityId?: string;
+  isSecondaryPane?: boolean;
 }
 
 function extractTocItems(articleJson?: string): TocItem[] {
@@ -61,10 +65,17 @@ function extractTocItems(articleJson?: string): TocItem[] {
   }
 }
 
-export default function EntityPage() {
-  const { entityId } = useParams<{ entityId: string }>();
+export default function EntityPage({ overrideEntityId, isSecondaryPane = false }: Props = {}) {
+  const { entityId: paramEntityId } = useParams<{ entityId: string }>();
+  const entityId = overrideEntityId || paramEntityId;
   const navigate = useNavigate();
-  const { setCurrentEntity, pushRecentEntity, isOwner, currentUser } = useAppStore();
+  const {
+    setCurrentEntity, pushRecentEntity, isOwner, currentUser,
+    favoriteEntityIds, toggleFavoriteEntity,
+    readerMode, toggleReaderMode,
+    splitViewEnabled, splitSecondaryId, splitRatio, setSplitRatio
+  } = useAppStore();
+
   const [entity, setEntity] = useState<Entity | null>(null);
   const [entityType, setEntityType] = useState<EntityType | null>(null);
   const [images, setImages] = useState<EntityImage[]>([]);
@@ -73,11 +84,17 @@ export default function EntityPage() {
   const [notFound, setNotFound] = useState(false);
   const [showFamilyTree, setShowFamilyTree] = useState(false);
   const [hideToc, setHideToc] = useState(false);
+  const [isMobileTocOpen, setIsMobileTocOpen] = useState(false);
+  const [readerFontSize, setReaderFontSize] = useState<'normal' | 'large' | 'huge'>('normal');
+
+  const isDraggingSplitRef = useRef(false);
 
   useEffect(() => {
     if (!entityId) return;
-    setCurrentEntity(entityId);
-    pushRecentEntity(entityId);
+    if (!isSecondaryPane) {
+      setCurrentEntity(entityId);
+      pushRecentEntity(entityId);
+    }
 
     getEntity(entityId)
       .then(async e => {
@@ -168,106 +185,220 @@ export default function EntityPage() {
   }
 
   const hasProperties = entity.properties && Object.keys(entity.properties).length > 0;
+  const isFavorite = favoriteEntityIds.includes(entity.id);
 
-  return (
-    <div className="wiki-article-page">
-      {/* ── 1. Sticky Navigation & Article Meta Bar ──────────────────────── */}
-      <div className="wiki-sticky-header-meta">
-        <div className="wiki-breadcrumbs">
-          <div className="wiki-nav-arrows">
-            <button
-              className="wiki-nav-arrow-btn"
-              onClick={() => prevEntity ? navigate(`/entity/${prevEntity.id}`) : navigate(-1)}
-              title={prevEntity ? `Previous entity: ${prevEntity.title}` : 'Go back'}
-              aria-label="Previous entity"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <button
-              className="wiki-nav-arrow-btn"
-              onClick={() => nextEntity ? navigate(`/entity/${nextEntity.id}`) : navigate(1)}
-              title={nextEntity ? `Next entity: ${nextEntity.title}` : 'Go forward'}
-              aria-label="Next entity"
-            >
-              <ChevronRight size={14} />
-            </button>
+  // If Split View is active, render dual panes
+  if (splitViewEnabled && splitSecondaryId && !isSecondaryPane) {
+    return (
+      <div className="split-view-wrapper" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <MultiArticleWorkspace
+          currentEntityId={entity.id}
+          currentTitle={entity.title}
+          currentTypeId={entity.typeId}
+        />
+        <div className="split-view-container" style={{ flex: 1, minHeight: 0 }}>
+          <div className="split-pane primary" style={{ flex: `0 0 ${splitRatio}%` }}>
+            <EntityPage isSecondaryPane={true} overrideEntityId={entity.id} />
           </div>
-          {worldTitle && <span className="wiki-breadcrumb-item">{worldTitle}</span>}
-          {worldTitle && <span className="wiki-breadcrumb-sep">/</span>}
-          {entityType && (
-            <span
-              className="wiki-breadcrumb-type"
-              style={{ color: entityType.color }}
-            >
-              {entityType.name}
-            </span>
-          )}
-          {formattedNumber && (
-            <span className="wiki-entry-badge" title="Permanent Entry Number">
-              {formattedNumber}
-            </span>
-          )}
-          <CanonBadge status={entity.canonStatus} />
-
-          {/* Creation & Last Edited Timestamps */}
-          {(entity.createdAt || entity.updatedAt) && (
-            <div
-              className="wiki-timestamps-badge"
-              title={`${entity.createdAt ? `Created: ${formatDateTime(entity.createdAt)}\n` : ''}${entity.updatedAt ? `Last edited: ${formatDateTime(entity.updatedAt)}` : ''}`}
-            >
-              <Clock size={11} className="wiki-timestamp-icon" />
-              <span className="wiki-timestamp-text">
-                {entity.createdAt ? `Created ${formatFullDate(entity.createdAt)}` : ''}
-                {entity.createdAt && entity.updatedAt ? ' · ' : ''}
-                {entity.updatedAt ? `Edited ${formatRelativeTime(entity.updatedAt)}` : ''}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="wiki-header-actions">
-          <button
-            className="wiki-action-tab active"
-            title="Article view"
-          >
-            <FileText size={13} /> Article
-          </button>
-          {isOwner && (
-            <button
-              className="wiki-action-tab"
-              onClick={() => navigate(`/entity/${entity.id}/edit`)}
-              title="Edit this article"
-            >
-              <Edit2 size={13} /> Edit
-            </button>
-          )}
-          <button
-            className="wiki-action-tab"
-            onClick={() => navigate(`/entity/${entity.id}/graph`)}
-            title="View in Network Graph"
-          >
-            <Compass size={13} /> Graph
-          </button>
-          {(entity.typeId === 'et-family' || entity.typeId === 'et-character') && (
-            <button
-              className={`wiki-action-tab ${showFamilyTree ? 'active' : ''}`}
-              onClick={() => setShowFamilyTree(!showFamilyTree)}
-              title="Toggle visual family tree"
-            >
-              <GitBranch size={13} /> Family Tree
-            </button>
-          )}
-          {isOwner && (
-            <button
-              className="wiki-action-tab danger"
-              onClick={handleDelete}
-              title="Delete entity"
-            >
-              <Trash2 size={13} /> Delete
-            </button>
-          )}
+          <div
+            className="split-divider"
+            onMouseDown={() => {
+              isDraggingSplitRef.current = true;
+              document.body.style.userSelect = 'none';
+              document.body.style.cursor = 'col-resize';
+            }}
+          />
+          <div className="split-pane secondary" style={{ flex: `0 0 ${100 - splitRatio}%` }}>
+            <EntityPage isSecondaryPane={true} overrideEntityId={splitSecondaryId} />
+          </div>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      {/* Workspace Tab Strip (for owner) */}
+      {!isSecondaryPane && (
+        <MultiArticleWorkspace
+          currentEntityId={entity.id}
+          currentTitle={entity.title}
+          currentTypeId={entity.typeId}
+        />
+      )}
+
+      <div
+        className={`wiki-article-page ${readerMode ? 'reader-mode' : ''}`}
+        data-size={readerFontSize}
+        style={{ flex: 1, minHeight: 0 }}
+      >
+        {/* Reader Mode Top Bar (when reading mode is active) */}
+        {readerMode && (
+          <div className="reader-toolbar">
+            <div className="reader-toolbar-left">
+              <span className="dash-hero-badge" style={{ margin: 0 }}>Reader Mode</span>
+              <button
+                type="button"
+                className="btn-ghost tiny"
+                onClick={() => setReaderFontSize(f => f === 'normal' ? 'large' : f === 'large' ? 'huge' : 'normal')}
+                title="Toggle text size"
+              >
+                <span style={{ fontWeight: 700 }}>A</span>
+                <span style={{ fontSize: '0.7rem' }}>{readerFontSize === 'normal' ? 'Standard' : readerFontSize === 'large' ? 'Large' : 'Largest'}</span>
+              </button>
+              {tocItems.length >= 2 && (
+                <button
+                  type="button"
+                  className="btn-ghost tiny"
+                  onClick={() => setIsMobileTocOpen(true)}
+                  title="Jump to section"
+                >
+                  <List size={13} /> Contents ({tocItems.length})
+                </button>
+              )}
+            </div>
+            <div className="reader-toolbar-right">
+              <button
+                type="button"
+                className="btn-primary tiny"
+                onClick={toggleReaderMode}
+              >
+                Exit Reader
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── 1. Sticky Navigation & Article Meta Bar ──────────────────────── */}
+        <div className="wiki-sticky-header-meta">
+          <div className="wiki-breadcrumbs">
+            <div className="wiki-nav-arrows">
+              <button
+                className="wiki-nav-arrow-btn"
+                onClick={() => prevEntity ? navigate(`/entity/${prevEntity.id}`) : navigate(-1)}
+                title={prevEntity ? `Previous entity: ${prevEntity.title}` : 'Go back'}
+                aria-label="Previous entity"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <button
+                className="wiki-nav-arrow-btn"
+                onClick={() => nextEntity ? navigate(`/entity/${nextEntity.id}`) : navigate(1)}
+                title={nextEntity ? `Next entity: ${nextEntity.title}` : 'Go forward'}
+                aria-label="Next entity"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+            {worldTitle && <span className="wiki-breadcrumb-item">{worldTitle}</span>}
+            {worldTitle && <span className="wiki-breadcrumb-sep">/</span>}
+            {entityType && (
+              <span
+                className="wiki-breadcrumb-type"
+                style={{ color: entityType.color }}
+              >
+                {entityType.name}
+              </span>
+            )}
+            {formattedNumber && (
+              <span className="wiki-entry-badge" title="Permanent Entry Number">
+                {formattedNumber}
+              </span>
+            )}
+            <CanonBadge status={entity.canonStatus} />
+
+            {/* Creation & Last Edited Timestamps */}
+            {(entity.createdAt || entity.updatedAt) && (
+              <div
+                className="wiki-timestamps-badge"
+                title={`${entity.createdAt ? `Created: ${formatDateTime(entity.createdAt)}\n` : ''}${entity.updatedAt ? `Last edited: ${formatDateTime(entity.updatedAt)}` : ''}`}
+              >
+                <Clock size={11} className="wiki-timestamp-icon" />
+                <span className="wiki-timestamp-text">
+                  {entity.createdAt ? `Created ${formatFullDate(entity.createdAt)}` : ''}
+                  {entity.createdAt && entity.updatedAt ? ' · ' : ''}
+                  {entity.updatedAt ? `Edited ${formatRelativeTime(entity.updatedAt)}` : ''}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="wiki-header-actions">
+            {/* Clean Reading Mode Toggle */}
+            <button
+              type="button"
+              className={`wiki-action-tab ${readerMode ? 'active text-accent' : ''}`}
+              onClick={toggleReaderMode}
+              title={readerMode ? 'Exit clean reading mode' : 'Switch to clean reading mode'}
+            >
+              <BookOpen size={13} /> Reader
+            </button>
+
+            {/* Favorite Star Button (Owner only) */}
+            {isOwner && (
+              <button
+                type="button"
+                className={`wiki-action-tab ${isFavorite ? 'favorited active' : ''}`}
+                onClick={() => toggleFavoriteEntity(entity.id)}
+                title={isFavorite ? 'Remove from favorites' : 'Pin to favorites'}
+                aria-label={isFavorite ? 'Remove from favorites' : 'Pin to favorites'}
+              >
+                <Star
+                  size={13}
+                  fill={isFavorite ? '#f59e0b' : 'none'}
+                  color={isFavorite ? '#f59e0b' : 'currentColor'}
+                />
+                <span>{isFavorite ? 'Favorited' : 'Favorite'}</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="wiki-action-tab active hide-in-reader"
+              title="Article view"
+            >
+              <FileText size={13} /> Article
+            </button>
+            {isOwner && (
+              <button
+                type="button"
+                className="wiki-action-tab hide-in-reader"
+                onClick={() => navigate(`/entity/${entity.id}/edit`)}
+                title="Edit this article"
+              >
+                <Edit2 size={13} /> Edit
+              </button>
+            )}
+            <button
+              type="button"
+              className="wiki-action-tab hide-in-reader"
+              onClick={() => navigate(`/entity/${entity.id}/graph`)}
+              title="View in Network Graph"
+            >
+              <Compass size={13} /> Graph
+            </button>
+            {(entity.typeId === 'et-family' || entity.typeId === 'et-character') && (
+              <button
+                type="button"
+                className={`wiki-action-tab hide-in-reader ${showFamilyTree ? 'active' : ''}`}
+                onClick={() => setShowFamilyTree(!showFamilyTree)}
+                title="Toggle visual family tree"
+              >
+                <GitBranch size={13} /> Family Tree
+              </button>
+            )}
+            {isOwner && (
+              <button
+                type="button"
+                className="wiki-action-tab danger hide-in-reader"
+                onClick={handleDelete}
+                title="Delete entity"
+              >
+                <Trash2 size={13} /> Delete
+              </button>
+            )}
+          </div>
+        </div>
 
       <header className="wiki-header">
         <h1 className="wiki-title">
@@ -332,41 +463,13 @@ export default function EntityPage() {
             </aside>
           )}
 
-          {/* Table of Contents: Contents [hide] */}
-          {tocItems.length > 0 && (
-            <nav className="wiki-toc" aria-label="Table of contents">
-              <div className="wiki-toc-header">
-                <span className="wiki-toc-title">Contents</span>
-                <button
-                  type="button"
-                  className="wiki-toc-toggle"
-                  onClick={() => setHideToc(!hideToc)}
-                  title={hideToc ? 'Show contents' : 'Hide contents'}
-                >
-                  [{hideToc ? 'show' : 'hide'}]
-                </button>
-              </div>
-              {!hideToc && (
-                <ol className="wiki-toc-list">
-                  {tocItems.map(item => (
-                    <li key={item.id} className={`wiki-toc-item level-${item.level}`}>
-                      <a
-                        href={`#${item.id}`}
-                        className="wiki-toc-link"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          const el = document.getElementById(item.id);
-                          if (el) el.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                      >
-                        <span className="wiki-toc-num">{item.number}</span>
-                        <span className="wiki-toc-text">{item.text}</span>
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </nav>
+          {/* Automatic Table of Contents with active heading tracking & smooth scrolling */}
+          {tocItems.length >= 2 && (
+            <TableOfContents
+              items={tocItems}
+              collapsed={hideToc}
+              onToggleCollapsed={() => setHideToc(!hideToc)}
+            />
           )}
 
           {/* The Actual Article Content */}
@@ -479,6 +582,30 @@ export default function EntityPage() {
           </div>
         </details>
       </footer>
+
+      {/* Mobile floating Table of Contents trigger & bottom-sheet */}
+      {tocItems.length >= 2 && (
+        <>
+          <button
+            type="button"
+            className="mobile-toc-fab"
+            onClick={() => setIsMobileTocOpen(true)}
+            title="Table of Contents"
+            aria-label="Table of Contents"
+          >
+            <List size={15} />
+            <span>Contents</span>
+          </button>
+
+          <TableOfContents
+            items={tocItems}
+            isMobileDrawer
+            isOpenMobile={isMobileTocOpen}
+            onCloseMobile={() => setIsMobileTocOpen(false)}
+          />
+        </>
+      )}
     </div>
+  </div>
   );
 }

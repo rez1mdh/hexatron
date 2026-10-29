@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Menu, Terminal, ChevronLeft, ChevronRight,
-  User as UserIcon, Network, Zap, Edit3
+  User as UserIcon, Network, Zap, Edit3, Star
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { useAppStore } from '../../store/appStore';
@@ -20,7 +20,10 @@ export default function TopBar() {
     toggleQuickActions,
     isQuickActionsOpen,
     isOwner,
-    currentEntityId
+    currentEntityId,
+    favoriteEntityIds,
+    favoriteWorldIds,
+    setFavoriteModalOpen
   } = useAppStore();
 
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
@@ -146,6 +149,23 @@ export default function TopBar() {
         >
           <Zap size={16} className={isQuickActionsOpen ? 'text-accent' : ''} />
         </button>
+
+        {/* Favorites & Pinned Records (Owner only) */}
+        {isOwner && (
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => setFavoriteModalOpen(true)}
+            title="Favorites & Pinned Records"
+            aria-label="Favorites"
+          >
+            <Star
+              size={16}
+              fill={favoriteEntityIds.length + favoriteWorldIds.length > 0 ? '#f59e0b' : 'none'}
+              color={favoriteEntityIds.length + favoriteWorldIds.length > 0 ? '#f59e0b' : 'currentColor'}
+            />
+          </button>
+        )}
 
         {/* Owner Account / Cloud Sync Pill */}
         <button

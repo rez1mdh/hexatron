@@ -8,7 +8,7 @@ import {
   Zap, X, GitBranch, BookOpen, Network, Compass, Edit3, PlusCircle,
   HardDrive, Layers, Download, Upload, Sun, Moon, RotateCw,
   HelpCircle, Settings, ArrowUp, ArrowDown, RotateCcw, Check,
-  Search as SearchIcon, Sparkles
+  Search as SearchIcon, Sparkles, Star
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { clearCacheAndReload } from '../../utils/clearCache';
@@ -47,7 +47,8 @@ export default function QuickActionsDrawer() {
     setRightSidebarOpen,
     setManageUniversesOpen,
     setBackupModalOpen,
-    setOfflineMediaOpen
+    setOfflineMediaOpen,
+    setFavoriteModalOpen
   } = useAppStore();
 
   const [isCustomizing, setIsCustomizing] = useState(false);
@@ -102,6 +103,17 @@ export default function QuickActionsDrawer() {
       icon: SearchIcon,
       run: () => {
         window.dispatchEvent(new CustomEvent('hexatron-open-palette'));
+      }
+    },
+    'favorites': {
+      id: 'favorites',
+      name: 'Pinned Favorites',
+      description: 'Quick access to your starred entities and worlds',
+      category: 'nav',
+      icon: Star,
+      ownerOnly: true,
+      run: () => {
+        setFavoriteModalOpen(true);
       }
     },
     'edit-article': {

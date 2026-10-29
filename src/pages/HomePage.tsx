@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Globe, Plus, BookOpen, Clock, Sliders, Trash2,
-  Compass, ArrowLeft, Layers
+  Compass, ArrowLeft, Layers, ShieldCheck, ArrowRight
 } from 'lucide-react';
 import {
   getUniverses, getWorlds, getEntity, getUniverseStats, getWorldStats,
@@ -12,6 +12,7 @@ import {
 } from '../db/operations';
 import { useAppStore } from '../store/appStore';
 import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
+import PersonalDashboard from '../components/dashboard/PersonalDashboard';
 import './pages.css';
 
 export default function HomePage() {
@@ -21,6 +22,7 @@ export default function HomePage() {
     recentEntityIds, setManageUniversesOpen, universeVersion, bumpUniverseVersion, isOwner
   } = useAppStore();
 
+  const [previewPublicView, setPreviewPublicView] = useState(false);
   const [universes, setUniverses] = useState<Universe[]>([]);
   const [worlds, setWorlds] = useState<World[]>([]);
   const [recentEntities, setRecentEntities] = useState<Entity[]>([]);
@@ -88,8 +90,32 @@ export default function HomePage() {
     }
   }
 
+  // Authenticated Owner gets the personal dashboard by default when on the root route
+  if (isOwner && !universeId && !previewPublicView) {
+    return <PersonalDashboard onTogglePublicView={() => setPreviewPublicView(true)} />;
+  }
+
   return (
     <div className="page-container">
+      {previewPublicView && isOwner && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: 'rgba(139, 92, 246, 0.15)',
+          border: '1px solid var(--accent)',
+          padding: '8px 16px',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '1.5rem',
+          fontSize: '0.85rem'
+        }}>
+          <span>👁️ Previewing public visitor landing experience. Private dashboard and draft data are hidden.</span>
+          <button className="btn-primary tiny" onClick={() => setPreviewPublicView(false)}>
+            Back to Dashboard
+          </button>
+        </div>
+      )}
+
       {currentUniverse ? (
         /* Universe Selected Banner */
         <div className="universe-banner">

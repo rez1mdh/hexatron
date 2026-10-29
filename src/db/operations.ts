@@ -225,6 +225,20 @@ export async function getEntities(worldId?: string) {
   return db.entities.filter(e => !e.deletedAt).toArray();
 }
 
+export async function getRecentlyEditedEntities(limit = 8): Promise<Entity[]> {
+  try {
+    return await db.entities
+      .orderBy('updatedAt')
+      .reverse()
+      .filter(e => !e.deletedAt)
+      .limit(limit)
+      .toArray();
+  } catch {
+    const all = await db.entities.filter(e => !e.deletedAt).toArray();
+    return all.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, limit);
+  }
+}
+
 export async function getEntity(id: string) {
   return db.entities.get(id);
 }

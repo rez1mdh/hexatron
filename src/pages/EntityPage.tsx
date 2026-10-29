@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Edit2, Trash2, Image as ImageIcon, GitBranch, Compass, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit2, Trash2, Image as ImageIcon, GitBranch, Compass, FileText, ChevronLeft, ChevronRight, Film } from 'lucide-react';
 import {
   getEntity, getEntityTypes, getImages, softDeleteEntity,
   getWorld, getEntities, formatEntryNumber
@@ -13,7 +13,7 @@ import type { Entity, EntityType, EntityImage } from '../db/schema';
 import ArticleEditor from '../editor/ArticleEditor';
 import LinkedEntitiesPanel from '../components/ui/LinkedEntitiesPanel';
 import CanonBadge from '../components/ui/CanonBadge';
-import ImageGallery from '../components/ui/ImageGallery';
+import MediaGallery from '../components/ui/MediaGallery';
 import InteractiveChart from '../components/ui/InteractiveChart';
 import FamilyTree from '../components/ui/FamilyTree';
 import './pages.css';
@@ -409,9 +409,9 @@ export default function EntityPage() {
       {images.length > 0 && (
         <section className="wiki-secondary-section">
           <h2 className="wiki-section-heading">
-            <ImageIcon size={15} /> Gallery
+            <Film size={15} /> Media &amp; Visuals ({images.length})
           </h2>
-          <ImageGallery images={images} />
+          <MediaGallery images={images} onRefresh={() => entityId && getImages(entityId).then(setImages)} />
         </section>
       )}
 

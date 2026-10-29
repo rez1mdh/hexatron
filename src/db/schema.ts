@@ -9,7 +9,7 @@ import Dexie, { type Table } from 'dexie';
 
 export type CanonStatus = 'canon' | 'provisional' | 'disputed' | 'non_canon' | 'alternate';
 export type ChangeOperation = 'create' | 'update' | 'delete' | 'relate' | 'unrelate';
-export type ImageRole = 'portrait' | 'map' | 'gallery' | 'flag' | 'other';
+export type ImageRole = 'portrait' | 'map' | 'gallery' | 'flag' | 'video' | 'header' | 'other';
 
 export interface Universe {
   id: string;
@@ -130,12 +130,18 @@ export interface EntityImage {
   entityId: string;
   role: ImageRole;
   caption?: string;
+  title?: string;
+  description?: string;
+  mediaType?: 'image' | 'video';
   // Blob stored locally; remote URL set after sync
   localBlob?: Blob;
   remotePath?: string;
+  remoteUrl?: string;
   width?: number;
   height?: number;
   mimeType?: string;
+  fileSize?: number;
+  isOfflineAvailable?: boolean;
   sortOrder: number;
   createdAt: number;
 }

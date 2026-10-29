@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Search, Sun, Moon, PanelRight, Download, Upload, Terminal, HelpCircle, Compass, User as UserIcon, Cloud, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
+import { Menu, Search, Sun, Moon, PanelRight, Download, Upload, Terminal, HelpCircle, Compass, User as UserIcon, Cloud, ChevronLeft, ChevronRight, RotateCw, HardDrive } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { useAppStore } from '../../store/appStore';
 import { getCurrentUser, subscribeToAuthState, isCloudConfigured } from '../../services/supabase';
 import { clearCacheAndReload } from '../../utils/clearCache';
 import CommandPalette from '../ui/CommandPalette';
 import AuthModal from '../auth/AuthModal';
+import OfflineMediaModal from '../ui/OfflineMediaModal';
 
 export default function TopBar() {
   const { toggleLeftSidebar, toggleRightSidebar, theme, toggleTheme, setBackupModalOpen, isOwner } = useAppStore();
   const navigate = useNavigate();
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isOfflineMediaOpen, setIsOfflineMediaOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Global Ctrl+K or Cmd+K or custom event for palette
@@ -93,6 +95,13 @@ export default function TopBar() {
         <button className="icon-btn" onClick={() => navigate('/help')} title="Help Center & Guide">
           <HelpCircle size={16} />
         </button>
+        <button
+          className="icon-btn"
+          onClick={() => setIsOfflineMediaOpen(true)}
+          title="Offline Media Manager (saved images & videos)"
+        >
+          <HardDrive size={16} />
+        </button>
         <button className="icon-btn" onClick={() => setBackupModalOpen(true, 'export')} title="Export backup (.json)">
           <Download size={16} />
         </button>
@@ -119,6 +128,7 @@ export default function TopBar() {
 
       <CommandPalette isOpen={isPaletteOpen} onClose={() => setIsPaletteOpen(false)} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      <OfflineMediaModal isOpen={isOfflineMediaOpen} onClose={() => setIsOfflineMediaOpen(false)} />
     </header>
   );
 }

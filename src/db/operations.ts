@@ -323,22 +323,104 @@ export async function deleteRelationship(id: string) {
   await appendChange('relationships', 'delete', { id });
 }
 
-// ── Images ─────────────────────────────────────────────────────────────────
+// ── Images & Media ──────────────────────────────────────────────────────────
 
 export async function getImages(entityId: string): Promise<EntityImage[]> {
   return db.images.where('entityId').equals(entityId).sortBy('sortOrder');
 }
 
 export async function addImage(data: Omit<EntityImage, 'id' | 'createdAt'>): Promise<EntityImage> {
-  const record: EntityImage = { ...data, id: uuidv4(), createdAt: Date.now() };
+  const record: EntityImage = {
+    ...data,
+    id: uuidv4(),
+    createdAt: Date.now(),
+    isOfflineAvailable: data.localBlob ? true : false,
+    fileSize: data.localBlob ? data.localBlob.size : data.fileSize,
+  };
   await db.images.add(record);
   await appendChange('images', 'create', { ...record, localBlob: undefined }); // don't serialise blob
   return record;
 }
 
-export async function deleteImage(id: string) {
+export async function updateImage(id: string, updates: Partial<EntityImage>): Promise<void> {
+  await db.images.update(id, updates);
+  await appendChange('images', 'update', { id, ...updates, localBlob: undefined });
+}
+
+export async function deleteImage(id: string): Promise<void> {
   await db.images.delete(id);
   await appendChange('images', 'delete', { id });
+}
+
+/**
+ * Downloads remote media file into local IndexedDB for permanent offline access
+ */
+export async function downloadMediaForOffline(id: string): Promise<{ success: boolean; size?: number; error?: string }> {
+  const media = await db.images.get(id);
+  if (!media) return { success: false, error: 'Media record not found.' };
+
+  const targetUrl = media.remoteUrl || media.remotePath;
+  if (!targetUrl) {
+    if (media.localBlob) {
+      return { success: true, size: media.localBlob.size };
+    }
+    return { success: false, error: 'No remote URL available to download.' };
+  }
+
+  // Check quota if available
+  if (navigator.storage && navigator.storage.estimate) {
+    const { quota, usage } = await navigator.storage.estimate();
+    if (quota && usage && quota - usage < 10 * 1024 * 1024) {
+      return { success: false, error: 'Insufficient browser storage quota available.' };
+    }
+  }
+
+  try {
+    const res = await fetch(targetUrl);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    const blob = await res.blob();
+    await db.images.update(id, {
+      localBlob: blob,
+      fileSize: blob.size,
+      mimeType: blob.type || media.mimeType,
+      isOfflineAvailable: true,
+    });
+    return { success: true, size: blob.size };
+  } catch (err) {
+    return { success: false, error: (err as Error).message };
+  }
+}
+
+/**
+ * Removes local offline copy of media without deleting the remote/online record
+ */
+export async function removeOfflineMediaCopy(id: string): Promise<void> {
+  const media = await db.images.get(id);
+  if (!media) return;
+  // If no remote URL exists, retain the file so the user doesn't lose unique content
+  if (!media.remoteUrl && !media.remotePath) {
+    throw new Error('Cannot remove offline copy: this media only exists locally and has no remote URL.');
+  }
+  await db.images.update(id, {
+    localBlob: undefined,
+    isOfflineAvailable: false,
+  });
+}
+
+/**
+ * Lists all offline-downloaded media across all entities
+ */
+export async function getAllOfflineMedia(): Promise<EntityImage[]> {
+  const all = await db.images.toArray();
+  return all.filter(m => m.localBlob || m.isOfflineAvailable);
+}
+
+/**
+ * Computes total offline media storage usage in bytes
+ */
+export async function getTotalOfflineStorageUsage(): Promise<number> {
+  const offline = await getAllOfflineMedia();
+  return offline.reduce((acc, m) => acc + (m.localBlob?.size || m.fileSize || 0), 0);
 }
 
 // ── Entity Types ───────────────────────────────────────────────────────────

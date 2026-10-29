@@ -17,14 +17,15 @@ import CharacterCount from '@tiptap/extension-character-count';
 import {
   Bold, Italic, Strikethrough, Code, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Minus, Undo, Redo, Link2, Sparkles, X, Search,
-  PlusCircle, ExternalLink, Unlink, Copy, Table as TableIcon, ImageIcon
+  PlusCircle, ExternalLink, Unlink, Copy, Table as TableIcon, ImageIcon, Film
 } from 'lucide-react';
 import { EntityLinkExtension } from './EntityLinkExtension';
-import { searchEntities, getEntities, formatEntryNumber } from '../db/operations';
+import { searchEntities, getEntities, formatEntryNumber, addImage } from '../db/operations';
 import { linkMentionsInDoc, linkMentionsInArticleString } from '../utils/entityLinker';
 import type { Entity } from '../db/schema';
 import EntityTypeIcon from '../components/ui/EntityTypeIcon';
 import CreateEntityQuickModal from './CreateEntityQuickModal';
+import InsertMediaModal from '../components/ui/InsertMediaModal';
 import './editor.css';
 
 interface Props {
@@ -103,6 +104,9 @@ export default function ArticleEditor({
   // External Link Modal state
   const [externalLinkPromptOpen, setExternalLinkPromptOpen] = useState(false);
   const [externalUrl, setExternalUrl] = useState('https://');
+
+  // Insert Media Modal state
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
 
   // Load available entities for inline link resolution and autocomplete
   useEffect(() => {
@@ -493,14 +497,13 @@ export default function ArticleEditor({
       },
     },
     {
-      id: 'image',
-      title: 'Image URL',
-      desc: 'Embed an illustration or map via URL',
-      icon: ImageIcon,
+      id: 'media',
+      title: 'Insert Image / Video',
+      desc: 'Upload or embed photos, maps, and videos',
+      icon: Film,
       action: (ed) => {
         ed.commands.deleteRange({ from: ed.state.selection.$anchor.start(), to: ed.state.selection.$anchor.pos });
-        const url = prompt('Enter image URL:');
-        if (url) ed.chain().focus().setImage({ src: url }).run();
+        setIsMediaModalOpen(true);
       },
     },
   ], []);
@@ -606,6 +609,7 @@ export default function ArticleEditor({
           editor={editor}
           onOpenLinkModal={() => openLinkModal()}
           onAutoLink={handleAutoLink}
+          onOpenMediaModal={() => setIsMediaModalOpen(true)}
         />
       )}
 
@@ -994,6 +998,39 @@ export default function ArticleEditor({
         }}
       />
 
+      {/* ── FEATURE 5: Insert Image / Video Modal ─────────────────── */}
+      <InsertMediaModal
+        isOpen={isMediaModalOpen}
+        onClose={() => setIsMediaModalOpen(false)}
+        allowInlineOption={true}
+        onSaveMedia={async (data) => {
+          let src = data.remoteUrl || '';
+          if (data.file) {
+            src = URL.createObjectURL(data.file);
+          }
+          if (src) {
+            if (data.mediaType === 'image') {
+              editor?.chain().focus().setImage({ src, alt: data.caption || data.title }).run();
+            } else {
+              editor?.chain().focus().insertContent(`<p><a href="${src}" target="_blank" rel="noopener noreferrer">🎬 Video: ${data.title || data.caption || src}</a></p>`).run();
+            }
+          }
+          if (currentEntityId) {
+            await addImage({
+              entityId: currentEntityId,
+              role: data.role,
+              caption: data.caption,
+              title: data.title,
+              description: data.description,
+              mediaType: data.mediaType,
+              localBlob: data.file,
+              remoteUrl: data.remoteUrl,
+              sortOrder: 0,
+            });
+          }
+        }}
+      />
+
       {!readOnly && (
         <div className="editor-footer">
           <span>{editor.storage.characterCount?.characters()} characters · {editor.storage.characterCount?.words()} words</span>
@@ -1009,6 +1046,7 @@ interface ToolbarProps {
   editor: any;
   onOpenLinkModal: () => void;
   onAutoLink: () => void;
+  onOpenMediaModal: () => void;
 }
 
 function ToolBtn({
@@ -1037,7 +1075,7 @@ function ToolBtn({
   );
 }
 
-function EditorToolbar({ editor, onOpenLinkModal, onAutoLink }: ToolbarProps) {
+function EditorToolbar({ editor, onOpenLinkModal, onAutoLink, onOpenMediaModal }: ToolbarProps) {
   return (
     <div className="editor-toolbar">
       <ToolBtn title="Bold (Ctrl+B)" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
@@ -1058,6 +1096,9 @@ function EditorToolbar({ editor, onOpenLinkModal, onAutoLink }: ToolbarProps) {
       </ToolBtn>
       <ToolBtn title="Scan & auto-link entity mentions" onClick={onAutoLink}>
         <Sparkles size={14} />
+      </ToolBtn>
+      <ToolBtn title="Insert Image or Video" onClick={onOpenMediaModal}>
+        <Film size={14} />
       </ToolBtn>
       <span className="toolbar-sep" />
       <ToolBtn title="Heading 1" active={editor.isActive('heading', { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>

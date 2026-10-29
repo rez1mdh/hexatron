@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Globe, Plus, ChevronRight, ChevronDown, Clock, Star,
   Settings, HelpCircle, Compass, Trash2, Sliders, X,
-  FolderTree, PanelLeftClose, RotateCw
+  FolderTree, PanelLeftClose, RotateCw, HardDrive
 } from 'lucide-react';
 import { clearCacheAndReload } from '../../utils/clearCache';
 import { useAppStore } from '../../store/appStore';
@@ -15,6 +15,7 @@ import {
 } from '../../db/operations';
 import DeleteConfirmModal from '../ui/DeleteConfirmModal';
 import NestedEntityTree from '../ui/NestedEntityTree';
+import OfflineMediaModal from '../ui/OfflineMediaModal';
 import './layout.css';
 
 export default function LeftSidebar() {
@@ -27,6 +28,7 @@ export default function LeftSidebar() {
   const [worlds, setWorlds] = useState<World[]>([]);
   const [expandedUniverses, setExpandedUniverses] = useState<Set<string>>(new Set());
   const [sidebarTab, setSidebarTab] = useState<'tree' | 'universes'>('tree');
+  const [isOfflineMediaOpen, setIsOfflineMediaOpen] = useState(false);
 
   // Delete modal state
   const [deleteTarget, setDeleteTarget] = useState<{
@@ -256,6 +258,11 @@ export default function LeftSidebar() {
           <span>Export Backup</span>
         </button>
 
+        <button className="sidebar-nav-item" onClick={() => { setIsOfflineMediaOpen(true); if (window.innerWidth <= 900) setLeftSidebarOpen(false); }}>
+          <HardDrive size={14} />
+          <span>Offline Media Manager</span>
+        </button>
+
         <button className="sidebar-nav-item" onClick={clearCacheAndReload} title="Clear browser cache and force reload">
           <RotateCw size={14} />
           <span>Clear Cache & Reload</span>
@@ -273,6 +280,11 @@ export default function LeftSidebar() {
           onClose={() => setDeleteTarget(null)}
         />
       )}
+
+      <OfflineMediaModal
+        isOpen={isOfflineMediaOpen}
+        onClose={() => setIsOfflineMediaOpen(false)}
+      />
     </nav>
   );
 }

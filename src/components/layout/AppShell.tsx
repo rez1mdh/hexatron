@@ -34,6 +34,31 @@ export default function AppShell() {
     }
   }, [location.pathname, setLeftSidebarOpen]);
 
+  // Lock body scroll when a modal mobile drawer is open
+  useEffect(() => {
+    const isMobileDrawerOpen = (leftSidebarOpen || rightSidebarOpen) && window.innerWidth <= 900;
+    if (isMobileDrawerOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [leftSidebarOpen, rightSidebarOpen]);
+
+  // Keyboard accessibility: dismiss drawers on Escape
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        if (rightSidebarOpen) toggleRightSidebar();
+        if (leftSidebarOpen && window.innerWidth <= 900) setLeftSidebarOpen(false);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [rightSidebarOpen, leftSidebarOpen, toggleRightSidebar, setLeftSidebarOpen]);
+
   return (
     <div className="app-layout">
       <LeftSidebar />

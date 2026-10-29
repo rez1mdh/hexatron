@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, X, Plus, Trash2, Upload, Layers, Link as LinkIcon, Settings2 } from 'lucide-react';
+import { Save, X, Plus, Trash2, Upload, Layers, Link as LinkIcon, Settings2, Image as ImageIcon } from 'lucide-react';
 import {
   getEntity, createEntity, updateEntity, getEntityTypes,
-  addImage, getEntities, getRelationships, createRelationship, getRelationshipTypes, getWorlds, softDeleteEntity
+  addImage, getImages, deleteImage, updateImage, getEntities, getRelationships, createRelationship, getRelationshipTypes, getWorlds, softDeleteEntity
 } from '../db/operations';
 import { useAppStore } from '../store/appStore';
 import { pushEntityToCloud, pushRelationshipToCloud, pushSoftDeleteEntityToCloud } from '../services/cloudSync';
-import type { Entity, EntityType, CanonStatus, Relationship, RelationshipType, StatisticalDataset } from '../db/schema';
+import type { Entity, EntityType, CanonStatus, Relationship, RelationshipType, StatisticalDataset, EntityImage, ImageRole } from '../db/schema';
 import ArticleEditor from '../editor/ArticleEditor';
 import EntityTypeIcon from '../components/ui/EntityTypeIcon';
 import EntityTypeModal from '../components/ui/EntityTypeModal';
@@ -17,6 +17,8 @@ import DynamicPropertyEditor from '../components/ui/DynamicPropertyEditor';
 import RelationshipEditor, { type PendingRelationship } from '../components/ui/RelationshipEditor';
 import DemographicDatasetEditor from '../components/ui/DemographicDatasetEditor';
 import InheritanceAssistant from '../components/ui/InheritanceAssistant';
+import InsertMediaModal from '../components/ui/InsertMediaModal';
+import { Film } from 'lucide-react';
 import './pages.css';
 
 interface Props {
@@ -62,7 +64,9 @@ export default function EntityEditPage({ mode }: Props) {
   const [isDirty, setIsDirty] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'details' | 'properties' | 'demographics' | 'relationships'>('details');
+  const [existingMedia, setExistingMedia] = useState<EntityImage[]>([]);
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'properties' | 'demographics' | 'relationships' | 'media'>('details');
 
   // Entity Type Manager Modal state
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
@@ -76,6 +80,10 @@ export default function EntityEditPage({ mode }: Props) {
     if (worldId) {
       const ents = await getEntities(worldId);
       setAvailableEntities(ents);
+    }
+    if (entityId) {
+      const media = await getImages(entityId);
+      setExistingMedia(media);
     }
   }
 
@@ -346,6 +354,12 @@ export default function EntityEditPage({ mode }: Props) {
             >
               Relationships {(existingRelationships.length + pendingRelationships.length) > 0 ? `(${existingRelationships.length + pendingRelationships.length})` : ''}
             </button>
+            <button
+              className={`meta-tab-btn ${activeTab === 'media' ? 'active' : ''}`}
+              onClick={() => setActiveTab('media')}
+            >
+              Media {existingMedia.length > 0 ? `(${existingMedia.length})` : ''}
+            </button>
           </div>
 
           {activeTab === 'details' && (
@@ -484,18 +498,84 @@ export default function EntityEditPage({ mode }: Props) {
             </div>
           )}
 
-          {activeTab === 'relationships' && (
+          {activeTab === 'media' && (
             <div className="tab-pane-content">
-              <RelationshipEditor
-                entityId={entityId}
-                worldId={worldId ?? ''}
-                existingRelationships={existingRelationships}
-                pendingRelationships={pendingRelationships}
-                onPendingChange={setPendingRelationships}
-                availableEntities={availableEntities}
-                relationshipTypes={relationshipTypes}
-                onRelTypesChanged={loadData}
-              />
+              <div className="form-row-header">
+                <label className="form-label mb-0">Attached Media & Videos</label>
+                <button
+                  type="button"
+                  className="btn-ghost tiny"
+                  onClick={() => setIsMediaModalOpen(true)}
+                  title="Attach new image or video"
+                >
+                  <Plus size={12} /> Add Media
+                </button>
+              </div>
+
+              {existingMedia.length === 0 ? (
+                <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                  <Film size={24} style={{ margin: '0 auto 6px', display: 'block', opacity: 0.5 }} />
+                  <p>No media attached to this entity yet.</p>
+                  <button
+                    type="button"
+                    className="btn-link"
+                    style={{ marginTop: 6 }}
+                    onClick={() => setIsMediaModalOpen(true)}
+                  >
+                    Attach first image or video
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                  {existingMedia.map(m => {
+                    const isVid = m.mediaType === 'video' || m.role === 'video';
+                    const src = m.localBlob ? URL.createObjectURL(m.localBlob) : (m.remoteUrl || m.remotePath);
+                    return (
+                      <div
+                        key={m.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          padding: 8,
+                          background: 'var(--bg-elevated)',
+                          border: '1px solid var(--border-subtle)',
+                          borderRadius: 'var(--radius-sm)'
+                        }}
+                      >
+                        <div style={{ width: 44, height: 36, background: '#000', borderRadius: 4, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {isVid ? <Film size={18} color="var(--accent)" /> : src ? <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ImageIcon size={18} />}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }} className="truncate">
+                            {m.title || m.caption || (isVid ? 'Video' : 'Image')}
+                          </div>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                            Role: {m.role} • {m.isOfflineAvailable ? 'Offline Ready' : 'Remote'}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="icon-btn small"
+                          style={{ color: '#ef4444' }}
+                          onClick={async () => {
+                            if (confirm('Delete this media attachment?')) {
+                              await deleteImage(m.id);
+                              if (entityId) {
+                                const updated = await getImages(entityId);
+                                setExistingMedia(updated);
+                              }
+                            }
+                          }}
+                          title="Delete media"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </aside>
@@ -521,6 +601,31 @@ export default function EntityEditPage({ mode }: Props) {
         entityTypes={entityTypes}
         onTypesChanged={loadData}
         initialSelectedTypeId={form.typeId}
+      />
+
+      {/* Insert / Attach Media Modal */}
+      <InsertMediaModal
+        isOpen={isMediaModalOpen}
+        onClose={() => setIsMediaModalOpen(false)}
+        onSaveMedia={async (data) => {
+          if (!entityId) {
+            alert('Please save the entity first before attaching media.');
+            return;
+          }
+          await addImage({
+            entityId,
+            role: data.role,
+            caption: data.caption,
+            title: data.title,
+            description: data.description,
+            mediaType: data.mediaType,
+            localBlob: data.file,
+            remoteUrl: data.remoteUrl,
+            sortOrder: existingMedia.length,
+          });
+          const updated = await getImages(entityId);
+          setExistingMedia(updated);
+        }}
       />
     </div>
   );

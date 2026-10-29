@@ -11,7 +11,6 @@ import { useAppStore } from '../store/appStore';
 import { pushSoftDeleteEntityToCloud } from '../services/cloudSync';
 import type { Entity, EntityType, EntityImage } from '../db/schema';
 import ArticleEditor from '../editor/ArticleEditor';
-import LinkedEntitiesPanel from '../components/ui/LinkedEntitiesPanel';
 import CanonBadge from '../components/ui/CanonBadge';
 import MediaGallery from '../components/ui/MediaGallery';
 import InteractiveChart from '../components/ui/InteractiveChart';
@@ -271,11 +270,9 @@ export default function EntityPage() {
         <hr className="wiki-title-divider" />
       </header>
 
-      {/* ── 2. Exact Layout: Main Article Column + Linked Entities Sidebar ── */}
-      <div className="wiki-columns-layout">
-        {/* Left / Center Area: MAIN ARTICLE AREA (Largest and most important) */}
-        <main className="wiki-main-column">
-          {/* Wikipedia Infobox floating on the top-right of the article */}
+      {/* ── 2. Primary Article Layout ───────────────────────────────────── */}
+      <article className="wiki-main-column">
+        {/* Wikipedia Infobox floating on the top-right of the article */}
           {((portrait && portrait.localBlob) || hasProperties) && (
             <aside className="wiki-infobox" aria-label="Quick Facts">
               <div className="wiki-infobox-header">
@@ -374,13 +371,7 @@ export default function EntityPage() {
           </div>
 
           <div className="wiki-clear" />
-        </main>
-
-        {/* Right Column: Exactly ONE Linked Entities Sidebar */}
-        <aside className="wiki-sidebar-column">
-          <LinkedEntitiesPanel entityId={entity.id} />
-        </aside>
-      </div>
+      </article>
 
       {/* ── 3. Secondary Sections strictly AFTER the main article ────────── */}
       {entity.demographicDatasets && entity.demographicDatasets.length > 0 && (

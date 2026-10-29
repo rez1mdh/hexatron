@@ -33,6 +33,10 @@ interface AppStore {
   backupModalOpen: boolean;
   backupModalTab: 'export' | 'import';
 
+  // Quick Actions Drawer & Tool Modals
+  isQuickActionsOpen: boolean;
+  isOfflineMediaOpen: boolean;
+
   // Actions
   setCurrentWorld: (id: string | null) => void;
   setCurrentEntity: (id: string | null) => void;
@@ -40,6 +44,9 @@ interface AppStore {
   setLeftSidebarOpen: (open: boolean) => void;
   toggleRightSidebar: () => void;
   setRightSidebarOpen: (open: boolean) => void;
+  toggleQuickActions: () => void;
+  setQuickActionsOpen: (open: boolean) => void;
+  setOfflineMediaOpen: (open: boolean) => void;
   toggleTheme: () => void;
   pushRecentEntity: (id: string) => void;
   setManageUniversesOpen: (open: boolean) => void;
@@ -55,6 +62,8 @@ export const useAppStore = create<AppStore>((set) => ({
   setCurrentUser: (user) => set({ currentUser: user, isOwner: Boolean(user) }),
   leftSidebarOpen: typeof window !== 'undefined' ? window.innerWidth > 900 : true,
   rightSidebarOpen: false,
+  isQuickActionsOpen: false,
+  isOfflineMediaOpen: false,
   theme: (localStorage.getItem('hexatron-theme') as 'dark' | 'light') ?? 'dark',
   recentEntityIds: JSON.parse(localStorage.getItem('hexatron-recent') ?? '[]'),
   isManageUniversesOpen: false,
@@ -69,6 +78,9 @@ export const useAppStore = create<AppStore>((set) => ({
   setLeftSidebarOpen: (open) => set({ leftSidebarOpen: open }),
   toggleRightSidebar: () => set((s) => ({ rightSidebarOpen: !s.rightSidebarOpen })),
   setRightSidebarOpen: (open) => set({ rightSidebarOpen: open }),
+  toggleQuickActions: () => set((s) => ({ isQuickActionsOpen: !s.isQuickActionsOpen })),
+  setQuickActionsOpen: (open) => set({ isQuickActionsOpen: open }),
+  setOfflineMediaOpen: (open) => set({ isOfflineMediaOpen: open }),
 
   toggleTheme: () => set((s) => {
     const next = s.theme === 'dark' ? 'light' : 'dark';

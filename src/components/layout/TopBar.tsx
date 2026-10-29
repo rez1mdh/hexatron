@@ -1,23 +1,33 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Menu, Search, Sun, Moon, PanelRight, Download, Upload, Terminal, HelpCircle, Compass, User as UserIcon, Cloud, ChevronLeft, ChevronRight, RotateCw, HardDrive } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  Menu, Terminal, ChevronLeft, ChevronRight,
+  User as UserIcon, Network, Zap, Edit3
+} from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { useAppStore } from '../../store/appStore';
 import { getCurrentUser, subscribeToAuthState, isCloudConfigured } from '../../services/supabase';
-import { clearCacheAndReload } from '../../utils/clearCache';
 import CommandPalette from '../ui/CommandPalette';
 import AuthModal from '../auth/AuthModal';
-import OfflineMediaModal from '../ui/OfflineMediaModal';
 
 export default function TopBar() {
-  const { toggleLeftSidebar, toggleRightSidebar, theme, toggleTheme, setBackupModalOpen, isOwner } = useAppStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const {
+    toggleLeftSidebar,
+    toggleRightSidebar,
+    rightSidebarOpen,
+    toggleQuickActions,
+    isQuickActionsOpen,
+    isOwner,
+    currentEntityId
+  } = useAppStore();
+
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [isOfflineMediaOpen, setIsOfflineMediaOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Global Ctrl+K or Cmd+K or custom event for palette
+  // Global Ctrl+K / Cmd+K listener & hexatron-open-palette listener
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -43,35 +53,103 @@ export default function TopBar() {
   }, []);
 
   const cloudConfigured = isCloudConfigured();
+  const isEntityView = location.pathname.startsWith('/entity/') && !location.pathname.includes('/edit') && currentEntityId;
 
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <button className="icon-btn" onClick={toggleLeftSidebar} title="Toggle navigation">
+        <button
+          type="button"
+          className="icon-btn"
+          onClick={toggleLeftSidebar}
+          title="Toggle Navigation Menu"
+          aria-label="Toggle navigation"
+        >
           <Menu size={18} />
         </button>
+
         <div className="topbar-nav-arrows">
-          <button className="icon-btn" onClick={() => navigate(-1)} title="Go back (Alt+Left)">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => navigate(-1)}
+            title="Go back (Alt+Left)"
+            aria-label="Back"
+          >
             <ChevronLeft size={16} />
           </button>
-          <button className="icon-btn" onClick={() => navigate(1)} title="Go forward (Alt+Right)">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => navigate(1)}
+            title="Go forward (Alt+Right)"
+            aria-label="Forward"
+          >
             <ChevronRight size={16} />
           </button>
         </div>
-        <span className="app-wordmark" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+
+        <span
+          className="app-wordmark"
+          onClick={() => navigate('/')}
+          style={{ cursor: 'pointer' }}
+          title="Hexatron Encyclopedia Home"
+        >
           Hexatron
         </span>
       </div>
 
-      <button className="topbar-search-btn" onClick={() => setIsPaletteOpen(true)} title="Command Palette & Search (Ctrl+K)">
+      <button
+        type="button"
+        className="topbar-search-btn"
+        onClick={() => setIsPaletteOpen(true)}
+        title="Command Palette & Search (Ctrl+K)"
+        aria-label="Search"
+      >
         <Terminal size={14} className="text-accent" />
         <span>Command / Search…</span>
         <kbd>Ctrl+K</kbd>
       </button>
 
       <div className="topbar-right">
+        {/* Contextual Edit Article button */}
+        {isEntityView && isOwner && (
+          <button
+            type="button"
+            className="topbar-action-pill"
+            onClick={() => navigate(`/entity/${currentEntityId}/edit`)}
+            title="Edit Article"
+          >
+            <Edit3 size={13} />
+            <span className="pill-text">Edit</span>
+          </button>
+        )}
+
+        {/* Linked Entities Sidebar Toggle */}
+        <button
+          type="button"
+          className={`icon-btn ${rightSidebarOpen ? 'active' : ''}`}
+          onClick={toggleRightSidebar}
+          title="Toggle Linked Entities & Entity Browser"
+          aria-label="Linked Entities"
+        >
+          <Network size={16} />
+        </button>
+
+        {/* Quick Actions Drawer Toggle */}
+        <button
+          type="button"
+          className={`icon-btn ${isQuickActionsOpen ? 'active' : ''}`}
+          onClick={toggleQuickActions}
+          title="Quick Actions & Tools"
+          aria-label="Quick Actions"
+        >
+          <Zap size={16} className={isQuickActionsOpen ? 'text-accent' : ''} />
+        </button>
+
         {/* Owner Account / Cloud Sync Pill */}
         <button
+          type="button"
           className="topbar-account-btn"
           onClick={() => setIsAuthOpen(true)}
           title={currentUser ? `Signed in as Owner (${currentUser.email})` : (cloudConfigured ? 'Owner Sign In' : 'Cloud Setup & Sync')}
@@ -88,47 +166,10 @@ export default function TopBar() {
             </>
           )}
         </button>
-
-        <button className="icon-btn" onClick={() => navigate('/graph')} title="Universe Graph View">
-          <Compass size={16} />
-        </button>
-        <button className="icon-btn" onClick={() => navigate('/help')} title="Help Center & Guide">
-          <HelpCircle size={16} />
-        </button>
-        <button
-          className="icon-btn"
-          onClick={() => setIsOfflineMediaOpen(true)}
-          title="Offline Media Manager (saved images & videos)"
-        >
-          <HardDrive size={16} />
-        </button>
-        <button className="icon-btn" onClick={() => setBackupModalOpen(true, 'export')} title="Export backup (.json)">
-          <Download size={16} />
-        </button>
-        {isOwner && (
-          <button className="icon-btn" onClick={() => setBackupModalOpen(true, 'import')} title="Import / Restore backup">
-            <Upload size={16} />
-          </button>
-        )}
-        <button className="icon-btn" onClick={toggleTheme} title="Toggle theme">
-          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-        </button>
-        <button
-          className="icon-btn"
-          onClick={clearCacheAndReload}
-          title="Clear cache and force reload latest version"
-          aria-label="Clear cache and reload"
-        >
-          <RotateCw size={15} />
-        </button>
-        <button className="icon-btn" onClick={toggleRightSidebar} title="Toggle Entity Browser & Linked Entities">
-          <PanelRight size={16} />
-        </button>
       </div>
 
       <CommandPalette isOpen={isPaletteOpen} onClose={() => setIsPaletteOpen(false)} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
-      <OfflineMediaModal isOpen={isOfflineMediaOpen} onClose={() => setIsOfflineMediaOpen(false)} />
     </header>
   );
 }

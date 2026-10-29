@@ -137,6 +137,39 @@
 }
 
 /* ── Icon buttons ──────────────────────────────────────────────────────── */
+.topbar-action-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  height: 28px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--accent-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+
+.topbar-action-pill:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+@media (max-width: 600px) {
+  .topbar-action-pill .pill-text {
+    display: none;
+  }
+  .topbar-action-pill {
+    padding: 4px;
+    width: 28px;
+    justify-content: center;
+  }
+}
+
 .icon-btn {
   display: flex;
   align-items: center;
@@ -155,6 +188,12 @@
   background: var(--bg-hover);
   border-color: var(--border);
   color: var(--text-primary);
+}
+
+.icon-btn.active {
+  color: var(--accent-text);
+  background: var(--accent-dim);
+  border-color: var(--accent-dim);
 }
 
 .icon-btn.small {

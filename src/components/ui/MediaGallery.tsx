@@ -298,3 +298,4 @@ export default function MediaGallery({ images, onRefresh }: Props) {
     </div>
   );
 }
+

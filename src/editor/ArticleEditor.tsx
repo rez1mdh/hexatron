@@ -110,7 +110,7 @@ export default function ArticleEditor({
 
   // Load available entities for inline link resolution and autocomplete
   useEffect(() => {
-    getEntities(worldId).then(setAvailableEntities).catch(() => {});
+    getEntities(worldId).then(setAvailableEntities).catch(() => { });
   }, [worldId]);
 
   // When in readOnly mode, auto-resolve any unlinked entity mentions so lore text is instantly interconnected
@@ -349,7 +349,7 @@ export default function ArticleEditor({
     applyEntityLink(newEntity);
     setCreateQuickOpen(false);
     // Refresh available entities list
-    getEntities(worldId).then(setAvailableEntities).catch(() => {});
+    getEntities(worldId).then(setAvailableEntities).catch(() => { });
   }
 
   // Scan and auto-link unlinked entity mentions in the current editor document

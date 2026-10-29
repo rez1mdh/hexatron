@@ -3,13 +3,15 @@
 
 import { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Search, Compass, Network, Sun, Moon } from 'lucide-react';
+import { Menu, Search, Network, Zap } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import LeftSidebar from './LeftSidebar';
 import RightSidebar from './RightSidebar';
 import TopBar from './TopBar';
 import ManageUniversesModal from '../ui/ManageUniversesModal';
 import BackupModal from '../ui/BackupModal';
+import QuickActionsDrawer from '../ui/QuickActionsDrawer';
+import OfflineMediaModal from '../ui/OfflineMediaModal';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import './layout.css';
 
@@ -17,10 +19,12 @@ export default function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const {
-    theme, toggleTheme, isManageUniversesOpen, setManageUniversesOpen,
+    theme, isManageUniversesOpen, setManageUniversesOpen,
     backupModalOpen, backupModalTab, setBackupModalOpen,
     leftSidebarOpen, setLeftSidebarOpen, toggleLeftSidebar,
-    rightSidebarOpen, toggleRightSidebar
+    rightSidebarOpen, toggleRightSidebar,
+    isQuickActionsOpen, toggleQuickActions, setQuickActionsOpen,
+    isOfflineMediaOpen, setOfflineMediaOpen
   } = useAppStore();
 
   useEffect(() => {
@@ -32,11 +36,12 @@ export default function AppShell() {
     if (window.innerWidth <= 900) {
       setLeftSidebarOpen(false);
     }
-  }, [location.pathname, setLeftSidebarOpen]);
+    setQuickActionsOpen(false);
+  }, [location.pathname, setLeftSidebarOpen, setQuickActionsOpen]);
 
   // Lock body scroll when a modal mobile drawer is open
   useEffect(() => {
-    const isMobileDrawerOpen = (leftSidebarOpen || rightSidebarOpen) && window.innerWidth <= 900;
+    const isMobileDrawerOpen = (leftSidebarOpen || rightSidebarOpen || isQuickActionsOpen) && window.innerWidth <= 900;
     if (isMobileDrawerOpen) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -45,19 +50,20 @@ export default function AppShell() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [leftSidebarOpen, rightSidebarOpen]);
+  }, [leftSidebarOpen, rightSidebarOpen, isQuickActionsOpen]);
 
   // Keyboard accessibility: dismiss drawers on Escape
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') {
+        if (isQuickActionsOpen) setQuickActionsOpen(false);
         if (rightSidebarOpen) toggleRightSidebar();
         if (leftSidebarOpen && window.innerWidth <= 900) setLeftSidebarOpen(false);
       }
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [rightSidebarOpen, leftSidebarOpen, toggleRightSidebar, setLeftSidebarOpen]);
+  }, [rightSidebarOpen, leftSidebarOpen, isQuickActionsOpen, toggleRightSidebar, setLeftSidebarOpen, setQuickActionsOpen]);
 
   return (
     <div className="app-layout">
@@ -112,16 +118,6 @@ export default function AppShell() {
 
         <button
           type="button"
-          className={`mobile-tab-btn ${location.pathname.includes('/graph') ? 'active' : ''}`}
-          onClick={() => navigate('/graph')}
-          aria-label="Graph View"
-        >
-          <Compass size={18} />
-          <span>Graph</span>
-        </button>
-
-        <button
-          type="button"
           className={`mobile-tab-btn ${rightSidebarOpen ? 'active' : ''}`}
           onClick={toggleRightSidebar}
           aria-label="Linked Entities Panel"
@@ -132,15 +128,19 @@ export default function AppShell() {
 
         <button
           type="button"
-          className="mobile-tab-btn"
-          onClick={toggleTheme}
-          aria-label="Toggle Theme"
+          className={`mobile-tab-btn ${isQuickActionsOpen ? 'active' : ''}`}
+          onClick={toggleQuickActions}
+          aria-label="Quick Actions & Tools"
         >
-          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          <span>Theme</span>
+          <Zap size={18} />
+          <span>Tools</span>
         </button>
       </nav>
 
+      {/* Quick Actions Drawer (Desktop slide-sheet & Mobile bottom-sheet) */}
+      <QuickActionsDrawer />
+
+      {/* Global Modals */}
       <ManageUniversesModal
         isOpen={isManageUniversesOpen}
         onClose={() => setManageUniversesOpen(false)}
@@ -150,6 +150,11 @@ export default function AppShell() {
         isOpen={backupModalOpen}
         initialTab={backupModalTab}
         onClose={() => setBackupModalOpen(false)}
+      />
+
+      <OfflineMediaModal
+        isOpen={isOfflineMediaOpen}
+        onClose={() => setOfflineMediaOpen(false)}
       />
     </div>
   );

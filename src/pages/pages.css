@@ -503,6 +503,7 @@
 .wiki-main-column {
   min-width: 0;
   position: relative;
+  max-width: 100%;
 }
 
 .wiki-sidebar-column {

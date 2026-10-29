@@ -48,29 +48,10 @@ export default function FamilyTree({ entity, worldId }: Props) {
     const allEnts = await getEntities(worldId);
     setAvailableCharacters(allEnts.filter(e => e.typeId === 'et-character'));
 
-    // Pull all relationships involving current world entities
-    const rels = await getRelationships(entity.id);
-
-    // If it's a character, also load parents' relationships to find siblings and spouses
-    const extendedRelIds = new Set<string>(rels.map(r => r.id));
-    const allRels = [...rels];
-
-    const immediateNeighbors = new Set<string>();
-    rels.forEach(r => {
-      immediateNeighbors.add(r.fromEntityId);
-      immediateNeighbors.add(r.toEntityId);
-    });
-
-    for (const nId of immediateNeighbors) {
-      if (nId === entity.id) continue;
-      const neighborRels = await getRelationships(nId);
-      for (const nr of neighborRels) {
-        if (!extendedRelIds.has(nr.id)) {
-          extendedRelIds.add(nr.id);
-          allRels.push(nr);
-        }
-      }
-    }
+    // Pull all family relationships for this world to build complete multi-generation tree
+    const allWorldRels = await getRelationships();
+    const familyTypes = new Set(['rt-parent-of', 'rt-child-of', 'rt-spouse-of', 'rt-married-to', 'rt-sibling-of', 'rt-adopted-by']);
+    const allRels = allWorldRels.filter(r => r.worldId === worldId && familyTypes.has(r.typeId));
 
     setRelationships(allRels);
 
@@ -332,14 +313,14 @@ export default function FamilyTree({ entity, worldId }: Props) {
               {genLevels.map(gl => (
                 <g key={gl.generation}>
                   <line
-                    x1="-500"
+                    x1={layout ? layout.bounds.minX - 500 : -500}
                     y1={gl.y - 15}
-                    x2="3000"
+                    x2={layout ? layout.bounds.maxX + 500 : 3000}
                     y2={gl.y - 15}
                     className="generation-guide-line"
                   />
                   <text
-                    x="15"
+                    x={layout ? Math.max(15, layout.bounds.minX + 20) : 15}
                     y={gl.y - 20}
                     className="generation-guide-text"
                   >
@@ -369,6 +350,7 @@ export default function FamilyTree({ entity, worldId }: Props) {
                     transform={`translate(${node.x}, ${node.y})`}
                     onClick={() => navigate(`/entity/${node.entity.id}`)}
                   >
+                    <title>{node.entity.title}</title>
                     {/* Card background */}
                     <rect
                       x="0"
@@ -402,8 +384,8 @@ export default function FamilyTree({ entity, worldId }: Props) {
                       y="24"
                       className="family-node-name-text"
                     >
-                      {node.entity.title.length > 17
-                        ? node.entity.title.slice(0, 15) + '…'
+                      {node.entity.title.length > 24
+                        ? node.entity.title.slice(0, 22) + '…'
                         : node.entity.title}
                     </text>
 

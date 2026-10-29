@@ -345,3 +345,4 @@ export default function AccountMenu({ onOpenAuth }: AccountMenuProps) {
     </div>
   );
 }
+

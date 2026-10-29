@@ -52,7 +52,7 @@ export interface ComputedTreeLayout {
   bounds: { minX: number; minY: number; maxX: number; maxY: number; width: number; height: number };
 }
 
-const CARD_WIDTH = 190;
+const CARD_WIDTH = 210;
 const CARD_HEIGHT = 74;
 const SPOUSE_GAP = 36;
 const SIBLING_GAP = 28;

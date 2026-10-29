@@ -234,3 +234,4 @@ export function PurpleDogSprite({ frameKey, size = 32 }: PurpleDogProps) {
     </svg>
   );
 }
+

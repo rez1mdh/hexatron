@@ -42,7 +42,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
         } catch {
           // ignore
         }
-        const AURYTHAR_DATA_VERSION = 'v4-trafloriede-extended';
+        const AURYTHAR_DATA_VERSION = 'v5-armanites-family-tree';
         const importedVersion = localStorage.getItem('hexatron-aurythar-version');
 
         if (isCloudConfigured()) {

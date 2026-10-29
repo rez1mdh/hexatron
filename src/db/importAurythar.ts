@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db, type StatisticalDataset, type Entity, type Relationship } from './schema';
 import { getNextEntryNumber, extractLinkedEntityIds } from './operations';
 import { linkMentionsInArticleString } from '../utils/entityLinker';
+import { importArmaniteLore } from './importArmanites';
 
 // Helper to create valid TipTap ProseMirror document JSON strings
 function makeDoc(sections: { heading?: string; paragraphs?: string[]; list?: string[] }[]): string {
@@ -2007,6 +2008,10 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
     }
     await db.relationships.bulkAdd(relationshipsToInsert);
   });
+
+  // Import authoritative Armanite Family Tree & Armanites Culture
+  const armaniteReport = await importArmaniteLore(worldId);
+  console.log(`[importAurythar] Armanite Lore imported: ${armaniteReport.totalPeopleInExport} people, ${armaniteReport.totalParentChildRelationships} parent-child, ${armaniteReport.totalSpouseRelationships} spouses.`);
 
   console.log(`[importAurythar] Cosmological & lore audit completed successfully!`);
 

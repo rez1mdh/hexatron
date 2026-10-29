@@ -1,11 +1,12 @@
 // src/components/ui/NestedEntityTree.tsx
-// Focused Hierarchical Navigation Tree with smooth transitions and path isolation
+// Redesigned Focused Hierarchical Navigation Tree for Worldbuilding Encyclopedia
+// Elegant indentation, restrained violet accents, and smooth CSS-grid branch animations
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronRight, Globe, Folder, Search, X,
-  ChevronsDown, ChevronsUp, FileText, Target, Layers, Eye
+  ChevronsDown, ChevronsUp, Target, Layers, Eye
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import {
@@ -50,7 +51,7 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
   // Search filter
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mode: 'focused' (default: shows only active entity and direct ancestor path) vs 'browse' (explores all children)
+  // Mode: 'focused' (default: shows active entity and ancestor path) vs 'browse' (explores all children)
   const [treeMode, setTreeMode] = useState<'focused' | 'browse'>('focused');
 
   // Manually expanded parents in focused mode
@@ -102,30 +103,25 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
       }
     }
     loadData();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [universeVersion]);
 
-  // Entity Type Map
-  const typeMap = useMemo(() => {
-    const map = new Map<string, EntityType>();
-    entityTypes.forEach(t => map.set(t.id, t));
-    return map;
-  }, [entityTypes]);
+  // Index maps
+  const typeMap = useMemo(() => new Map(entityTypes.map(t => [t.id, t])), [entityTypes]);
 
-  // Parent-child mappings
   const { parentOfEntity, childrenOfEntity, entityById } = useMemo(() => {
-    const eMap = new Map<string, Entity>();
-    entities.forEach(ent => eMap.set(ent.id, ent));
-
-    const childrenMap = new Map<string, Set<string>>();
     const parentMap = new Map<string, string>();
+    const childrenMap = new Map<string, Set<string>>();
+    const eMap = new Map<string, Entity>(entities.map(e => [e.id, e]));
 
     // Process relationships
     relationships.forEach(rel => {
-      let parentId: string | null = null;
-      let childId: string | null = null;
+      let parentId: string | undefined;
+      let childId: string | undefined;
 
-      if (['rt-located-in', 'rt-member-of', 'rt-belongs-to', 'rt-child-of', 'rt-capital-of'].includes(rel.typeId)) {
+      if (rel.typeId === 'rt-part-of') {
         childId = rel.fromEntityId;
         parentId = rel.toEntityId;
       } else if (rel.typeId === 'rt-parent-of') {
@@ -237,22 +233,20 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
     });
 
     return universeNodes;
-  }, [universes, worlds, entities, typeMap, entityById, childrenOfEntity, parentOfEntity]);
+  }, [universes, worlds, entities, entityById, parentOfEntity, childrenOfEntity, typeMap]);
 
-  // Compute exact ancestor chain of currentEntityId
+  // Set of entity IDs in the active ancestor path
   const focusedPathSet = useMemo(() => {
-    if (!currentEntityId) return new Set<string>();
     const path = new Set<string>();
-    path.add(currentEntityId);
+    if (!currentEntityId) return path;
 
-    let curr = currentEntityId;
-    const visited = new Set<string>();
-    while (curr) {
-      visited.add(curr);
-      const parent = parentOfEntity.get(curr);
-      if (parent && !visited.has(parent)) {
-        path.add(parent);
-        curr = parent;
+    path.add(currentEntityId);
+    let cur: string | undefined = currentEntityId;
+    while (cur && parentOfEntity.has(cur)) {
+      const p: string | undefined = parentOfEntity.get(cur);
+      if (p) {
+        path.add(p);
+        cur = p;
       } else {
         break;
       }
@@ -269,7 +263,7 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
     return path;
   }, [currentEntityId, parentOfEntity, entityById, worlds]);
 
-  // When entity selection changes, auto-expand its ancestors and reset manual branches
+  // When entity selection changes, auto-expand its ancestors
   useEffect(() => {
     if (currentEntityId && focusedPathSet.size > 0) {
       setExpandedIds(prev => {
@@ -287,7 +281,7 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
-      }, 100);
+      }, 120);
     }
   }, [currentEntityId, focusedPathSet, persistExpanded]);
 
@@ -308,9 +302,10 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
 
         const matchingChildren: TreeNode[] = [];
         const nextPath = [...path, node.id];
+
         node.children.forEach(c => {
-          const filteredChild = filterNode(c, nextPath);
-          if (filteredChild) matchingChildren.push(filteredChild);
+          const res = filterNode(c, nextPath);
+          if (res) matchingChildren.push(res);
         });
 
         if (isMatch || matchingChildren.length > 0) {
@@ -331,19 +326,16 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
     // 2. Focused Path Mode (Default when entity is selected)
     if (treeMode === 'focused' && currentEntityId && focusedPathSet.size > 0) {
       function pruneFocused(node: TreeNode): TreeNode | null {
-        // If node is not in path and not a sibling under a manually expanded parent, prune it
         if (!focusedPathSet.has(node.id)) {
           return null;
         }
 
         const isManuallyExpanded = manuallyExpandedParents.has(node.id);
-
         let filteredChildren: TreeNode[] = [];
+
         if (isManuallyExpanded) {
-          // User deliberately clicked to browse all children under this parent!
           filteredChildren = node.children;
         } else {
-          // Focused path mode: Only show the child that is in the focused path!
           filteredChildren = node.children.filter(c => focusedPathSet.has(c.id));
         }
 
@@ -362,7 +354,7 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
       return { displayTree: focusedTree.length > 0 ? focusedTree : rawTree, searchMatches: new Set(), matchedAncestorIds: new Set() };
     }
 
-    // 3. Browse Mode (Standard full hierarchy)
+    // 3. Browse Mode (Full hierarchy)
     return { displayTree: rawTree, searchMatches: new Set(), matchedAncestorIds: new Set() };
   }, [rawTree, searchTerm, treeMode, currentEntityId, focusedPathSet, manuallyExpandedParents]);
 
@@ -379,7 +371,6 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
       return next;
     });
 
-    // In focused mode: expanding also reveals siblings under this parent
     if (treeMode === 'focused') {
       setManuallyExpandedParents(prev => {
         const next = new Set(prev);
@@ -440,28 +431,35 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
     onSelectEntity?.();
   };
 
-  // Node renderer with smooth branch animation
+  // Node renderer with disciplined indentation and restrained styling
   const renderNode = (node: TreeNode, depth: number = 0) => {
     const hasChildren = node.children && node.children.length > 0;
     const isExpanded = searchTerm.trim()
       ? (matchedAncestorIds.has(node.id) || expandedIds.has(node.id))
       : expandedIds.has(node.id);
-    const isCurrent = (node.type === 'entity' && node.id === currentEntityId) || (node.type === 'world' && node.id === currentWorldId);
+
+    // Active state: strictly the current entity (or current world if no entity is active)
+    const isCurrent = node.type === 'entity' && node.id === currentEntityId;
+    const isAncestor = !isCurrent && treeMode === 'focused' && focusedPathSet.has(node.id);
     const isMatched = searchMatches.has(node.id);
 
-    // Count hidden siblings if in focused mode
     const totalOriginalChildren = childrenOfEntity.get(node.id)?.size || 0;
     const isParentInFocusedPath = treeMode === 'focused' && focusedPathSet.has(node.id) && !manuallyExpandedParents.has(node.id);
     const hasHiddenSiblings = isParentInFocusedPath && totalOriginalChildren > node.children.length;
 
+    const indentPx = depth * 14;
+
     return (
-      <div key={node.id} id={`tree-node-${node.id}`} className="tree-node-item">
-        <div className={`tree-row-wrapper ${isCurrent ? 'active' : ''} ${isMatched ? 'search-matched' : ''}`}>
+      <div key={node.id} id={`tree-node-${node.id}`} className="net-node-item">
+        <div
+          className={`net-row ${isCurrent ? 'active' : ''} ${isAncestor ? 'ancestor' : ''} ${isMatched ? 'search-matched' : ''}`}
+          style={{ paddingLeft: `${indentPx + 4}px`, '--indent-depth': `${indentPx}px` } as React.CSSProperties}
+        >
           {/* 1. Expand / Collapse chevron control */}
           {hasChildren || hasHiddenSiblings ? (
             <button
               type="button"
-              className="tree-expand-btn"
+              className="net-chevron-btn"
               onClick={(e) => {
                 e.stopPropagation();
                 toggleExpand(node.id);
@@ -470,18 +468,18 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
               aria-expanded={isExpanded}
             >
               <ChevronRight
-                size={14}
-                className={`tree-arrow-icon ${isExpanded ? 'rotated' : ''}`}
+                size={13}
+                className={`net-chevron-icon ${isExpanded ? 'open' : ''}`}
               />
             </button>
           ) : (
-            <span className="tree-expand-spacer" />
+            <span className="net-spacer" />
           )}
 
-          {/* 2. Entity Title button (separate action) */}
+          {/* 2. Entity Title button (separate navigation action) */}
           <button
             type="button"
-            className="tree-node-title"
+            className="net-node-btn"
             onClick={() => {
               if (node.type === 'entity') handleEntityClick(node.id);
               else if (node.type === 'world') handleWorldClick(node.id);
@@ -489,35 +487,39 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
             }}
             title={node.title}
           >
-            {node.type === 'universe' && <Globe size={14} className="icon-muted" />}
-            {node.type === 'world' && <Folder size={14} style={{ color: node.iconColor }} />}
+            {node.type === 'universe' && <Globe size={13} className="icon-muted" />}
+            {node.type === 'world' && <Folder size={13} style={{ color: node.iconColor }} />}
             {node.type === 'entity' && (
               <EntityTypeIcon name={node.iconName || 'FileText'} size={13} color={node.iconColor} />
             )}
-            <span className="tree-node-label">{node.title}</span>
-            {hasChildren && <span className="tree-badge">{node.children.length}</span>}
+            <span className="net-node-label">{node.title}</span>
+            {hasChildren && <span className="net-child-badge">{node.children.length}</span>}
           </button>
         </div>
 
-        {/* Option to reveal other children when in focused path */}
+        {/* 3. Option to reveal hidden siblings when in focused path */}
         {hasHiddenSiblings && isExpanded && (
           <button
             type="button"
-            className="tree-siblings-toggle-btn"
+            className="net-siblings-btn"
+            style={{ '--indent-depth': `${indentPx}px` } as React.CSSProperties}
             onClick={() => {
               setManuallyExpandedParents(prev => new Set(prev).add(node.id));
             }}
             title="Reveal all children and siblings under this branch"
           >
             <Eye size={11} />
-            <span>Show all {totalOriginalChildren} children</span>
+            <span>Show all {totalOriginalChildren} siblings</span>
           </button>
         )}
 
-        {/* 3. Smooth animated branch container */}
+        {/* 4. Smooth animated branch container */}
         {(hasChildren || hasHiddenSiblings) && (
-          <div className={`tree-branch-animator ${isExpanded ? 'open' : ''}`}>
-            <div className="tree-branch-animator-inner">
+          <div
+            className={`net-branch ${isExpanded ? 'open' : ''}`}
+            style={{ '--indent-depth': `${indentPx}px` } as React.CSSProperties}
+          >
+            <div className="net-branch-inner">
               {node.children.map(child => renderNode(child, depth + 1))}
             </div>
           </div>
@@ -527,89 +529,87 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
   };
 
   if (loading && universes.length === 0) {
-    return <div className="tree-empty-state">Loading hierarchy…</div>;
+    return <div className="net-empty">Loading encyclopedia tree…</div>;
   }
 
   return (
-    <div className="nested-tree-container">
+    <div className="net-root">
       {/* Toolbar: Search + Mode Switcher */}
-      <div className="nested-tree-toolbar">
-        <div className="nested-tree-search-row">
-          <div className="nested-tree-search">
-            <Search size={13} />
-            <input
-              type="text"
-              placeholder="Search / filter hierarchy…"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                className="nested-tree-search-clear"
-                onClick={() => setSearchTerm('')}
-                title="Clear search"
-              >
-                <X size={12} />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="nested-tree-controls-row">
-          {/* Mode Switcher: Focused Path vs Browse All */}
-          <div className="tree-mode-toggle" role="group" aria-label="Hierarchy display mode">
+      <div className="net-toolbar">
+        <div className="net-search-wrapper">
+          <Search size={13} />
+          <input
+            type="text"
+            className="net-search-input"
+            placeholder="Search hierarchy…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
             <button
               type="button"
-              className={`tree-mode-btn ${treeMode === 'focused' ? 'active' : ''}`}
+              className="net-search-clear"
+              onClick={() => setSearchTerm('')}
+              title="Clear search"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+
+        <div className="net-controls-row">
+          {/* Mode Switcher: Focused Path vs Browse All */}
+          <div className="net-mode-toggle" role="group" aria-label="Hierarchy mode">
+            <button
+              type="button"
+              className={`net-mode-btn ${treeMode === 'focused' ? 'active' : ''}`}
               onClick={() => {
                 setTreeMode('focused');
                 setManuallyExpandedParents(new Set());
               }}
-              title="Focused path mode: shows the selected entity's direct ancestor chain, hiding siblings"
+              title="Focused path mode: shows current entity's ancestor chain, hiding siblings"
             >
               <Target size={11} />
               <span>Focused</span>
             </button>
             <button
               type="button"
-              className={`tree-mode-btn ${treeMode === 'browse' ? 'active' : ''}`}
+              className={`net-mode-btn ${treeMode === 'browse' ? 'active' : ''}`}
               onClick={() => setTreeMode('browse')}
-              title="Browse children mode: explore all entities and branches"
+              title="Browse mode: view and expand all branches"
             >
               <Layers size={11} />
               <span>Browse</span>
             </button>
           </div>
 
-          <div className="tree-actions-group">
+          <div className="net-actions-group">
             <button
               type="button"
-              className="nested-tree-btn"
+              className="net-action-icon-btn"
               onClick={expandAll}
               title="Expand all branches"
             >
-              <ChevronsDown size={14} />
+              <ChevronsDown size={13} />
             </button>
             <button
               type="button"
-              className="nested-tree-btn"
+              className="net-action-icon-btn"
               onClick={collapseAll}
               title="Collapse all branches"
             >
-              <ChevronsUp size={14} />
+              <ChevronsUp size={13} />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Hierarchical Tree List */}
-      <div className="nested-tree-list">
-        {displayTree.length > 0 ? (
-          displayTree.map(node => renderNode(node, 0))
-        ) : (
-          <div className="tree-empty-state">
-            {searchTerm ? 'No matching entities found.' : 'No entities in hierarchy.'}
+      {/* Tree Content */}
+      <div className="net-tree-list">
+        {displayTree.map(node => renderNode(node, 0))}
+        {displayTree.length === 0 && (
+          <div className="net-empty">
+            {searchTerm ? 'No matching entities found.' : 'No entities in this universe yet.'}
           </div>
         )}
       </div>

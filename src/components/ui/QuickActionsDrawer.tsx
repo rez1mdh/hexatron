@@ -8,7 +8,7 @@ import {
   Zap, X, GitBranch, BookOpen, Network, Compass, Edit3, PlusCircle,
   HardDrive, Layers, Download, Upload, Sun, Moon, RotateCw,
   HelpCircle, Settings, ArrowUp, ArrowDown, RotateCcw, Check,
-  Search as SearchIcon
+  Search as SearchIcon, Sparkles
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { clearCacheAndReload } from '../../utils/clearCache';
@@ -151,6 +151,16 @@ export default function QuickActionsDrawer() {
         setManageUniversesOpen(true);
       }
     },
+    'pixel-dog': {
+      id: 'pixel-dog',
+      name: 'Pixel Dog Companion',
+      description: 'Configure and interact with the violet pixel companion',
+      category: 'tools',
+      icon: Sparkles,
+      run: () => {
+        window.dispatchEvent(new CustomEvent('hexatron-open-dog-settings'));
+      }
+    },
     'export-backup': {
       id: 'export-backup',
       name: 'Export JSON Backup',
@@ -213,6 +223,7 @@ export default function QuickActionsDrawer() {
     { id: 'edit-article', enabled: true },
     { id: 'create-entity', enabled: true },
     { id: 'offline-media', enabled: true },
+    { id: 'pixel-dog', enabled: true },
     { id: 'manage-universes', enabled: true },
     { id: 'export-backup', enabled: true },
     { id: 'import-backup', enabled: true },

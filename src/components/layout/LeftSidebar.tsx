@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Globe, Plus, ChevronRight, ChevronDown, Clock, Star,
   Settings, HelpCircle, Compass, Trash2, Sliders, X,
-  FolderTree, PanelLeftClose, RotateCw, HardDrive
+  FolderTree, PanelLeftClose, RotateCw, HardDrive, Sparkles
 } from 'lucide-react';
 import { clearCacheAndReload } from '../../utils/clearCache';
 import { useAppStore } from '../../store/appStore';
@@ -255,6 +255,18 @@ export default function LeftSidebar() {
         <button className="sidebar-nav-item" onClick={() => { setBackupModalOpen(true, 'export'); if (window.innerWidth <= 900) setLeftSidebarOpen(false); }}>
           <Settings size={14} />
           <span>Export Backup</span>
+        </button>
+
+        <button
+          className="sidebar-nav-item"
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent('hexatron-open-dog-settings'));
+            if (window.innerWidth <= 900) setLeftSidebarOpen(false);
+          }}
+          title="Pixel Dog Companion Settings"
+        >
+          <Sparkles size={14} className="text-accent" />
+          <span>Pixel Dog Companion</span>
         </button>
 
         <button className="sidebar-nav-item" onClick={() => { setOfflineMediaOpen(true); if (window.innerWidth <= 900) setLeftSidebarOpen(false); }}>

@@ -336,9 +336,10 @@
 .world-row:hover { background: var(--bg-hover); color: var(--text-primary); }
 
 .world-row.active {
-  background: var(--accent-glow);
+  background: var(--accent-subtle);
   color: var(--accent-text);
   border-left-color: var(--world-color, var(--accent));
+  font-weight: 600;
 }
 
 .sidebar-row-wrapper {

@@ -12,6 +12,7 @@ import ManageUniversesModal from '../ui/ManageUniversesModal';
 import BackupModal from '../ui/BackupModal';
 import QuickActionsDrawer from '../ui/QuickActionsDrawer';
 import OfflineMediaModal from '../ui/OfflineMediaModal';
+import PixelDogCompanion from '../ui/PixelDogCompanion';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import './layout.css';
 
@@ -167,6 +168,9 @@ export default function AppShell() {
         isOpen={isOfflineMediaOpen}
         onClose={() => setOfflineMediaOpen(false)}
       />
+
+      {/* Interactive Violet Pixel-Dog Companion */}
+      <PixelDogCompanion />
     </div>
   );
 }

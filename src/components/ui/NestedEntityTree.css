@@ -1,43 +1,43 @@
 /* src/components/ui/NestedEntityTree.css */
+/* Polished Obsidian-style Hierarchy Tree for Worldbuilding Encyclopedia */
 
-.nested-tree-container {
+.net-root {
   display: flex;
   flex-direction: column;
   width: 100%;
-  font-size: 0.83rem;
+  font-size: 0.82rem;
   user-select: none;
 }
 
-.nested-tree-toolbar {
+/* ── Toolbar: Search & Mode Control ────────────────────────────────────── */
+.net-toolbar {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 6px 10px 8px;
+  padding: 8px 12px 10px;
   border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 6px;
+  background: var(--bg-surface);
+  margin-bottom: 4px;
 }
 
-.nested-tree-search-row {
+.net-search-wrapper {
   display: flex;
   align-items: center;
   gap: 6px;
-  width: 100%;
-}
-
-.nested-tree-search {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
+  padding: 5px 8px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-muted);
-  font-size: 0.78rem;
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.nested-tree-search input {
+.net-search-wrapper:focus-within {
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 0 1px var(--accent-dim);
+}
+
+.net-search-input {
   flex: 1;
   background: transparent;
   border: none;
@@ -48,7 +48,11 @@
   width: 100%;
 }
 
-.nested-tree-search-clear {
+.net-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.net-search-clear {
   background: transparent;
   border: none;
   color: var(--text-muted);
@@ -57,60 +61,62 @@
   align-items: center;
   justify-content: center;
   padding: 0;
+  transition: color var(--transition);
 }
 
-.nested-tree-search-clear:hover {
+.net-search-clear:hover {
   color: var(--text-primary);
 }
 
-.nested-tree-controls-row {
+.net-controls-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
 }
 
-.tree-mode-toggle {
-  display: flex;
+.net-mode-toggle {
+  display: inline-flex;
   background: var(--bg-elevated);
   padding: 2px;
   border-radius: var(--radius-sm);
   gap: 2px;
+  border: 1px solid var(--border-subtle);
 }
 
-.tree-mode-btn {
+.net-mode-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 2px 7px;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 500;
   color: var(--text-muted);
   background: transparent;
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--transition);
 }
 
-.tree-mode-btn:hover {
+.net-mode-btn:hover {
   color: var(--text-primary);
 }
 
-.tree-mode-btn.active {
+.net-mode-btn.active {
   background: var(--bg-surface);
   color: var(--accent-text);
   font-weight: 600;
   box-shadow: var(--shadow-sm);
 }
 
-.tree-actions-group {
+.net-actions-group {
   display: flex;
   align-items: center;
   gap: 2px;
 }
 
-.nested-tree-btn {
+.net-action-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -121,45 +127,87 @@
   border: 1px solid transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--transition);
 }
 
-.nested-tree-btn:hover {
+.net-action-icon-btn:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
   border-color: var(--border-subtle);
 }
 
-.nested-tree-list {
+/* ── Tree Container ────────────────────────────────────────────────────── */
+.net-tree-list {
   display: flex;
   flex-direction: column;
-  padding: 0 4px 1rem;
+  padding: 2px 6px 1.5rem;
 }
 
-.tree-row-wrapper {
+.net-node-item {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ── Individual Tree Row ───────────────────────────────────────────────── */
+.net-row {
   display: flex;
   align-items: center;
   width: 100%;
-  min-height: 30px;
+  min-height: 28px;
   border-radius: var(--radius-sm);
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background var(--transition), color var(--transition);
+  position: relative;
+  box-sizing: border-box;
 }
 
-.tree-row-wrapper:hover {
+.net-row:hover {
   background: var(--bg-hover);
 }
 
-.tree-row-wrapper.active {
+/* Restrained Selected State (No large violet slabs or bleeding backgrounds) */
+.net-row.active {
   background: var(--accent-subtle);
-  border-left: 2px solid var(--accent);
 }
 
-.tree-expand-btn {
+.net-row.active::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 5px;
+  bottom: 5px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+/* Ancestor In Path (Subtle breadcrumb styling, no violet block) */
+.net-row.ancestor {
+  background: transparent;
+}
+
+.net-row.ancestor .net-node-label {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Search match highlight */
+.net-row.search-matched {
+  background: rgba(234, 179, 8, 0.1);
+}
+
+.net-row.search-matched .net-node-label {
+  color: #eab308;
+  font-weight: 600;
+}
+
+/* ── Chevron / Disclosure Toggle ───────────────────────────────────────── */
+.net-chevron-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 30px;
+  width: 20px;
+  height: 26px;
   flex-shrink: 0;
   background: transparent;
   border: none;
@@ -167,32 +215,32 @@
   cursor: pointer;
   padding: 0;
   border-radius: var(--radius-sm);
-  transition: color 0.15s ease, background 0.15s ease;
+  transition: color var(--transition), background var(--transition);
 }
 
-.tree-expand-btn:hover {
+.net-chevron-btn:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
 }
 
-/* Animated chevron rotation */
-.tree-arrow-icon {
+.net-chevron-icon {
   display: inline-block;
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
 }
 
-.tree-arrow-icon.rotated {
+.net-chevron-icon.open {
   transform: rotate(90deg);
 }
 
-.tree-expand-spacer {
-  width: 24px;
-  height: 30px;
+.net-spacer {
+  width: 20px;
+  height: 26px;
   flex-shrink: 0;
 }
 
-.tree-node-title {
+/* ── Node Title Button ─────────────────────────────────────────────────── */
+.net-node-btn {
   flex: 1;
   display: flex;
   align-items: center;
@@ -202,96 +250,115 @@
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-size: 0.82rem;
+  font-size: 0.81rem;
   font-family: inherit;
   text-align: left;
   cursor: pointer;
   border-radius: var(--radius-sm);
-  transition: color 0.15s ease;
+  transition: color var(--transition);
 }
 
-.tree-row-wrapper:hover .tree-node-title {
+.net-row:hover .net-node-btn {
   color: var(--text-primary);
 }
 
-.tree-row-wrapper.active .tree-node-title {
+.net-row.active .net-node-btn {
   color: var(--accent-text);
   font-weight: 600;
 }
 
-.tree-node-label {
+.net-node-label {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+  min-width: 0;
 }
 
-.tree-badge {
-  font-size: 0.68rem;
+.net-child-badge {
+  font-size: 0.65rem;
   padding: 1px 5px;
   border-radius: 999px;
   background: var(--bg-overlay);
   color: var(--text-muted);
   font-weight: 500;
   flex-shrink: 0;
+  font-family: var(--font-mono);
 }
 
-/* Smooth branch expand / collapse animation via CSS grid */
-.tree-branch-animator {
+.net-row.active .net-child-badge {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--accent-text);
+}
+
+/* ── Smooth Branch Expand / Collapse Animation via CSS Grid ───────────── */
+.net-branch {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  transition: grid-template-rows 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease;
   opacity: 0;
-  margin-left: 11px;
-  border-left: 1px solid var(--border-subtle);
-  padding-left: 2px;
+  position: relative;
 }
 
-.tree-branch-animator.open {
+.net-branch.open {
   grid-template-rows: 1fr;
   opacity: 1;
 }
 
-.tree-branch-animator-inner {
+.net-branch-inner {
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-.tree-empty-state {
-  padding: 12px;
+/* Subtle hierarchy guideline */
+.net-branch::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 6px;
+  left: calc(var(--indent-depth, 0px) + 9px);
+  width: 1px;
+  background: var(--border-subtle);
+  pointer-events: none;
+}
+
+/* ── Show All Siblings Toggle ─────────────────────────────────────────── */
+.net-siblings-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 3px 0 4px;
+  margin-left: calc(var(--indent-depth, 0px) + 20px);
+  padding: 3px 8px;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.net-siblings-btn:hover {
+  color: var(--accent-text);
+  border-color: var(--accent-dim);
+  background: var(--accent-subtle);
+}
+
+.net-empty {
+  padding: 24px 16px;
   color: var(--text-muted);
   font-size: 0.8rem;
   text-align: center;
 }
 
-.tree-siblings-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 2px 0 4px 24px;
-  padding: 2px 6px;
-  background: transparent;
-  border: 1px dashed var(--border-subtle);
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.tree-siblings-toggle-btn:hover {
-  color: var(--accent-text);
-  border-color: var(--accent-dim);
-  background: var(--bg-elevated);
-}
-
-/* Reduced motion preference support */
+/* ── Accessibility & Reduced Motion ───────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .tree-branch-animator {
+  .net-branch {
     transition: none !important;
   }
-  .tree-arrow-icon {
+  .net-chevron-icon {
     transition: none !important;
   }
 }

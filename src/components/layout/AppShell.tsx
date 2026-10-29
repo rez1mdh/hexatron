@@ -31,6 +31,13 @@ export default function AppShell() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  // Ensure mobile drawers are closed on initial mount
+  useEffect(() => {
+    if (window.innerWidth <= 900) {
+      setLeftSidebarOpen(false);
+    }
+  }, [setLeftSidebarOpen]);
+
   // Automatically close mobile drawers when route changes
   useEffect(() => {
     if (window.innerWidth <= 900) {
@@ -39,16 +46,20 @@ export default function AppShell() {
     setQuickActionsOpen(false);
   }, [location.pathname, setLeftSidebarOpen, setQuickActionsOpen]);
 
-  // Lock body scroll when a modal mobile drawer is open
+  // Lock scroll when a modal mobile drawer is open
   useEffect(() => {
     const isMobileDrawerOpen = (leftSidebarOpen || rightSidebarOpen || isQuickActionsOpen) && window.innerWidth <= 900;
+    const mainEl = document.querySelector('.app-main') as HTMLElement | null;
     if (isMobileDrawerOpen) {
       document.body.style.overflow = 'hidden';
+      if (mainEl) mainEl.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
+      if (mainEl) mainEl.style.overflow = '';
     }
     return () => {
       document.body.style.overflow = '';
+      if (mainEl) mainEl.style.overflow = '';
     };
   }, [leftSidebarOpen, rightSidebarOpen, isQuickActionsOpen]);
 
@@ -78,15 +89,15 @@ export default function AppShell() {
       </div>
       <RightSidebar />
 
-      {/* Mobile drawer backdrops */}
-      {leftSidebarOpen && (
+      {/* Mobile drawer backdrops (strictly on narrow screens) */}
+      {leftSidebarOpen && typeof window !== 'undefined' && window.innerWidth <= 900 && (
         <div
           className="sidebar-mobile-backdrop left"
           onClick={() => setLeftSidebarOpen(false)}
           aria-label="Close navigation drawer"
         />
       )}
-      {rightSidebarOpen && (
+      {rightSidebarOpen && typeof window !== 'undefined' && window.innerWidth <= 900 && (
         <div
           className="sidebar-mobile-backdrop right"
           onClick={toggleRightSidebar}

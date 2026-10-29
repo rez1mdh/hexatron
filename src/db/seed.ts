@@ -399,17 +399,5 @@ export async function seedBuiltIns(): Promise<void> {
     }
   }
 
-  // Create a default universe if none exists
-  const universeCount = await db.universes.count();
-  if (universeCount === 0) {
-    const now = Date.now();
-    const universeId = uuidv4();
-    await db.universes.add({
-      id: universeId,
-      title: 'My Universe',
-      description: 'The default universe. Rename or add more.',
-      createdAt: now,
-      updatedAt: now,
-    });
-  }
+  // Built-in entity types and relationship types seeded
 }

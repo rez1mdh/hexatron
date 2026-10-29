@@ -11,6 +11,7 @@ import SearchPage from './pages/SearchPage';
 import NewWorldPage from './pages/NewWorldPage';
 import HelpPage from './pages/HelpPage';
 import GraphPage from './pages/GraphPage';
+import { db } from './db/schema';
 import { seedBuiltIns } from './db/seed';
 import { ensureEntityEntryNumbers, autoLinkEntitiesInWorld } from './db/operations';
 import { importAurytharData } from './db/importAurythar';
@@ -32,6 +33,15 @@ function AppInit({ children }: { children: React.ReactNode }) {
     seedBuiltIns()
       .then(() => ensureEntityEntryNumbers())
       .then(async () => {
+        // Prune local ghost universes
+        try {
+          const ghosts = await db.universes.where('title').equals('My Universe').toArray();
+          for (const g of ghosts) {
+            await db.universes.delete(g.id);
+          }
+        } catch {
+          // ignore
+        }
         const AURYTHAR_DATA_VERSION = 'v4-trafloriede-extended';
         const importedVersion = localStorage.getItem('hexatron-aurythar-version');
 

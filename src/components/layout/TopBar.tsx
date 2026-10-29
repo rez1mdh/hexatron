@@ -14,7 +14,7 @@ export default function TopBar() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Global Ctrl+K or Cmd+K or / shortcut for palette
+  // Global Ctrl+K or Cmd+K or custom event for palette
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -22,8 +22,15 @@ export default function TopBar() {
         setIsPaletteOpen(prev => !prev);
       }
     }
+    function handleOpenEvent() {
+      setIsPaletteOpen(true);
+    }
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('hexatron-open-palette', handleOpenEvent);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('hexatron-open-palette', handleOpenEvent);
+    };
   }, []);
 
   useEffect(() => {

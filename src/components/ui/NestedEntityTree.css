@@ -1,0 +1,188 @@
+/* src/components/ui/NestedEntityTree.css */
+
+.nested-tree-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  font-size: 0.83rem;
+  user-select: none;
+}
+
+.nested-tree-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 6px;
+}
+
+.nested-tree-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.nested-tree-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-family: inherit;
+  width: 100%;
+}
+
+.nested-tree-search-clear {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.nested-tree-search-clear:hover {
+  color: var(--text-primary);
+}
+
+.nested-tree-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.nested-tree-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.nested-tree-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0 4px 1rem;
+}
+
+.tree-row-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 30px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+}
+
+.tree-row-wrapper:hover {
+  background: var(--bg-hover);
+}
+
+.tree-row-wrapper.active {
+  background: var(--accent-subtle);
+  border-left: 2px solid var(--accent);
+}
+
+.tree-expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 30px;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition);
+}
+
+.tree-expand-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tree-expand-spacer {
+  width: 24px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.tree-node-title {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 2px;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition);
+}
+
+.tree-row-wrapper:hover .tree-node-title {
+  color: var(--text-primary);
+}
+
+.tree-row-wrapper.active .tree-node-title {
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.tree-node-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.tree-badge {
+  font-size: 0.68rem;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--bg-overlay);
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.tree-children-container {
+  border-left: 1px solid var(--border-subtle);
+  margin-left: 11px;
+  padding-left: 2px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tree-empty-state {
+  padding: 12px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+

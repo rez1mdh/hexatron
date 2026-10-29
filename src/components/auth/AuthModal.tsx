@@ -154,6 +154,8 @@ export default function AuthModal({ isOpen, onClose }: Props) {
       await signOutUser();
       setCurrentUser(null);
       useAppStore.getState().setCurrentUser(null);
+      await syncPublishedDataFromCloud();
+      useAppStore.getState().bumpUniverseVersion();
       setSuccessMsg('Signed out successfully.');
       setActiveTab('signin');
     } catch (err) {

@@ -37,7 +37,9 @@ interface AppStore {
   setCurrentWorld: (id: string | null) => void;
   setCurrentEntity: (id: string | null) => void;
   toggleLeftSidebar: () => void;
+  setLeftSidebarOpen: (open: boolean) => void;
   toggleRightSidebar: () => void;
+  setRightSidebarOpen: (open: boolean) => void;
   toggleTheme: () => void;
   pushRecentEntity: (id: string) => void;
   setManageUniversesOpen: (open: boolean) => void;
@@ -51,7 +53,7 @@ export const useAppStore = create<AppStore>((set) => ({
   currentUser: null,
   isOwner: false,
   setCurrentUser: (user) => set({ currentUser: user, isOwner: Boolean(user) }),
-  leftSidebarOpen: true,
+  leftSidebarOpen: typeof window !== 'undefined' ? window.innerWidth > 900 : true,
   rightSidebarOpen: false,
   theme: (localStorage.getItem('hexatron-theme') as 'dark' | 'light') ?? 'dark',
   recentEntityIds: JSON.parse(localStorage.getItem('hexatron-recent') ?? '[]'),
@@ -64,7 +66,9 @@ export const useAppStore = create<AppStore>((set) => ({
   setCurrentEntity: (id) => set({ currentEntityId: id }),
 
   toggleLeftSidebar: () => set((s) => ({ leftSidebarOpen: !s.leftSidebarOpen })),
+  setLeftSidebarOpen: (open) => set({ leftSidebarOpen: open }),
   toggleRightSidebar: () => set((s) => ({ rightSidebarOpen: !s.rightSidebarOpen })),
+  setRightSidebarOpen: (open) => set({ rightSidebarOpen: open }),
 
   toggleTheme: () => set((s) => {
     const next = s.theme === 'dark' ? 'light' : 'dark';

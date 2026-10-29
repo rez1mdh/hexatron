@@ -789,23 +789,127 @@
 
 @media (max-width: 900px) {
   .wiki-article-page {
-    padding: 1rem 1rem 2rem;
+    padding: 12px 14px 4.5rem;
+    max-width: 100vw;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  .wiki-header-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .wiki-breadcrumbs {
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 0.75rem;
+  }
+
+  .wiki-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .wiki-action-tab {
+    min-height: 36px;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    touch-action: manipulation;
+  }
+
+  .wiki-title {
+    font-size: 1.6rem;
+    line-height: 1.25;
+    word-break: break-word;
+    margin: 0.4rem 0 0.2rem;
   }
 
   .wiki-columns-layout {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1.25rem;
+  }
+
+  .wiki-main-column {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   .wiki-infobox {
     float: none;
     width: 100%;
-    margin: 0 0 1.25rem 0;
+    margin: 0.75rem 0 1.25rem 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .wiki-infobox-table {
+    width: 100%;
+    table-layout: auto;
+  }
+
+  .wiki-toc {
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0.75rem 0 1.25rem;
+  }
+
+  .wiki-article-body {
+    max-width: 100%;
+    overflow-x: hidden;
+    font-size: 0.95rem;
+    line-height: 1.65;
+  }
+
+  /* Responsive tables without page overflow */
+  .wiki-article-body table,
+  .tiptap-content table {
+    display: block;
+    width: 100% !important;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-collapse: collapse;
+    margin: 1rem 0;
+  }
+
+  /* Responsive images */
+  .wiki-article-body img,
+  .tiptap-content img {
+    max-width: 100% !important;
+    height: auto !important;
+    border-radius: var(--radius-sm);
   }
 
   .wiki-sidebar-column {
     position: static;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .wiki-secondary-section {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .wiki-article-pager {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .wiki-pager-btn {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 48px;
   }
 }
 

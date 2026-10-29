@@ -46,9 +46,10 @@ export async function migrateLocalDataToCloud(user: User): Promise<{ success: bo
     return { success: true, message: 'No local records to migrate.', verifiedCount: 0 };
   }
 
-  // 2. Upload Universes
-  if (universes.length > 0) {
-    const records = universes.map(u => ({
+  // 2. Upload Universes (filter out ghost demo universes)
+  const validUniverses = universes.filter(u => u.title !== 'My Universe' || worlds.some(w => w.universeId === u.id));
+  if (validUniverses.length > 0) {
+    const records = validUniverses.map(u => ({
       id: u.id,
       user_id: user.id,
       title: u.title,
@@ -159,6 +160,13 @@ export async function syncFromCloudToLocal(user: User): Promise<{ entitiesSynced
   const client = getSupabaseClient();
   if (!client) throw new Error('Cloud backend is not configured.');
 
+  // Prune any remote ghost universes for this user
+  try {
+    await client.from('hex_universes').delete().eq('user_id', user.id).eq('title', 'My Universe');
+  } catch {
+    // ignore
+  }
+
   // Fetch remote records belonging to this user
   const [
     { data: universes },
@@ -174,9 +182,19 @@ export async function syncFromCloudToLocal(user: User): Promise<{ entitiesSynced
     client.from('hex_entity_types').select('*').eq('user_id', user.id),
   ]);
 
+  const cleanUniverses = (universes || []).filter(u => u.title !== 'My Universe' || (worlds && worlds.some(w => w.universe_id === u.id)));
+
   await db.transaction('rw', [db.universes, db.worlds, db.entities, db.relationships, db.entityTypes], async () => {
-    if (universes && universes.length > 0) {
-      await db.universes.bulkPut(universes.map(u => ({
+    // Prune local ghost universes
+    const localUnis = await db.universes.toArray();
+    for (const lu of localUnis) {
+      if (lu.title === 'My Universe') {
+        await db.universes.delete(lu.id);
+      }
+    }
+
+    if (cleanUniverses.length > 0) {
+      await db.universes.bulkPut(cleanUniverses.map(u => ({
         id: u.id,
         title: u.title,
         description: u.description,
@@ -286,9 +304,19 @@ export async function syncPublishedDataFromCloud(): Promise<{ entitiesSynced: nu
       return { entitiesSynced: 0 };
     }
 
+    const cleanUniverses = (universes || []).filter(u => u.title !== 'My Universe' || (worlds && worlds.some(w => w.universe_id === u.id)));
+
     await db.transaction('rw', [db.universes, db.worlds, db.entities, db.relationships, db.entityTypes, db.relationshipTypes], async () => {
-      if (universes && universes.length > 0) {
-        await db.universes.bulkPut(universes.map(u => ({
+      // Prune local ghost universes
+      const localUnis = await db.universes.toArray();
+      for (const lu of localUnis) {
+        if (lu.title === 'My Universe') {
+          await db.universes.delete(lu.id);
+        }
+      }
+
+      if (cleanUniverses.length > 0) {
+        await db.universes.bulkPut(cleanUniverses.map(u => ({
           id: u.id,
           title: u.title,
           description: u.description || undefined,

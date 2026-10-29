@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Menu, Terminal, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
-  Network, Zap, Edit3, Star
+  Network, Zap, Edit3, Star, Compass
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import CommandPalette from '../ui/CommandPalette';
@@ -144,6 +144,18 @@ export default function TopBar() {
         </button>
 
         <div className="topbar-right">
+          {/* Welcome & Visitor Guide */}
+          <button
+            type="button"
+            className="topbar-action-pill"
+            onClick={() => navigate('/welcome')}
+            title="Welcome & Visitor Guide"
+            aria-label="Welcome Guide"
+          >
+            <Compass size={13} />
+            <span className="pill-text">Guide</span>
+          </button>
+
           {/* Contextual Edit Article button */}
           {isEntityView && isOwner && (
             <button
@@ -284,6 +296,19 @@ export default function TopBar() {
 
             {/* Quick Actions row */}
             <div className="mobile-expanded-actions-grid">
+              <button
+                type="button"
+                className="mobile-action-pill"
+                onClick={() => {
+                  navigate('/welcome');
+                  setIsMobileExpanded(false);
+                }}
+                title="Welcome & Visitor Guide"
+              >
+                <Compass size={14} className="text-accent" />
+                <span>Guide</span>
+              </button>
+
               <button
                 type="button"
                 className="mobile-action-pill"

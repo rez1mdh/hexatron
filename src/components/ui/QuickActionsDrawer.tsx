@@ -56,6 +56,17 @@ export default function QuickActionsDrawer() {
 
   // Define master action catalog
   const masterActions = useMemo<Record<string, ActionDef>>(() => ({
+    'welcome-guide': {
+      id: 'welcome-guide',
+      name: 'Welcome & Visitor Guide',
+      description: 'Explore archive introduction, creator notes, and starting points',
+      category: 'nav',
+      icon: Compass,
+      run: () => {
+        navigate('/welcome');
+        setQuickActionsOpen(false);
+      }
+    },
     'tree': {
       id: 'tree',
       name: 'Hierarchy Tree',
@@ -228,6 +239,7 @@ export default function QuickActionsDrawer() {
   }), [navigate, currentEntityId, currentWorldId, theme, toggleTheme, setLeftSidebarOpen, setRightSidebarOpen, setManageUniversesOpen, setBackupModalOpen, setOfflineMediaOpen]);
 
   const defaultOrder = useMemo<QuickActionConfig[]>(() => [
+    { id: 'welcome-guide', enabled: true },
     { id: 'tree', enabled: true },
     { id: 'search', enabled: true },
     { id: 'linked', enabled: true },

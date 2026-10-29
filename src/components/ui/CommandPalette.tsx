@@ -211,6 +211,17 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
       }
     },
     {
+      id: 'cmd-go-welcome',
+      syntax: '/welcome',
+      title: 'Welcome & Visitor Guide',
+      description: 'Open the lore archive introduction, creator notes, and visitor guide',
+      category: 'navigate',
+      execute: async () => {
+        navigate('/welcome');
+        onClose();
+      }
+    },
+    {
       id: 'cmd-go-help',
       syntax: '/help',
       title: 'Help & Guide',

@@ -1,7 +1,7 @@
 // src/pages/WorldPage.tsx — entity list for a world + creation
 
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Search, Filter, Compass, Trash2, Star } from 'lucide-react';
 import { getWorld, getEntities, getEntityTypes, softDeleteEntity, formatEntryNumber, getWorldStats } from '../db/operations';
 import { useAppStore } from '../store/appStore';
@@ -15,6 +15,7 @@ import './pages.css';
 export default function WorldPage() {
   const { worldId } = useParams<{ worldId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const {
     setCurrentWorld, setCurrentEntity, bumpUniverseVersion, isOwner,
     favoriteWorldIds, toggleFavoriteWorld
@@ -22,10 +23,17 @@ export default function WorldPage() {
   const [world, setWorld] = useState<World | null>(null);
   const [entities, setEntities] = useState<Entity[]>([]);
   const [entityTypes, setEntityTypes] = useState<Map<string, EntityType>>(new Map());
-  const [filterType, setFilterType] = useState<string>('');
+  const [filterType, setFilterType] = useState<string>(() => searchParams.get('type') || '');
   const [search, setSearch] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [worldStats, setWorldStats] = useState<{ entityCount: number; relationshipCount: number }>({ entityCount: 0, relationshipCount: 0 });
+
+  useEffect(() => {
+    const t = searchParams.get('type');
+    if (t !== null) {
+      setFilterType(t);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!worldId) return;

@@ -11,6 +11,7 @@ import SearchPage from './pages/SearchPage';
 import NewWorldPage from './pages/NewWorldPage';
 import HelpPage from './pages/HelpPage';
 import GraphPage from './pages/GraphPage';
+import WelcomePage from './pages/WelcomePage';
 import { db } from './db/schema';
 import { seedBuiltIns } from './db/seed';
 import { ensureEntityEntryNumbers, autoLinkEntitiesInWorld } from './db/operations';
@@ -103,6 +104,9 @@ export default function App() {
             <Route path="search" element={<SearchPage />} />
             <Route path="new-world" element={<NewWorldPage />} />
             <Route path="help" element={<HelpPage />} />
+            <Route path="welcome" element={<WelcomePage />} />
+            <Route path="about" element={<WelcomePage />} />
+            <Route path="guide" element={<WelcomePage />} />
             <Route path="recent" element={<Navigate to="/" />} />
             <Route path="favorites" element={<FavoritesRouteHandler />} />
             <Route path="settings" element={<Navigate to="/" />} />

@@ -241,9 +241,14 @@ export default function LeftSidebar() {
           <span>Favorites</span>
         </button>
 
+        <button className="sidebar-nav-item" onClick={() => handleNavClick('/welcome')}>
+          <Compass size={14} className="text-accent" />
+          <span>Welcome & Visitor Guide</span>
+        </button>
+
         <button className="sidebar-nav-item" onClick={() => handleNavClick('/help')}>
           <HelpCircle size={14} />
-          <span>Help & Guide</span>
+          <span>Help & Documentation</span>
         </button>
 
         {isOwner && (

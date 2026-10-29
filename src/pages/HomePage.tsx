@@ -51,6 +51,17 @@ export default function HomePage() {
     }
   }, [universeId, universeVersion]);
 
+  // First-visit or startup welcome guide redirection for public visitors
+  useEffect(() => {
+    if (!universeId) {
+      const hasVisited = localStorage.getItem('hexatron_visited_welcome');
+      const alwaysShow = localStorage.getItem('hexatron_always_show_welcome') === 'true';
+      if (!isOwner && (!hasVisited || alwaysShow)) {
+        navigate('/welcome', { replace: true });
+      }
+    }
+  }, [universeId, isOwner, navigate]);
+
   const currentUniverse = universeId ? universes.find(u => u.id === universeId) : null;
   const displayedWorlds = universeId
     ? worlds.filter(w => w.universeId === universeId)

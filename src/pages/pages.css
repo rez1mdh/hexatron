@@ -452,6 +452,10 @@
   letter-spacing: 0.04em;
 }
 
+.wiki-mobile-actions-toggle {
+  display: none !important;
+}
+
 .wiki-header-actions {
   display: flex;
   align-items: center;
@@ -826,31 +830,30 @@
 @media (max-width: 900px) {
   .wiki-article-page {
     padding: 0 14px 4.5rem;
-    max-width: 100vw;
-    overflow-x: clip;
+    max-width: 100%;
+    width: 100%;
+    overflow-x: hidden;
     box-sizing: border-box;
   }
 
   .wiki-sticky-header-meta,
   .wiki-header-meta {
-    flex-direction: column;
-    align-items: stretch;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 8px;
-    padding: 8px 0;
+    padding: 6px 0;
   }
 
   .wiki-breadcrumbs {
+    flex: 1;
+    min-width: 0;
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
     font-size: 0.75rem;
-  }
-
-  .wiki-header-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    width: 100%;
   }
 
   .wiki-action-tab {
@@ -888,7 +891,21 @@
 
   .wiki-infobox-table {
     width: 100%;
-    table-layout: auto;
+    table-layout: fixed;
+  }
+
+  .wiki-infobox-table th {
+    width: 36%;
+    font-size: 0.76rem;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  .wiki-infobox-table td {
+    width: 64%;
+    font-size: 0.76rem;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .wiki-toc {
@@ -906,8 +923,29 @@
   }
 
   /* Responsive tables without page overflow */
+  .tableWrapper,
+  .wiki-article-body .tableWrapper,
+  .tiptap-content .tableWrapper {
+    display: block;
+    width: 100% !important;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 1rem 0;
+    box-sizing: border-box;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+  }
+
   .wiki-article-body table,
   .tiptap-content table {
+    width: 100% !important;
+    border-collapse: collapse;
+    box-sizing: border-box;
+  }
+
+  .wiki-article-body table:not(.tableWrapper table),
+  .tiptap-content table:not(.tableWrapper table) {
     display: block;
     width: 100% !important;
     max-width: 100%;
@@ -915,14 +953,26 @@
     -webkit-overflow-scrolling: touch;
     border-collapse: collapse;
     margin: 1rem 0;
+    box-sizing: border-box;
+  }
+
+  .tiptap-content table th,
+  .tiptap-content table td {
+    min-width: 80px;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    padding: 6px 10px;
   }
 
   /* Responsive images */
   .wiki-article-body img,
-  .tiptap-content img {
+  .tiptap-content img,
+  .wiki-infobox-image {
     max-width: 100% !important;
     height: auto !important;
     border-radius: var(--radius-sm);
+    box-sizing: border-box;
   }
 
   .wiki-sidebar-column {
@@ -1741,7 +1791,9 @@
   --reader-font-size: 1.42rem;
 }
 
-.wiki-article-page.reader-mode .hide-in-reader {
+.wiki-article-page.reader-mode .hide-in-reader,
+.wiki-article-page.reader-mode .wiki-mobile-actions-toggle,
+.wiki-article-page.reader-mode .wiki-header-actions {
   display: none !important;
 }
 
@@ -1852,11 +1904,168 @@
   gap: 5px;
 }
 
-/* ── Mobile Reader Mode Responsive Treatment (<= 768px) ───────────────── */
+/* ── Desktop Stability Guarantee (width > 768px) ───────────────────────── */
+@media (min-width: 769px) {
+  .wiki-mobile-actions-toggle {
+    display: none !important;
+  }
+
+  .wiki-header-actions,
+  .wiki-header-actions.mobile-minimized,
+  .wiki-header-actions.mobile-open {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 4px !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: auto !important;
+    max-height: none !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    animation: none !important;
+  }
+}
+
+/* ── Mobile Responsive Treatment & Android Optimizations (<= 768px) ───── */
 @media (max-width: 768px) {
+  /* 1. Mobile Minimized Article Actions Panel */
+  .wiki-sticky-header-meta {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 6px 0;
+    margin-bottom: 0.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    background: var(--bg-surface);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .wiki-breadcrumbs {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.74rem;
+  }
+
+  /* Minimized compact Actions toggle handle */
+  .wiki-mobile-actions-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    min-height: 28px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 9999px;
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  .wiki-mobile-actions-toggle:active,
+  .wiki-mobile-actions-toggle.active {
+    background: var(--accent-dim);
+    color: var(--accent-text);
+    border-color: var(--accent);
+  }
+
+  .wiki-mobile-actions-chevron {
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .wiki-mobile-actions-chevron.rotated {
+    transform: rotate(180deg);
+  }
+
+  /* Minimized State: 0 height, completely hidden to maximize vertical reading space */
+  .wiki-header-actions.mobile-minimized {
+    display: none !important;
+  }
+
+  /* Expanded State: smooth dropdown tray with comfortable touch targets */
+  .wiki-header-actions.mobile-open {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 10px;
+    margin-top: 4px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+    animation: actionsSlideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes actionsSlideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .wiki-header-actions.mobile-open .wiki-action-tab {
+    min-height: 36px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .wiki-header-actions.mobile-open .wiki-action-tab:active,
+  .wiki-header-actions.mobile-open .wiki-action-tab.active {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--border);
+  }
+
+  .wiki-header-actions.mobile-open .wiki-action-tab.danger {
+    color: #ef4444;
+  }
+
+  .wiki-header-actions.mobile-open .wiki-action-tab.danger:active {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.35);
+  }
+
+  /* 2. Android Mobile Reader Mode */
   .wiki-article-page.reader-mode {
     padding: 0.5rem 12px calc(6rem + env(safe-area-inset-bottom, 16px));
-    max-width: 100vw;
+    max-width: 100%;
     width: 100%;
     overflow-x: hidden;
     box-sizing: border-box;
@@ -1874,27 +2083,32 @@
   }
 
   .reader-toolbar {
+    display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     padding: 8px 10px;
-    margin-left: -12px;
-    margin-right: -12px;
-    width: calc(100% + 24px);
-    max-width: calc(100% + 24px);
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-    margin-bottom: 0.85rem;
+    margin: 0 0 1rem 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    box-sizing: border-box;
   }
 
   .reader-toolbar-left {
-    flex: 1;
-    min-width: 0;
+    display: flex;
+    align-items: center;
     flex-wrap: wrap;
     gap: 6px;
+    min-width: 0;
   }
 
   .reader-toolbar-right {
+    display: flex;
+    align-items: center;
     flex-shrink: 0;
   }
 
@@ -1908,37 +2122,46 @@
     min-height: 28px;
   }
 
-  /* Tables in Reader Mode on mobile: scrollable container */
+  /* Tables in Reader Mode on mobile: horizontally scrollable container without page overflow */
+  .wiki-article-page.reader-mode .tableWrapper,
   .wiki-article-page.reader-mode .tiptap-content .tableWrapper,
   .wiki-article-page.reader-mode .table-responsive {
-    max-width: 100%;
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin: 1.25rem 0;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
-    box-sizing: border-box;
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin: 1.25rem 0 !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: var(--radius-sm) !important;
+    box-sizing: border-box !important;
+  }
+
+  .wiki-article-page.reader-mode .tiptap-content table,
+  .wiki-article-page.reader-mode .wiki-article-body table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    box-sizing: border-box !important;
   }
 
   .wiki-article-page.reader-mode .tiptap-content table:not(.tableWrapper table),
   .wiki-article-page.reader-mode .wiki-article-body table:not(.tableWrapper table) {
-    display: block;
-    max-width: 100%;
+    display: block !important;
+    max-width: 100% !important;
     width: 100% !important;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    border-collapse: collapse;
-    margin: 1.25rem 0;
-    box-sizing: border-box;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-collapse: collapse !important;
+    margin: 1.25rem 0 !important;
+    box-sizing: border-box !important;
   }
 
   .wiki-article-page.reader-mode .tiptap-content table th,
   .wiki-article-page.reader-mode .tiptap-content table td {
-    min-width: 90px;
-    word-break: break-word;
-    box-sizing: border-box;
-    font-size: 0.82rem;
+    min-width: 80px !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    box-sizing: border-box !important;
+    font-size: 0.82rem !important;
   }
 
   /* Images in Reader Mode on mobile */
@@ -1946,20 +2169,23 @@
   .wiki-article-page.reader-mode .tiptap-content img {
     max-width: 100% !important;
     height: auto !important;
-    display: block;
-    margin: 1.25rem auto;
-    box-sizing: border-box;
+    display: block !important;
+    margin: 1.25rem auto !important;
+    box-sizing: border-box !important;
   }
 
   /* Code / Pre in Reader Mode on mobile */
   .wiki-article-page.reader-mode pre,
   .wiki-article-page.reader-mode .tiptap-content pre {
-    max-width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    font-size: 0.82rem;
-    padding: 0.75rem;
-    box-sizing: border-box;
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    font-size: 0.82rem !important;
+    padding: 0.75rem 10px !important;
+    box-sizing: border-box !important;
+    white-space: pre !important;
+    word-break: normal !important;
   }
 
   /* Headings & links in Reader Mode */
@@ -1969,26 +2195,43 @@
   .wiki-article-page.reader-mode .tiptap-content h1,
   .wiki-article-page.reader-mode .tiptap-content h2,
   .wiki-article-page.reader-mode .tiptap-content h3 {
-    overflow-wrap: break-word;
-    word-break: break-word;
-    max-width: 100%;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    max-width: 100% !important;
   }
 
   .wiki-article-page.reader-mode .tiptap-content a,
   .wiki-article-page.reader-mode .entity-link {
-    overflow-wrap: break-word;
-    word-break: break-word;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
   }
 
   /* Infobox in Mobile Reader Mode */
+  .wiki-article-page.reader-mode .wiki-infobox {
+    float: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0.75rem 0 1.25rem 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .wiki-article-page.reader-mode .wiki-infobox-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+
   .wiki-article-page.reader-mode .wiki-infobox-table th {
-    width: 38%;
-    font-size: 0.75rem;
+    width: 36% !important;
+    font-size: 0.75rem !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
   }
 
   .wiki-article-page.reader-mode .wiki-infobox-table td {
-    width: 62%;
-    font-size: 0.75rem;
+    width: 64% !important;
+    font-size: 0.75rem !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
   }
 
   .wiki-article-page.reader-mode ~ .mobile-toc-fab {

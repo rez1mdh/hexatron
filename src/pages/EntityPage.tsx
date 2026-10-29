@@ -4,8 +4,8 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Edit2, Trash2, Image as ImageIcon, GitBranch, Compass, FileText,
-  ChevronLeft, ChevronRight, Film, Clock, Star, BookOpen, List,
-  Minimize2, Columns, ZoomIn, ZoomOut
+  ChevronLeft, ChevronRight, ChevronDown, Film, Clock, Star, BookOpen, List,
+  Minimize2, Columns, ZoomIn, ZoomOut, Sliders
 } from 'lucide-react';
 import {
   getEntity, getEntityTypes, getImages, softDeleteEntity,
@@ -86,8 +86,63 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
   const [hideToc, setHideToc] = useState(false);
   const [isMobileTocOpen, setIsMobileTocOpen] = useState(false);
   const [readerFontSize, setReaderFontSize] = useState<'normal' | 'large' | 'huge'>('normal');
+  const [isMobileActionsOpen, setIsMobileActionsOpen] = useState(false);
 
   const isDraggingSplitRef = useRef(false);
+
+  // Auto-minimize mobile article actions panel on scroll down
+  useEffect(() => {
+    const mainEl = document.querySelector('.app-main');
+    if (!mainEl) return;
+
+    let lastScrollTop = mainEl.scrollTop;
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollTop = mainEl ? mainEl.scrollTop : 0;
+          const delta = currentScrollTop - lastScrollTop;
+
+          // If mobile actions panel is open and user scrolled downward, auto-minimize
+          // (delta > 8 means scrolling down; scrolling up has delta < 0 and will NOT expand)
+          if (isMobileActionsOpen && delta > 8 && currentScrollTop > 20) {
+            setIsMobileActionsOpen(false);
+          }
+
+          lastScrollTop = currentScrollTop;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    mainEl.addEventListener('scroll', handleScroll, { passive: true });
+    return () => mainEl.removeEventListener('scroll', handleScroll);
+  }, [isMobileActionsOpen]);
+
+  // Collapse mobile actions panel whenever entity changes
+  useEffect(() => {
+    setIsMobileActionsOpen(false);
+  }, [entityId]);
+
+  // Close mobile actions on click outside
+  useEffect(() => {
+    if (!isMobileActionsOpen) return;
+    const handleDocumentClick = (e: MouseEvent) => {
+      const headerMeta = document.querySelector('.wiki-sticky-header-meta');
+      if (headerMeta && !headerMeta.contains(e.target as Node)) {
+        setIsMobileActionsOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleDocumentClick);
+    return () => document.removeEventListener('pointerdown', handleDocumentClick);
+  }, [isMobileActionsOpen]);
+
+  const handleActionClick = (actionFn?: () => void) => {
+    setIsMobileActionsOpen(false);
+    if (actionFn) actionFn();
+  };
 
   useEffect(() => {
     if (!entityId) return;
@@ -217,7 +272,7 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
   }
 
   return (
-    <div className="entity-page-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+    <div className="entity-page-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', minWidth: 0, width: '100%', maxWidth: '100%' }}>
       {/* Workspace Tab Strip (for owner, hidden in clean reader mode) */}
       {!isSecondaryPane && !readerMode && (
         <MultiArticleWorkspace
@@ -274,7 +329,7 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
         )}
 
         {/* ── 1. Sticky Navigation & Article Meta Bar ──────────────────────── */}
-        <div className="wiki-sticky-header-meta">
+        <div className={`wiki-sticky-header-meta ${isMobileActionsOpen ? 'mobile-actions-open' : ''}`}>
           <div className="wiki-breadcrumbs">
             <div className="wiki-nav-arrows">
               <button
@@ -327,12 +382,29 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
             )}
           </div>
 
-          <div className="wiki-header-actions">
+          {/* Minimized Mobile Action Handle / Toggle (Mobile only <= 768px, hidden on desktop and in reader mode) */}
+          <button
+            type="button"
+            className={`wiki-mobile-actions-toggle ${isMobileActionsOpen ? 'active' : ''}`}
+            onClick={() => setIsMobileActionsOpen(v => !v)}
+            aria-expanded={isMobileActionsOpen}
+            aria-label={isMobileActionsOpen ? 'Collapse article actions' : 'Expand article actions'}
+            title="Article actions"
+          >
+            <Sliders size={13} />
+            <span className="wiki-mobile-actions-toggle-text">Actions</span>
+            <ChevronDown
+              size={13}
+              className={`wiki-mobile-actions-chevron ${isMobileActionsOpen ? 'rotated' : ''}`}
+            />
+          </button>
+
+          <div className={`wiki-header-actions ${isMobileActionsOpen ? 'mobile-open' : 'mobile-minimized'}`}>
             {/* Clean Reading Mode Toggle */}
             <button
               type="button"
               className={`wiki-action-tab ${readerMode ? 'active text-accent' : ''}`}
-              onClick={toggleReaderMode}
+              onClick={() => handleActionClick(toggleReaderMode)}
               title={readerMode ? 'Exit clean reading mode' : 'Switch to clean reading mode'}
             >
               <BookOpen size={13} /> Reader
@@ -343,7 +415,10 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
               <button
                 type="button"
                 className={`wiki-action-tab ${isFavorite ? 'favorited active' : ''}`}
-                onClick={() => toggleFavoriteEntity(entity.id)}
+                onClick={() => {
+                  toggleFavoriteEntity(entity.id);
+                  setIsMobileActionsOpen(false);
+                }}
                 title={isFavorite ? 'Remove from favorites' : 'Pin to favorites'}
                 aria-label={isFavorite ? 'Remove from favorites' : 'Pin to favorites'}
               >
@@ -359,6 +434,7 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
             <button
               type="button"
               className="wiki-action-tab active hide-in-reader"
+              onClick={() => handleActionClick()}
               title="Article view"
             >
               <FileText size={13} /> Article
@@ -367,7 +443,7 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
               <button
                 type="button"
                 className="wiki-action-tab hide-in-reader"
-                onClick={() => navigate(`/entity/${entity.id}/edit`)}
+                onClick={() => handleActionClick(() => navigate(`/entity/${entity.id}/edit`))}
                 title="Edit this article"
               >
                 <Edit2 size={13} /> Edit
@@ -376,7 +452,7 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
             <button
               type="button"
               className="wiki-action-tab hide-in-reader"
-              onClick={() => navigate(`/entity/${entity.id}/graph`)}
+              onClick={() => handleActionClick(() => navigate(`/entity/${entity.id}/graph`))}
               title="View in Network Graph"
             >
               <Compass size={13} /> Graph
@@ -385,7 +461,7 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
               <button
                 type="button"
                 className={`wiki-action-tab hide-in-reader ${showFamilyTree ? 'active' : ''}`}
-                onClick={() => setShowFamilyTree(!showFamilyTree)}
+                onClick={() => handleActionClick(() => setShowFamilyTree(!showFamilyTree))}
                 title="Toggle visual family tree"
               >
                 <GitBranch size={13} /> Family Tree
@@ -395,7 +471,7 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
               <button
                 type="button"
                 className="wiki-action-tab danger hide-in-reader"
-                onClick={handleDelete}
+                onClick={() => handleActionClick(handleDelete)}
                 title="Delete entity"
               >
                 <Trash2 size={13} /> Delete

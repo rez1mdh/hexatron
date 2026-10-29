@@ -217,9 +217,9 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-      {/* Workspace Tab Strip (for owner) */}
-      {!isSecondaryPane && (
+    <div className="entity-page-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+      {/* Workspace Tab Strip (for owner, hidden in clean reader mode) */}
+      {!isSecondaryPane && !readerMode && (
         <MultiArticleWorkspace
           currentEntityId={entity.id}
           currentTitle={entity.title}
@@ -236,32 +236,36 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
         {readerMode && (
           <div className="reader-toolbar">
             <div className="reader-toolbar-left">
-              <span className="dash-hero-badge" style={{ margin: 0 }}>Reader Mode</span>
+              <span className="reader-mode-pill">Reader Mode</span>
               <button
                 type="button"
-                className="btn-ghost tiny"
+                className="btn-ghost tiny reader-size-btn"
                 onClick={() => setReaderFontSize(f => f === 'normal' ? 'large' : f === 'large' ? 'huge' : 'normal')}
                 title="Toggle text size"
+                aria-label="Toggle text size"
               >
-                <span style={{ fontWeight: 700 }}>A</span>
-                <span style={{ fontSize: '0.7rem' }}>{readerFontSize === 'normal' ? 'Standard' : readerFontSize === 'large' ? 'Large' : 'Largest'}</span>
+                <span className="reader-size-a">A</span>
+                <span className="reader-size-label">{readerFontSize === 'normal' ? 'Standard' : readerFontSize === 'large' ? 'Large' : 'Largest'}</span>
               </button>
               {tocItems.length >= 2 && (
                 <button
                   type="button"
-                  className="btn-ghost tiny"
+                  className="btn-ghost tiny reader-toc-btn"
                   onClick={() => setIsMobileTocOpen(true)}
                   title="Jump to section"
+                  aria-label="Table of contents"
                 >
-                  <List size={13} /> Contents ({tocItems.length})
+                  <List size={13} />
+                  <span className="reader-toc-label">Contents ({tocItems.length})</span>
                 </button>
               )}
             </div>
             <div className="reader-toolbar-right">
               <button
                 type="button"
-                className="btn-primary tiny"
+                className="btn-primary tiny reader-exit-btn"
                 onClick={toggleReaderMode}
+                title="Exit clean reading mode"
               >
                 Exit Reader
               </button>

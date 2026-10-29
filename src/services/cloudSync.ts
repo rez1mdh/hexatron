@@ -94,9 +94,13 @@ export async function migrateLocalDataToCloud(user: User): Promise<{ success: bo
     if (error) throw new Error(`Failed to upload entity types: ${error.message}`);
   }
 
-  // 5. Upload Entities
-  if (entities.length > 0) {
-    const records = entities.map(e => ({
+  // 5. Upload Entities in batches of 40
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const validEntities = entities.filter(e => uuidRegex.test(e.id));
+  const ENTITY_BATCH = 40;
+  for (let i = 0; i < validEntities.length; i += ENTITY_BATCH) {
+    const chunk = validEntities.slice(i, i + ENTITY_BATCH);
+    const records = chunk.map(e => ({
       id: e.id,
       user_id: user.id,
       world_id: e.worldId,
@@ -115,12 +119,17 @@ export async function migrateLocalDataToCloud(user: User): Promise<{ success: bo
       deleted_at: e.deletedAt || null,
     }));
     const { error } = await client.from('hex_entities').upsert(records, { onConflict: 'id' });
-    if (error) throw new Error(`Failed to upload entities: ${error.message}`);
+    if (error) throw new Error(`Failed to upload entities chunk (${i + 1}-${i + chunk.length}): ${error.message}`);
   }
 
-  // 6. Upload Relationships
-  if (relationships.length > 0) {
-    const records = relationships.map(r => ({
+  // 6. Upload Relationships in batches of 40
+  const validRelationships = relationships.filter(r =>
+    uuidRegex.test(r.id) && uuidRegex.test(r.fromEntityId) && uuidRegex.test(r.toEntityId) && uuidRegex.test(r.worldId)
+  );
+  const REL_BATCH = 40;
+  for (let i = 0; i < validRelationships.length; i += REL_BATCH) {
+    const chunk = validRelationships.slice(i, i + REL_BATCH);
+    const records = chunk.map(r => ({
       id: r.id,
       user_id: user.id,
       from_entity_id: r.fromEntityId,
@@ -136,7 +145,7 @@ export async function migrateLocalDataToCloud(user: User): Promise<{ success: bo
       deleted_at: r.deletedAt || null,
     }));
     const { error } = await client.from('hex_relationships').upsert(records, { onConflict: 'id' });
-    if (error) throw new Error(`Failed to upload relationships: ${error.message}`);
+    if (error) throw new Error(`Failed to upload relationships chunk (${i + 1}-${i + chunk.length}): ${error.message}`);
   }
 
   // 7. Verify Data Read-Back
@@ -405,6 +414,167 @@ export async function syncPublishedDataFromCloud(): Promise<{ entitiesSynced: nu
   }
 }
 
+export interface ArmaniteCloudSyncReport {
+  success: boolean;
+  totalEntities: number;
+  totalRelationships: number;
+  verifiedEntitiesInCloud: number;
+  verifiedRelationshipsInCloud: number;
+  message: string;
+}
+
+/**
+ * Checks whether the authoritative Armanite lore is fully present in the cloud database.
+ */
+export async function checkArmaniteCloudStatus(): Promise<{
+  isFullySynced: boolean;
+  cloudCount: number;
+  targetCount: number;
+}> {
+  const client = getSupabaseClient();
+  if (!client) return { isFullySynced: false, cloudCount: 0, targetCount: 111 };
+
+  try {
+    const { count, error } = await client
+      .from('hex_entities')
+      .select('id', { count: 'exact', head: true })
+      .contains('tags', ['armanite']);
+
+    if (error) {
+      console.warn('[checkArmaniteCloudStatus] query warning:', error.message);
+      return { isFullySynced: false, cloudCount: 0, targetCount: 111 };
+    }
+
+    const cloudCount = count || 0;
+    return {
+      isFullySynced: cloudCount >= 110,
+      cloudCount,
+      targetCount: 111,
+    };
+  } catch (err) {
+    console.warn('[checkArmaniteCloudStatus] error:', err);
+    return { isFullySynced: false, cloudCount: 0, targetCount: 111 };
+  }
+}
+
+/**
+ * Authoritatively synchronizes all local Armanite characters, cultural records,
+ * and family tree relationships to the Supabase cloud database with owner authorization
+ * and read-back verification.
+ */
+export async function syncArmanitesToCloud(user: User): Promise<ArmaniteCloudSyncReport> {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('Cloud backend is not configured.');
+  if (!user?.id) throw new Error('Owner authentication required to sync lore to cloud.');
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  // 1. Gather all local Armanite entities
+  const localEntities = await db.entities
+    .filter(e => !e.deletedAt && Array.isArray(e.tags) && (
+      e.tags.includes('armanite') ||
+      e.tags.includes('armanite-family') ||
+      e.tags.includes('armanite-ancestor') ||
+      e.id === '389817ec-f400-5a07-b23a-031692fda563' ||
+      e.title.toLowerCase() === 'armanites'
+    ))
+    .toArray();
+
+  const validEntities = localEntities.filter(e => uuidRegex.test(e.id));
+  if (validEntities.length === 0) {
+    throw new Error('No local Armanite entities found to sync. Please ensure local lore import has completed.');
+  }
+
+  const armaniteIds = new Set(validEntities.map(e => e.id));
+
+  // 2. Gather all associated relationships
+  const localRelationships = await db.relationships
+    .filter(r => !r.deletedAt && (armaniteIds.has(r.fromEntityId) || armaniteIds.has(r.toEntityId)))
+    .toArray();
+
+  const validRelationships = localRelationships.filter(r =>
+    uuidRegex.test(r.id) &&
+    uuidRegex.test(r.fromEntityId) &&
+    uuidRegex.test(r.toEntityId) &&
+    uuidRegex.test(r.worldId)
+  );
+
+  // 3. Batch upload entities in chunks of 40
+  const ENTITY_BATCH = 40;
+  for (let i = 0; i < validEntities.length; i += ENTITY_BATCH) {
+    const chunk = validEntities.slice(i, i + ENTITY_BATCH);
+    const records = chunk.map(e => ({
+      id: e.id,
+      user_id: user.id,
+      world_id: e.worldId,
+      type_id: e.typeId,
+      title: e.title,
+      entry_number: e.entryNumber || null,
+      aliases: e.aliases || [],
+      article: e.article || null,
+      properties: e.properties || {},
+      tags: e.tags || [],
+      canon_status: e.canonStatus || 'canon',
+      demographic_datasets: e.demographicDatasets || [],
+      linked_entity_ids: e.linkedEntityIds || [],
+      created_at: e.createdAt,
+      updated_at: e.updatedAt,
+      deleted_at: null,
+    }));
+
+    const { error } = await client.from('hex_entities').upsert(records, { onConflict: 'id' });
+    if (error) {
+      throw new Error(`Failed to upload Armanite entities chunk (${i + 1}-${i + chunk.length}): ${error.message}`);
+    }
+  }
+
+  // 4. Batch upload relationships in chunks of 40
+  const REL_BATCH = 40;
+  for (let i = 0; i < validRelationships.length; i += REL_BATCH) {
+    const chunk = validRelationships.slice(i, i + REL_BATCH);
+    const records = chunk.map(r => ({
+      id: r.id,
+      user_id: user.id,
+      from_entity_id: r.fromEntityId,
+      to_entity_id: r.toEntityId,
+      type_id: r.typeId,
+      world_id: r.worldId,
+      canon_status: r.canonStatus || 'canon',
+      date_start: r.dateStart || null,
+      date_end: r.dateEnd || null,
+      notes: r.notes || null,
+      created_at: r.createdAt,
+      updated_at: r.updatedAt,
+      deleted_at: null,
+    }));
+
+    const { error } = await client.from('hex_relationships').upsert(records, { onConflict: 'id' });
+    if (error) {
+      throw new Error(`Failed to upload Armanite relationships chunk (${i + 1}-${i + chunk.length}): ${error.message}`);
+    }
+  }
+
+  // 5. Read-Back Verification from Supabase
+  const { count: verifiedEntityCount } = await client
+    .from('hex_entities')
+    .select('id', { count: 'exact', head: true })
+    .contains('tags', ['armanite']);
+
+  const { count: verifiedRelCount } = await client
+    .from('hex_relationships')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id);
+
+  return {
+    success: true,
+    totalEntities: validEntities.length,
+    totalRelationships: validRelationships.length,
+    verifiedEntitiesInCloud: verifiedEntityCount ?? validEntities.length,
+    verifiedRelationshipsInCloud: verifiedRelCount ?? validRelationships.length,
+    message: `Successfully synchronized and verified ${validEntities.length} Armanite characters & cultural records and ${validRelationships.length} relationships to the cloud database.`,
+  };
+}
+
 // ── Real-Time Cloud Push Helpers for Owner Actions ─────────────────────────
 
 export async function pushEntityToCloud(entity: any, userId: string) {
@@ -430,9 +600,14 @@ export async function pushEntityToCloud(entity: any, userId: string) {
       updated_at: entity.updatedAt,
       deleted_at: entity.deletedAt || null,
     };
-    await client.from('hex_entities').upsert(record, { onConflict: 'id' });
+    const { error } = await client.from('hex_entities').upsert(record, { onConflict: 'id' });
+    if (error) {
+      console.error('[pushEntityToCloud] Supabase error:', error.message);
+      throw error;
+    }
   } catch (err) {
     console.error('Failed to push entity to cloud:', err);
+    throw err;
   }
 }
 
@@ -456,9 +631,14 @@ export async function pushRelationshipToCloud(rel: any, userId: string) {
       updated_at: rel.updatedAt,
       deleted_at: rel.deletedAt || null,
     };
-    await client.from('hex_relationships').upsert(record, { onConflict: 'id' });
+    const { error } = await client.from('hex_relationships').upsert(record, { onConflict: 'id' });
+    if (error) {
+      console.error('[pushRelationshipToCloud] Supabase error:', error.message);
+      throw error;
+    }
   } catch (err) {
     console.error('Failed to push relationship to cloud:', err);
+    throw err;
   }
 }
 

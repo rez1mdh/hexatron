@@ -6,7 +6,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
 import {
   User as UserIcon, ShieldCheck, Cloud, Star, Layers, Zap,
-  LogOut, ChevronDown, X, Check, Settings
+  LogOut, ChevronDown, X, Check, Settings, RefreshCw
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import {
@@ -15,6 +15,8 @@ import {
   signOutUser,
   isCloudConfigured
 } from '../../services/supabase';
+import { syncArmanitesToCloud, checkArmaniteCloudStatus } from '../../services/cloudSync';
+import { importArmaniteLore } from '../../db/importArmanites';
 import './AccountMenu.css';
 
 interface AccountMenuProps {
@@ -31,14 +33,52 @@ export default function AccountMenu({ onOpenAuth }: AccountMenuProps) {
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [syncingArmanites, setSyncingArmanites] = useState(false);
+  const [armaniteStatus, setArmaniteStatus] = useState<{ isFullySynced: boolean; cloudCount: number; targetCount: number } | null>(null);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Sync auth state
   useEffect(() => {
-    getCurrentUser().then(setCurrentUser);
-    const sub = subscribeToAuthState(user => setCurrentUser(user));
+    getCurrentUser().then(user => {
+      setCurrentUser(user);
+      if (user && isCloudConfigured()) {
+        checkArmaniteCloudStatus().then(setArmaniteStatus).catch(console.warn);
+      }
+    });
+    const sub = subscribeToAuthState(user => {
+      setCurrentUser(user);
+      if (user && isCloudConfigured()) {
+        checkArmaniteCloudStatus().then(setArmaniteStatus).catch(console.warn);
+      }
+    });
     return () => sub.unsubscribe();
   }, []);
+
+  // Check Armanite cloud status whenever menu is opened
+  useEffect(() => {
+    if (isOpen && currentUser && isCloudConfigured()) {
+      checkArmaniteCloudStatus().then(setArmaniteStatus).catch(console.warn);
+    }
+  }, [isOpen, currentUser]);
+
+  async function handleSyncArmanites() {
+    if (!currentUser) return;
+    setSyncingArmanites(true);
+    setSyncMessage(null);
+    try {
+      await importArmaniteLore();
+      const res = await syncArmanitesToCloud(currentUser);
+      setSyncMessage(res.message);
+      const status = await checkArmaniteCloudStatus();
+      setArmaniteStatus(status);
+      useAppStore.getState().bumpUniverseVersion();
+    } catch (err) {
+      setSyncMessage(`Sync error: ${(err as Error).message}`);
+    } finally {
+      setSyncingArmanites(false);
+    }
+  }
 
   // Close on outside click (for desktop popover)
   useEffect(() => {
@@ -195,6 +235,28 @@ export default function AccountMenu({ onOpenAuth }: AccountMenuProps) {
               <>
                 <button
                   type="button"
+                  className="account-action-item highlight"
+                  onClick={handleSyncArmanites}
+                  disabled={syncingArmanites}
+                  title="Authoritatively verify and upload the 110-member Armanite family tree and cultural lore to the persistent cloud database"
+                >
+                  <RefreshCw size={15} className={syncingArmanites ? 'spin' : ''} />
+                  <span>
+                    {syncingArmanites
+                      ? 'Syncing Armanites to Cloud...'
+                      : armaniteStatus?.isFullySynced
+                      ? `Armanite Lore: Cloud Synced (${armaniteStatus.cloudCount})`
+                      : 'Sync Armanite Lore to Cloud'}
+                  </span>
+                </button>
+                {syncMessage && (
+                  <div className="account-sync-message-pill" title={syncMessage}>
+                    {syncMessage}
+                  </div>
+                )}
+
+                <button
+                  type="button"
                   className="account-action-item"
                   onClick={() => handleActionClick(() => setFavoriteModalOpen(true))}
                 >
@@ -299,6 +361,28 @@ export default function AccountMenu({ onOpenAuth }: AccountMenuProps) {
 
               {isOwner && (
                 <>
+                  <button
+                    type="button"
+                    className="account-action-item highlight"
+                    onClick={handleSyncArmanites}
+                    disabled={syncingArmanites}
+                    title="Authoritatively verify and upload the 110-member Armanite family tree and cultural lore to the persistent cloud database"
+                  >
+                    <RefreshCw size={16} className={syncingArmanites ? 'spin' : ''} />
+                    <span>
+                      {syncingArmanites
+                        ? 'Syncing Armanites to Cloud...'
+                        : armaniteStatus?.isFullySynced
+                        ? `Armanite Lore: Cloud Synced (${armaniteStatus.cloudCount})`
+                        : 'Sync Armanite Lore to Cloud'}
+                    </span>
+                  </button>
+                  {syncMessage && (
+                    <div className="account-sync-message-pill" title={syncMessage}>
+                      {syncMessage}
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     className="account-action-item"

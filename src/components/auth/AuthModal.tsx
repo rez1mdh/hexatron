@@ -12,7 +12,11 @@ import {
   getCurrentUser, signInWithEmail, signUpWithEmail, signOutUser, resetPasswordForEmail,
   subscribeToAuthState, SUPABASE_SETUP_SQL
 } from '../../services/supabase';
-import { getLocalDataStats, migrateLocalDataToCloud, syncFromCloudToLocal, syncPublishedDataFromCloud, type MigrationSummary } from '../../services/cloudSync';
+import {
+  getLocalDataStats, migrateLocalDataToCloud, syncFromCloudToLocal, syncPublishedDataFromCloud,
+  syncArmanitesToCloud, type MigrationSummary
+} from '../../services/cloudSync';
+import { importArmaniteLore } from '../../db/importArmanites';
 import { exportAll } from '../../db/operations';
 import { useAppStore } from '../../store/appStore';
 import './AuthModal.css';
@@ -43,6 +47,7 @@ export default function AuthModal({ isOpen, onClose }: Props) {
   const [localStats, setLocalStats] = useState<MigrationSummary | null>(null);
   const [migrating, setMigrating] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncingArmanites, setSyncingArmanites] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -227,6 +232,23 @@ export default function AuthModal({ isOpen, onClose }: Props) {
       setErrorMsg(`Sync error: ${(err as Error).message}`);
     } finally {
       setSyncing(false);
+    }
+  }
+
+  async function handleSyncArmanites() {
+    if (!currentUser) return;
+    setSyncingArmanites(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      await importArmaniteLore();
+      const res = await syncArmanitesToCloud(currentUser);
+      setSuccessMsg(res.message);
+      useAppStore.getState().bumpUniverseVersion();
+    } catch (err) {
+      setErrorMsg(`Armanite sync error: ${(err as Error).message}`);
+    } finally {
+      setSyncingArmanites(false);
     }
   }
 
@@ -506,6 +528,26 @@ export default function AuthModal({ isOpen, onClose }: Props) {
                   disabled={syncing}
                 >
                   {syncing ? 'Syncing…' : 'Sync from Cloud to Device'}
+                </button>
+              </div>
+
+              {/* Armanite Lore Cloud Sync */}
+              <div className="auth-sync-card">
+                <div className="auth-sync-header">
+                  <ShieldCheck size={14} className="text-accent" />
+                  <span className="auth-sync-title">Armanite Kinship & Family Tree Cloud Sync</span>
+                </div>
+                <p className="auth-sync-desc">
+                  Authoritatively verify and upload the 110-member Armanite genealogical tree, Hannik Armanas lore, and cultural dynasty articles to Supabase.
+                </p>
+                <button
+                  type="button"
+                  className="btn-primary small"
+                  onClick={handleSyncArmanites}
+                  disabled={syncingArmanites}
+                >
+                  <RefreshCw size={13} className={syncingArmanites ? 'spin' : ''} />
+                  {syncingArmanites ? 'Syncing & Verifying…' : 'Sync Armanite Lore to Cloud'}
                 </button>
               </div>
 

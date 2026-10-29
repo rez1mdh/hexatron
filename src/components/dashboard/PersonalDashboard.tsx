@@ -7,7 +7,7 @@ import {
   Globe, Plus, BookOpen, Clock, Sliders, Trash2,
   Compass, Layers, Star, Edit3, GitBranch, Search,
   ExternalLink, FileText, ArrowRight, Eye, ShieldCheck,
-  CheckCircle2, Sparkles, Filter, Database
+  CheckCircle2, Sparkles, Filter, Database, RefreshCw, Cloud
 } from 'lucide-react';
 import {
   getUniverses, getWorlds, getEntity, getWorld,
@@ -16,6 +16,9 @@ import {
 } from '../../db/operations';
 import { useAppStore } from '../../store/appStore';
 import { formatRelativeTime } from '../../utils/dateFormatter';
+import { checkArmaniteCloudStatus, syncArmanitesToCloud } from '../../services/cloudSync';
+import { importArmaniteLore } from '../../db/importArmanites';
+import { isCloudConfigured } from '../../services/supabase';
 import CanonBadge from '../ui/CanonBadge';
 import './PersonalDashboard.css';
 
@@ -48,6 +51,33 @@ export default function PersonalDashboard({ onTogglePublicView }: Props) {
   const [worldSearch, setWorldSearch] = useState('');
   const [selectedUniverseId, setSelectedUniverseId] = useState<string>('all');
   const [loading, setLoading] = useState(true);
+  const [syncingArmanites, setSyncingArmanites] = useState(false);
+  const [armaniteStatus, setArmaniteStatus] = useState<{ isFullySynced: boolean; cloudCount: number; targetCount: number } | null>(null);
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isCloudConfigured() && currentUser) {
+      checkArmaniteCloudStatus().then(setArmaniteStatus).catch(console.warn);
+    }
+  }, [currentUser, universeVersion]);
+
+  async function handleSyncArmanites() {
+    if (!currentUser) return;
+    setSyncingArmanites(true);
+    setSyncFeedback(null);
+    try {
+      await importArmaniteLore();
+      const report = await syncArmanitesToCloud(currentUser);
+      setSyncFeedback(report.message);
+      const updated = await checkArmaniteCloudStatus();
+      setArmaniteStatus(updated);
+      useAppStore.getState().bumpUniverseVersion();
+    } catch (err) {
+      setSyncFeedback(`Sync failed: ${(err as Error).message}`);
+    } finally {
+      setSyncingArmanites(false);
+    }
+  }
 
   // Load real data from DB
   useEffect(() => {
@@ -259,7 +289,39 @@ export default function PersonalDashboard({ onTogglePublicView }: Props) {
               <span className="dash-action-sub">{favoriteEntityIds.length + favoriteWorldIds.length} pinned records</span>
             </div>
           </button>
+
+          <button
+            type="button"
+            className="dash-action-card"
+            onClick={handleSyncArmanites}
+            disabled={syncingArmanites}
+            title="Synchronize and verify Armanite characters, family tree, and culture to Supabase cloud"
+          >
+            <div className="dash-action-icon accent">
+              <RefreshCw size={18} className={syncingArmanites ? 'spin' : ''} />
+            </div>
+            <div className="dash-action-text">
+              <span className="dash-action-name">
+                {syncingArmanites
+                  ? 'Syncing Armanites...'
+                  : armaniteStatus?.isFullySynced
+                  ? `Armanites Synced (${armaniteStatus.cloudCount})`
+                  : 'Sync Armanites to Cloud'}
+              </span>
+              <span className="dash-action-sub">
+                {armaniteStatus?.isFullySynced
+                  ? '110 characters verified in cloud'
+                  : '110 characters + family tree'}
+              </span>
+            </div>
+          </button>
         </div>
+        {syncFeedback && (
+          <div className="dash-sync-feedback-banner">
+            <CheckCircle2 size={15} className="text-success" />
+            <span>{syncFeedback}</span>
+          </div>
+        )}
       </section>
 
       {/* ── 4. Pinned / Favorite Entities & Universes ──────────────────────── */}

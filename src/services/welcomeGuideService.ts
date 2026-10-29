@@ -45,6 +45,20 @@ export interface WelcomeGuideContent {
 const STORAGE_KEY = 'hexatron_welcome_guide_content';
 const ENTITY_ID = 'doc-welcome-guide';
 
+const LEGACY_FEATURED_ID_MAP: Record<string, string> = {
+  'char-hannik-armanas': '43de1704-3746-444a-af5e-1613b3fe9b3a',
+  'event-trafloriede': '85437dcd-7d16-4887-9bd5-0f4045cd63ae',
+  'culture-armanites': '389817ec-f400-5a07-b23a-031692fda563',
+  'char-hannik-lonko': 'fd581a68-92a4-496a-9769-22e2c198ad17',
+};
+
+function normalizeFeaturedArticles(items: FeaturedArticleItem[]): FeaturedArticleItem[] {
+  return items.map(item => ({
+    ...item,
+    entityId: LEGACY_FEATURED_ID_MAP[item.entityId] || item.entityId,
+  }));
+}
+
 export function getDefaultWelcomeGuideContent(): WelcomeGuideContent {
   return {
     projectTitle: 'Aurythar',
@@ -62,28 +76,28 @@ export function getDefaultWelcomeGuideContent(): WelcomeGuideContent {
     },
     featuredArticles: [
       {
-        entityId: 'char-hannik-armanas',
+        entityId: '43de1704-3746-444a-af5e-1613b3fe9b3a',
         title: 'Hannik Armanas',
         subtitle: 'Cultural Hero of Sorivinsenzio & Ancestral Progenitor of the Armanites',
         badge: 'Historical Figure',
         typeId: 'et-character'
       },
       {
-        entityId: 'event-trafloriede',
+        entityId: '85437dcd-7d16-4887-9bd5-0f4045cd63ae',
         title: 'The Battle of Trafloriede',
         subtitle: 'Decisive 50 A.C. Native Victory and Clash of Plains',
         badge: 'Key Event',
         typeId: 'et-event'
       },
       {
-        entityId: 'culture-armanites',
+        entityId: '389817ec-f400-5a07-b23a-031692fda563',
         title: 'Armanites',
         subtitle: 'Cultural Dynasty & Confirmed 110-Member Kinship Lineage',
         badge: 'Culture & Dynasty',
         typeId: 'et-culture'
       },
       {
-        entityId: 'char-hannik-lonko',
+        entityId: 'fd581a68-92a4-496a-9769-22e2c198ad17',
         title: 'Hannik Lonko',
         subtitle: 'Sorivinsenzio Vanguard Leader at Trafloriede',
         badge: 'Commander',
@@ -125,9 +139,11 @@ export async function getWelcomeGuideContent(): Promise<WelcomeGuideContent> {
           ...(cached?.aboutCreator || {}),
           ...(dbConfig.aboutCreator || {})
         },
-        featuredArticles: dbConfig.featuredArticles && dbConfig.featuredArticles.length > 0
-          ? dbConfig.featuredArticles
-          : (cached?.featuredArticles || defaults.featuredArticles),
+        featuredArticles: normalizeFeaturedArticles(
+          dbConfig.featuredArticles && dbConfig.featuredArticles.length > 0
+            ? dbConfig.featuredArticles
+            : (cached?.featuredArticles || defaults.featuredArticles)
+        ),
         videos: dbConfig.videos !== undefined ? dbConfig.videos : (cached?.videos || defaults.videos),
         updatedAt: dbConfig.updatedAt || Date.now()
       };

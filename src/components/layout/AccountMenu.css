@@ -408,6 +408,33 @@
   color: #ef4444;
 }
 
+.account-action-item.highlight {
+  color: var(--accent);
+  background: rgba(139, 92, 246, 0.08);
+  font-weight: 600;
+  border-left: 3px solid var(--accent);
+}
+
+.account-action-item.highlight:hover {
+  background: rgba(139, 92, 246, 0.16);
+}
+
+.account-action-item.highlight svg {
+  color: var(--accent);
+}
+
+.account-sync-message-pill {
+  margin: 4px 16px 8px;
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
 /* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   .account-popover-desktop,

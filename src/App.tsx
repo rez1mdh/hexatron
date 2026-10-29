@@ -17,8 +17,10 @@ import { seedBuiltIns } from './db/seed';
 import { ensureEntityEntryNumbers, autoLinkEntitiesInWorld } from './db/operations';
 import { importAurytharData } from './db/importAurythar';
 import { useAppStore } from './store/appStore';
+import type { User } from '@supabase/supabase-js';
 import { getCurrentUser, subscribeToAuthState, isCloudConfigured } from './services/supabase';
-import { syncPublishedDataFromCloud } from './services/cloudSync';
+import { syncPublishedDataFromCloud, syncArmanitesToCloud, checkArmaniteCloudStatus } from './services/cloudSync';
+import { importArmaniteLore } from './db/importArmanites';
 
 function AppInit({ children }: { children: React.ReactNode }) {
   const { theme, setCurrentUser, bumpUniverseVersion } = useAppStore();
@@ -26,9 +28,27 @@ function AppInit({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
 
-    // 1. Subscribe to owner auth state changes
-    getCurrentUser().then(user => setCurrentUser(user));
-    const authSub = subscribeToAuthState(user => setCurrentUser(user));
+    // 1. Subscribe to owner auth state changes & auto-sync Armanite lore if owner is logged in
+    const handleAuthChange = async (user: User | null) => {
+      setCurrentUser(user);
+      if (user && isCloudConfigured()) {
+        try {
+          const status = await checkArmaniteCloudStatus();
+          if (!status.isFullySynced) {
+            console.log(`[AppInit] Owner ${user.email} signed in, but cloud has only ${status.cloudCount}/111 Armanite records. Running cloud sync...`);
+            await importArmaniteLore();
+            const report = await syncArmanitesToCloud(user);
+            console.log('[AppInit] Cloud sync successful:', report);
+            bumpUniverseVersion();
+          }
+        } catch (err) {
+          console.warn('[AppInit] Owner cloud auto-sync check error:', err);
+        }
+      }
+    };
+
+    getCurrentUser().then(handleAuthChange);
+    const authSub = subscribeToAuthState(handleAuthChange);
 
     // 2. Initialize database
     seedBuiltIns()
@@ -43,7 +63,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
         } catch {
           // ignore
         }
-        const AURYTHAR_DATA_VERSION = 'v5-armanites-family-tree';
+        const AURYTHAR_DATA_VERSION = 'v6-armanites-cloud-uuid';
         const importedVersion = localStorage.getItem('hexatron-aurythar-version');
 
         if (isCloudConfigured()) {
@@ -51,19 +71,15 @@ function AppInit({ children }: { children: React.ReactNode }) {
           const res = await syncPublishedDataFromCloud();
           if (res.entitiesSynced > 0) {
             bumpUniverseVersion();
-          } else if (importedVersion !== AURYTHAR_DATA_VERSION) {
-            await importAurytharData(true);
-            localStorage.setItem('hexatron-aurythar-version', AURYTHAR_DATA_VERSION);
-            bumpUniverseVersion();
           }
-        } else {
-          // Local offline fallback
-          if (importedVersion !== AURYTHAR_DATA_VERSION) {
-            await importAurytharData(true);
-            localStorage.setItem('hexatron-aurythar-version', AURYTHAR_DATA_VERSION);
-            localStorage.setItem('hexatron-aurythar-imported', 'true');
-            bumpUniverseVersion();
-          }
+        }
+
+        // Always ensure Armanite data is seeded and migrated to UUIDs locally
+        if (importedVersion !== AURYTHAR_DATA_VERSION) {
+          await importArmaniteLore();
+          localStorage.setItem('hexatron-aurythar-version', AURYTHAR_DATA_VERSION);
+          localStorage.setItem('hexatron-aurythar-imported', 'true');
+          bumpUniverseVersion();
         }
         await autoLinkEntitiesInWorld();
       })

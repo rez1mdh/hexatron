@@ -1,9 +1,15 @@
 // src/db/importArmanites.ts
 // Authoritative Lore Import for Hannik Armanas, the Armanite Family Tree & Armanite Culture
 
+import { v5 as uuidv5 } from 'uuid';
 import { db, type Entity, type Relationship } from './schema';
 import { getNextEntryNumber, extractLinkedEntityIds } from './operations';
 import { linkMentionsInArticleString } from '../utils/entityLinker';
+import { getCurrentUser } from '../services/supabase';
+import { syncArmanitesToCloud } from '../services/cloudSync';
+
+export const ARMANITE_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface ArmaniteImportReport {
   worldId: string;
@@ -3889,22 +3895,38 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
   const existingById = new Map<string, Entity>(existingEntities.map(e => [e.id, e]));
   const existingByTitle = new Map<string, Entity>(existingEntities.map(e => [e.title.trim().toLowerCase(), e]));
 
-  // Index map of sourceId -> final entityId
+  // Authoritative known Supabase cloud UUIDs to preserve across all imports
+  const KNOWN_CLOUD_UUIDS: Record<string, string> = {
+    '7ffb33ee': '43de1704-3746-444a-af5e-1613b3fe9b3a', // Hannik Armanas
+    'be0304e5': '099c2259-10f0-4e5e-bf38-69df60934236', // Hannik Debalak
+    '7c3f5f62': 'fd581a68-92a4-496a-9769-22e2c198ad17', // Hannik Lonko
+  };
+
+  // Index map of sourceId -> final entityId (RFC 4122 compliant UUIDs)
   const srcToEntityId = new Map<string, string>();
   for (const m of ARMANITE_EXPORT_MANIFEST) {
-    let match = existingById.get(m.entityId) || existingByTitle.get(m.displayTitle.trim().toLowerCase());
-    if (m.isArmanas) {
-      match = match || existingById.get('char-hannik-armanas') || existingByTitle.get('hannik armanas');
-    } else if (m.sourceId === 'be0304e5') {
-      match = match || existingById.get('char-hannik-debalak') || existingByTitle.get('hannik debalak');
-    } else if (m.sourceId === '7c3f5f62') {
-      match = match || existingById.get('char-hannik-lonko') || existingByTitle.get('hannik lonko');
+    if (KNOWN_CLOUD_UUIDS[m.sourceId]) {
+      srcToEntityId.set(m.sourceId, KNOWN_CLOUD_UUIDS[m.sourceId]);
+      continue;
     }
 
-    if (match) {
+    let match: Entity | undefined;
+    if (m.isArmanas) {
+      match = existingById.get('43de1704-3746-444a-af5e-1613b3fe9b3a') || existingById.get('char-hannik-armanas') || existingByTitle.get('hannik armanas');
+    } else if (m.sourceId === 'be0304e5') {
+      match = existingById.get('099c2259-10f0-4e5e-bf38-69df60934236') || existingById.get('char-hannik-debalak') || existingByTitle.get('hannik debalak');
+    } else if (m.sourceId === '7c3f5f62') {
+      match = existingById.get('fd581a68-92a4-496a-9769-22e2c198ad17') || existingById.get('char-hannik-lonko') || existingByTitle.get('hannik lonko');
+    } else {
+      match = existingById.get(m.entityId);
+    }
+
+    if (match && uuidRegex.test(match.id)) {
       srcToEntityId.set(m.sourceId, match.id);
     } else {
-      srcToEntityId.set(m.sourceId, m.entityId);
+      // Deterministic RFC 4122 UUID ensuring consistent stable IDs across all devices
+      const deterministicId = uuidv5('armanite-' + m.sourceId, ARMANITE_NAMESPACE);
+      srcToEntityId.set(m.sourceId, deterministicId);
     }
   }
 
@@ -3915,9 +3937,10 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
   let updatedCount = 0;
   let newCount = 0;
 
-  // 3. Create or Update Armanites Cultural Entity
-  const cultureId = 'culture-armanites';
-  const existingCulture = existingById.get(cultureId) || existingByTitle.get('armanites');
+  // 3. Create or Update Armanites Cultural Entity with stable UUID
+  const cultureDeterministicId = uuidv5('culture-armanites', ARMANITE_NAMESPACE);
+  const existingCulture = existingById.get(cultureDeterministicId) || existingById.get('culture-armanites') || existingByTitle.get('armanites');
+  const cultureId = (existingCulture && uuidRegex.test(existingCulture.id)) ? existingCulture.id : cultureDeterministicId;
   const cultureEntryNumber = existingCulture?.entryNumber ?? nextEntryNum++;
 
   const armanitesCultureDoc = makeDoc([
@@ -3954,7 +3977,7 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
   ]);
 
   const armanitesCultureEntity: Entity = {
-    id: existingCulture?.id ?? cultureId,
+    id: cultureId,
     worldId: finalWorldId,
     typeId: 'et-culture',
     title: 'Armanites',
@@ -3966,7 +3989,8 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
       'House of Armanas',
       'Descendants of Hannik Armanas',
       'Armanite Dynasty',
-      'Armanite Lineage'
+      'Armanite Lineage',
+      'culture-armanites'
     ],
     article: armanitesCultureDoc,
     properties: {
@@ -3975,7 +3999,8 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
       namingConvention: 'Family name first (Hannik [Given Name])',
       ancestralPatriarch: 'Hannik Grettoinino',
       confirmedMembersCount: 110,
-      confirmedDescendantsCount: 81
+      confirmedDescendantsCount: 81,
+      legacyId: 'culture-armanites'
     },
     tags: ['culture', 'armanite', 'family-tree', 'dynasty', 'lineage'],
     canonStatus: 'canon',
@@ -3990,7 +4015,7 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
     const finalId = srcToEntityId.get(m.sourceId)!;
     let existing = existingById.get(finalId) || existingByTitle.get(m.displayTitle.trim().toLowerCase());
     if (m.isArmanas) {
-      existing = existing || existingById.get('char-hannik-armanas') || existingByTitle.get('hannik armanas');
+      existing = existing || existingById.get('43de1704-3746-444a-af5e-1613b3fe9b3a') || existingById.get('char-hannik-armanas') || existingByTitle.get('hannik armanas');
     }
 
     const assignedEntryNumber = existing?.entryNumber ?? nextEntryNum++;
@@ -4140,7 +4165,7 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
       typeId: 'et-character',
       title: m.displayTitle,
       entryNumber: assignedEntryNumber,
-      aliases: m.aliases,
+      aliases: Array.from(new Set([...(m.aliases || []), m.entityId, m.sourceId, m.displayTitle, m.rawName, m.givenName].filter(Boolean))),
       article: articleDoc,
       properties: {
         ...(existing?.properties || {}),
@@ -4148,6 +4173,7 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
         familyName: 'Hannik',
         gender: m.gender || 'unspecified',
         sourceId: m.sourceId,
+        legacyId: m.entityId,
         culturalNaming: 'Family name first (Hannik [Given Name])',
         generationFromHannik: m.generationFromHannik,
         isArmanite: m.isArmanas || m.isDescendant,
@@ -4162,7 +4188,7 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
     entitiesToUpsert.push(entityRecord);
   }
 
-  // 5. Build Relationships
+  // 5. Build Relationships with stable deterministic UUIDs
   const registeredSpousePairs = new Set<string>();
 
   for (const m of ARMANITE_EXPORT_MANIFEST) {
@@ -4173,7 +4199,7 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
       const toEntityId = srcToEntityId.get(cSrcId);
       if (toEntityId) {
         relationshipsToInsert.push({
-          id: `rel-parent-${fromEntityId}-${toEntityId}`,
+          id: uuidv5(`rel-parent-${fromEntityId}-${toEntityId}`, ARMANITE_NAMESPACE),
           fromEntityId,
           toEntityId,
           typeId: 'rt-parent-of',
@@ -4194,7 +4220,7 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
         if (!registeredSpousePairs.has(pairKey)) {
           registeredSpousePairs.add(pairKey);
           relationshipsToInsert.push({
-            id: `rel-spouse-${fromEntityId}-${toEntityId}`,
+            id: uuidv5(`rel-spouse-${pairKey}`, ARMANITE_NAMESPACE),
             fromEntityId,
             toEntityId,
             typeId: 'rt-spouse-of',
@@ -4211,7 +4237,7 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
     // Connect Armanites to the Armanites Cultural Entity
     if (m.isArmanas || m.isDescendant) {
       relationshipsToInsert.push({
-        id: `rel-culture-${fromEntityId}-${cultureId}`,
+        id: uuidv5(`rel-culture-${fromEntityId}-${cultureId}`, ARMANITE_NAMESPACE),
         fromEntityId,
         toEntityId: cultureId,
         typeId: 'rt-member-of',
@@ -4239,6 +4265,14 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
   // 7. Write to IndexedDB Transaction
   console.log(`[importArmaniteLore] Executing bulk write for ${entitiesToUpsert.length} entities and ${relationshipsToInsert.length} relationships...`);
   await db.transaction('rw', db.entities, db.relationships, async () => {
+    // Delete legacy non-UUID Armanite entities
+    const oldNonUuids = existingEntities.filter(e =>
+      !uuidRegex.test(e.id) && (e.id.startsWith('char-armanite-') || e.id === 'char-hannik-armanas' || e.id === 'culture-armanites')
+    );
+    if (oldNonUuids.length > 0) {
+      await db.entities.bulkDelete(oldNonUuids.map(e => e.id));
+    }
+
     await db.entities.bulkPut(entitiesToUpsert);
 
     // Clean old relations with matching IDs to avoid collision
@@ -4246,6 +4280,17 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
     await db.relationships.bulkDelete(relIds);
     await db.relationships.bulkAdd(relationshipsToInsert);
   });
+
+  // 8. Auto-sync to persistent cloud database if owner is authenticated
+  try {
+    const user = await getCurrentUser();
+    if (user) {
+      console.log('[importArmaniteLore] Owner session active. Auto-syncing Armanites to Supabase cloud...');
+      await syncArmanitesToCloud(user);
+    }
+  } catch (cloudErr) {
+    console.warn('[importArmaniteLore] Note: Cloud auto-sync deferred until owner signs in:', cloudErr);
+  }
 
   console.log('[importArmaniteLore] Complete! All 110 people and Armanites cultural article successfully imported.');
 

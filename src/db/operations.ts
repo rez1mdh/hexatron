@@ -240,7 +240,21 @@ export async function getRecentlyEditedEntities(limit = 8): Promise<Entity[]> {
 }
 
 export async function getEntity(id: string) {
-  return db.entities.get(id);
+  const direct = await db.entities.get(id);
+  if (direct) return direct;
+
+  // Fallback: lookup by alias, legacy ID, sourceId, or lowercase title
+  const idLower = id.toLowerCase().trim();
+  const matched = await db.entities.filter(e => {
+    if (e.deletedAt) return false;
+    if (e.title.toLowerCase() === idLower) return true;
+    if (e.aliases && e.aliases.some(a => a.toLowerCase() === idLower)) return true;
+    const props = e.properties as Record<string, unknown> | undefined;
+    if (props && (props.legacyId === id || props.sourceId === id)) return true;
+    return false;
+  }).first();
+
+  return matched;
 }
 
 export async function searchEntities(query: string, worldId?: string): Promise<Entity[]> {

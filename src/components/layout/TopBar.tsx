@@ -153,16 +153,19 @@ export default function TopBar() {
           className="topbar-account-btn"
           onClick={() => setIsAuthOpen(true)}
           title={currentUser ? `Signed in as Owner (${currentUser.email})` : (cloudConfigured ? 'Owner Sign In' : 'Cloud Setup & Sync')}
+          aria-label="Account and Cloud Sync"
         >
           {currentUser ? (
             <>
               <span className="status-dot online" />
-              <span className="account-email truncate">{currentUser.email?.split('@')[0]} (Owner)</span>
+              <span className="account-email-desktop truncate">{currentUser.email?.split('@')[0]}</span>
+              <span className="account-badge-owner">Owner</span>
             </>
           ) : (
             <>
               <UserIcon size={14} className={cloudConfigured ? 'text-accent' : 'text-muted'} />
-              <span className="account-email">{cloudConfigured ? 'Owner Sign In' : 'Cloud Setup'}</span>
+              <span className="account-text-desktop">{cloudConfigured ? 'Owner Sign In' : 'Cloud Setup'}</span>
+              <span className="account-text-mobile">{cloudConfigured ? 'Sign In' : 'Cloud'}</span>
             </>
           )}
         </button>

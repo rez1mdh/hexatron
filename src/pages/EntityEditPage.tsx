@@ -1,8 +1,11 @@
 // src/pages/EntityEditPage.tsx — create/edit entity form + dynamic schema + relationships + editor
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, X, Plus, Trash2, Upload, Layers, Link as LinkIcon, Settings2, Image as ImageIcon } from 'lucide-react';
+import {
+  Save, X, Plus, Trash2, Upload, Layers, Link as LinkIcon, Settings2,
+  Image as ImageIcon, Film, AlertTriangle, AlertCircle, Copy, Check, RefreshCw, Clock
+} from 'lucide-react';
 import {
   getEntity, createEntity, updateEntity, getEntityTypes,
   addImage, getImages, deleteImage, updateImage, getEntities, getRelationships, createRelationship, getRelationshipTypes, getWorlds, softDeleteEntity
@@ -18,11 +21,30 @@ import RelationshipEditor, { type PendingRelationship } from '../components/ui/R
 import DemographicDatasetEditor from '../components/ui/DemographicDatasetEditor';
 import InheritanceAssistant from '../components/ui/InheritanceAssistant';
 import InsertMediaModal from '../components/ui/InsertMediaModal';
-import { Film } from 'lucide-react';
+import { formatDateTime, formatRelativeTime } from '../utils/dateFormatter';
 import './pages.css';
 
 interface Props {
   mode?: 'create' | 'edit';
+}
+
+function extractPreviewText(articleJson?: string): string {
+  if (!articleJson) return '';
+  try {
+    const doc = typeof articleJson === 'string' && (articleJson.startsWith('{') || articleJson.startsWith('['))
+      ? JSON.parse(articleJson)
+      : null;
+    if (!doc || !Array.isArray(doc.content)) return typeof articleJson === 'string' ? articleJson : '';
+    const parts: string[] = [];
+    function walk(node: any) {
+      if (node.text) parts.push(node.text);
+      if (node.content && Array.isArray(node.content)) node.content.forEach(walk);
+    }
+    walk(doc);
+    return parts.join(' ').slice(0, 350);
+  } catch {
+    return String(articleJson).slice(0, 350);
+  }
 }
 
 export default function EntityEditPage({ mode }: Props) {
@@ -60,8 +82,21 @@ export default function EntityEditPage({ mode }: Props) {
   const [aliasInput, setAliasInput] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'unsaved' | 'saving' | 'saved' | 'failed'>('idle');
+  const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [baseUpdatedAt, setBaseUpdatedAt] = useState<number | null>(null);
+  const [conflictData, setConflictData] = useState<{
+    latestEntity: Entity;
+    draftForm: typeof form;
+  } | null>(null);
+  const [localDraftAvailable, setLocalDraftAvailable] = useState<{
+    form: typeof form;
+    pendingRelationships?: PendingRelationship[];
+    savedAt: number;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
+
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [existingMedia, setExistingMedia] = useState<EntityImage[]>([]);
@@ -70,6 +105,39 @@ export default function EntityEditPage({ mode }: Props) {
 
   // Entity Type Manager Modal state
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
+
+  // Synchronized refs to avoid stale closures in debounced callbacks
+  const formRef = useRef(form);
+  formRef.current = form;
+  const pendingRelationshipsRef = useRef(pendingRelationships);
+  pendingRelationshipsRef.current = pendingRelationships;
+  const isDirtyRef = useRef(isDirty);
+  isDirtyRef.current = isDirty;
+  const baseUpdatedAtRef = useRef(baseUpdatedAt);
+  baseUpdatedAtRef.current = baseUpdatedAt;
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const draftKey = `hexatron_draft_${entityId || 'new'}`;
+
+  function persistDraftToStorage(f: typeof form, p: PendingRelationship[] = pendingRelationshipsRef.current) {
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({
+        entityId: entityId || null,
+        worldId: worldId || null,
+        form: f,
+        pendingRelationships: p,
+        savedAt: Date.now(),
+      }));
+    } catch (err) {
+      console.warn('Failed to persist draft to localStorage:', err);
+    }
+  }
+
+  function removeDraftFromStorage() {
+    try {
+      localStorage.removeItem(draftKey);
+    } catch {}
+  }
 
   async function loadData() {
     const types = await getEntityTypes();
@@ -93,7 +161,10 @@ export default function EntityEditPage({ mode }: Props) {
     if (isEdit && entityId) {
       getEntity(entityId).then(async e => {
         if (!e) return;
-        setForm({
+        setBaseUpdatedAt(e.updatedAt);
+        baseUpdatedAtRef.current = e.updatedAt;
+
+        const initialForm = {
           title: e.title,
           typeId: e.typeId,
           aliases: e.aliases || [],
@@ -102,31 +173,84 @@ export default function EntityEditPage({ mode }: Props) {
           article: e.article ?? '',
           properties: e.properties ?? {},
           demographicDatasets: e.demographicDatasets || [],
-        });
+        };
+        setForm(initialForm);
+        formRef.current = initialForm;
+
         const rels = await getRelationships(entityId);
         setExistingRelationships(rels);
         const ents = await getEntities(e.worldId);
         setAvailableEntities(ents);
+
+        // Check for newer local draft
+        try {
+          const rawDraft = localStorage.getItem(`hexatron_draft_${entityId}`);
+          if (rawDraft) {
+            const parsed = JSON.parse(rawDraft);
+            if (parsed && parsed.form && parsed.savedAt && parsed.savedAt > (e.updatedAt || 0) + 1500) {
+              setLocalDraftAvailable({
+                form: parsed.form,
+                pendingRelationships: parsed.pendingRelationships || [],
+                savedAt: parsed.savedAt,
+              });
+            }
+          }
+        } catch {}
       });
+    } else {
+      // New entity draft check
+      try {
+        const rawDraft = localStorage.getItem('hexatron_draft_new');
+        if (rawDraft) {
+          const parsed = JSON.parse(rawDraft);
+          if (parsed && parsed.form && (parsed.form.title || parsed.form.article)) {
+            setLocalDraftAvailable({
+              form: parsed.form,
+              pendingRelationships: parsed.pendingRelationships || [],
+              savedAt: parsed.savedAt || Date.now(),
+            });
+          }
+        }
+      } catch {}
     }
   }, [entityId, isEdit, worldId]);
 
   function setField<K extends keyof typeof form>(key: K, val: typeof form[K]) {
-    setForm(f => ({ ...f, [key]: val }));
+    setForm(f => {
+      const next = { ...f, [key]: val };
+      formRef.current = next;
+      persistDraftToStorage(next);
+      return next;
+    });
     setIsDirty(true);
+    isDirtyRef.current = true;
+    setSaveStatus('unsaved');
+
+    // Debounced autosave after 1800ms
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      if (isDirtyRef.current && formRef.current.title.trim()) {
+        performSave(true);
+      }
+    }, 1800);
   }
 
   // Warn user before leaving page if unsaved changes exist
   useEffect(() => {
     function handleBeforeUnload(e: BeforeUnloadEvent) {
-      if (isDirty) {
+      if (isDirtyRef.current) {
         e.preventDefault();
         e.returnValue = '';
       }
     }
     window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isDirty]);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const currentType = entityTypes.find(t => t.id === form.typeId);
 
@@ -151,14 +275,46 @@ export default function EntityEditPage({ mode }: Props) {
     setImagePreview(URL.createObjectURL(file));
   }
 
-  async function handleSave() {
-    if (!form.title.trim()) return alert('Title is required.');
+  async function performSave(isAutosave = false) {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+
+    const currentForm = formRef.current;
+    if (!currentForm.title.trim()) {
+      if (!isAutosave) alert('Title is required.');
+      return;
+    }
+
     setSaving(true);
     setSaveStatus('saving');
+
     try {
-      let wId = worldId ?? (isEdit ? (await getEntity(entityId!))?.worldId : undefined);
+      const currentEntityId = entityId;
+
+      // 1. Cross-device conflict protection
+      if (isEdit && currentEntityId) {
+        const latest = await getEntity(currentEntityId);
+        if (latest && baseUpdatedAtRef.current && latest.updatedAt > baseUpdatedAtRef.current) {
+          console.warn('Cross-device conflict detected:', {
+            baseUpdatedAt: baseUpdatedAtRef.current,
+            latestUpdatedAt: latest.updatedAt,
+          });
+          persistDraftToStorage(currentForm, pendingRelationshipsRef.current);
+          setConflictData({
+            latestEntity: latest,
+            draftForm: { ...currentForm },
+          });
+          setSaveStatus('failed');
+          setSaving(false);
+          return;
+        }
+      }
+
+      // 2. Resolve worldId
+      let wId = worldId ?? (isEdit && currentEntityId ? (await getEntity(currentEntityId))?.worldId : undefined);
       if (!wId) {
-        // Fallback to active store world or first existing world in database
         const { currentWorldId } = useAppStore.getState();
         wId = currentWorldId ?? (await getWorlds())[0]?.id;
       }
@@ -166,36 +322,45 @@ export default function EntityEditPage({ mode }: Props) {
 
       const data = {
         worldId: wId,
-        typeId: form.typeId,
-        title: form.title.trim(),
-        aliases: form.aliases,
-        tags: form.tags,
-        canonStatus: form.canonStatus,
-        article: form.article || undefined,
-        properties: form.properties,
-        demographicDatasets: form.demographicDatasets.length > 0 ? form.demographicDatasets : undefined,
+        typeId: currentForm.typeId,
+        title: currentForm.title.trim(),
+        aliases: currentForm.aliases,
+        tags: currentForm.tags,
+        canonStatus: currentForm.canonStatus,
+        article: currentForm.article || undefined,
+        properties: currentForm.properties,
+        demographicDatasets: currentForm.demographicDatasets.length > 0 ? currentForm.demographicDatasets : undefined,
       };
 
       let savedId: string;
-      if (isEdit && entityId) {
-        await updateEntity(entityId, data);
-        savedId = entityId;
+      if (isEdit && currentEntityId) {
+        await updateEntity(currentEntityId, data);
+        savedId = currentEntityId;
       } else {
         const created = await createEntity(data);
         savedId = created.id;
       }
 
-      // Synchronize entity to cloud if owner is authenticated
-      if (currentUser) {
-        const fullEntity = await getEntity(savedId);
-        if (fullEntity) {
-          await pushEntityToCloud(fullEntity, currentUser.id);
+      // 3. Update baseUpdatedAt from confirmed database state
+      const confirmed = await getEntity(savedId);
+      if (confirmed) {
+        setBaseUpdatedAt(confirmed.updatedAt);
+        baseUpdatedAtRef.current = confirmed.updatedAt;
+      }
+
+      // 4. Synchronize to cloud if owner is authenticated
+      if (currentUser && confirmed) {
+        try {
+          await pushEntityToCloud(confirmed, currentUser.id);
+        } catch (cloudErr) {
+          console.warn('Background cloud sync deferred:', cloudErr);
         }
       }
 
-      // Save pending relationships
-      if (pendingRelationships.length > 0) {
-        for (const p of pendingRelationships) {
+      // 5. Save pending relationships
+      const currentPending = pendingRelationshipsRef.current;
+      if (currentPending.length > 0) {
+        for (const p of currentPending) {
           const createdRel = await createRelationship({
             fromEntityId: savedId,
             toEntityId: p.toEntityId,
@@ -208,9 +373,13 @@ export default function EntityEditPage({ mode }: Props) {
             await pushRelationshipToCloud(createdRel, currentUser.id);
           }
         }
+        setPendingRelationships([]);
+        pendingRelationshipsRef.current = [];
+        const rels = await getRelationships(savedId);
+        setExistingRelationships(rels);
       }
 
-      // Save portrait image if picked
+      // 6. Save portrait image if picked
       if (imageFile) {
         const blob = await imageFile.arrayBuffer().then(ab => new Blob([ab], { type: imageFile.type }));
         await addImage({
@@ -218,20 +387,106 @@ export default function EntityEditPage({ mode }: Props) {
           role: 'portrait',
           localBlob: blob,
           mimeType: imageFile.type,
-          caption: form.title,
+          caption: currentForm.title,
           sortOrder: 0,
         });
+        setImageFile(null);
       }
 
+      // 7. Clear local draft since changes are successfully confirmed in DB
+      removeDraftFromStorage();
+
       setIsDirty(false);
+      isDirtyRef.current = false;
+      setLastSavedTime(new Date());
       setSaveStatus('saved');
-      navigate(`/entity/${savedId}`);
+
+      if (!isAutosave) {
+        navigate(`/entity/${savedId}`);
+      } else if (!isEdit) {
+        // Seamlessly switch URL so further autosaves update this newly created entity
+        navigate(`/entity/${savedId}/edit`, { replace: true });
+      }
     } catch (err) {
+      console.error('Save failed:', err);
       setSaveStatus('failed');
-      alert('Save failed: ' + (err as Error).message);
+      if (!isAutosave) {
+        alert('Save failed: ' + (err as Error).message);
+      }
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleForceOverwrite() {
+    if (!conflictData) return;
+    setBaseUpdatedAt(conflictData.latestEntity.updatedAt);
+    baseUpdatedAtRef.current = conflictData.latestEntity.updatedAt;
+    setConflictData(null);
+    await performSave(false);
+  }
+
+  function handleKeepStoredVersion() {
+    if (!conflictData) return;
+    const e = conflictData.latestEntity;
+    const remoteForm = {
+      title: e.title,
+      typeId: e.typeId,
+      aliases: e.aliases || [],
+      tags: e.tags || [],
+      canonStatus: e.canonStatus,
+      article: e.article ?? '',
+      properties: e.properties ?? {},
+      demographicDatasets: e.demographicDatasets || [],
+    };
+    setForm(remoteForm);
+    formRef.current = remoteForm;
+    setBaseUpdatedAt(e.updatedAt);
+    baseUpdatedAtRef.current = e.updatedAt;
+    removeDraftFromStorage();
+    setIsDirty(false);
+    isDirtyRef.current = false;
+    setSaveStatus('saved');
+    setConflictData(null);
+  }
+
+  async function handleCopyDraftText() {
+    if (!conflictData) return;
+    const txt = extractPreviewText(conflictData.draftForm.article) || conflictData.draftForm.title;
+    try {
+      await navigator.clipboard.writeText(conflictData.draftForm.article || txt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      prompt('Copy your draft content:', conflictData.draftForm.article || txt);
+    }
+  }
+
+  function handleRestoreDraft() {
+    if (!localDraftAvailable) return;
+    setForm(localDraftAvailable.form);
+    formRef.current = localDraftAvailable.form;
+    if (localDraftAvailable.pendingRelationships) {
+      setPendingRelationships(localDraftAvailable.pendingRelationships);
+      pendingRelationshipsRef.current = localDraftAvailable.pendingRelationships;
+    }
+    setIsDirty(true);
+    isDirtyRef.current = true;
+    setSaveStatus('unsaved');
+    setLocalDraftAvailable(null);
+  }
+
+  function handleDiscardDraft() {
+    removeDraftFromStorage();
+    setLocalDraftAvailable(null);
+  }
+
+  function handleCancel() {
+    if (isDirtyRef.current) {
+      if (!confirm('You have unsaved changes. Are you sure you want to discard them and go back?')) return;
+    }
+    removeDraftFromStorage();
+    navigate(-1);
   }
 
   async function handleDelete() {
@@ -285,24 +540,32 @@ export default function EntityEditPage({ mode }: Props) {
         <h2 className="edit-title">{isEdit ? 'Edit Entity' : 'New Entity'}</h2>
         <div className="edit-actions">
           {/* Save Status Feedback */}
-          {saveStatus === 'saving' && (
-            <span className="editor-save-status saving">
-              <span className="lep-status-dot" style={{ background: '#f59e0b', width: 6, height: 6, borderRadius: '50%', display: 'inline-block' }} />
-              Saving…
-            </span>
-          )}
-          {saveStatus === 'saved' && (
-            <span className="editor-save-status saved">
-              <span className="lep-status-dot" style={{ background: '#10b981', width: 6, height: 6, borderRadius: '50%', display: 'inline-block' }} />
-              Saved
-            </span>
-          )}
-          {saveStatus === 'failed' && (
-            <span className="editor-save-status failed">
-              <span className="lep-status-dot" style={{ background: '#ef4444', width: 6, height: 6, borderRadius: '50%', display: 'inline-block' }} />
-              Save Failed
-            </span>
-          )}
+          <div className="editor-save-status-wrap">
+            {saveStatus === 'unsaved' && (
+              <span className="editor-save-status unsaved" title="Unsaved changes (autosaving soon)">
+                <span className="editor-status-dot unsaved" />
+                Unsaved changes
+              </span>
+            )}
+            {saveStatus === 'saving' && (
+              <span className="editor-save-status saving" title="Saving changes to database…">
+                <span className="editor-status-dot saving" />
+                Saving…
+              </span>
+            )}
+            {saveStatus === 'saved' && (
+              <span className="editor-save-status saved" title={lastSavedTime ? `Saved to database at ${lastSavedTime.toLocaleTimeString()}` : 'All changes saved'}>
+                <span className="editor-status-dot saved" />
+                Saved {lastSavedTime ? lastSavedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+              </span>
+            )}
+            {saveStatus === 'failed' && (
+              <span className="editor-save-status failed" title="Save failed. Click Retry Save to try again.">
+                <span className="editor-status-dot failed" />
+                Save failed
+              </span>
+            )}
+          </div>
 
           {isEdit && (
             <button
@@ -316,14 +579,43 @@ export default function EntityEditPage({ mode }: Props) {
               <Trash2 size={14} /> Delete
             </button>
           )}
-          <button className="btn-ghost small" onClick={() => navigate(-1)}>
+          <button className="btn-ghost small" onClick={handleCancel}>
             <X size={14} /> Cancel
           </button>
-          <button className="btn-primary small" onClick={handleSave} disabled={saving}>
+          <button className="btn-primary small" onClick={() => performSave(false)} disabled={saving}>
             <Save size={14} /> {saving ? 'Saving…' : (saveStatus === 'failed' ? 'Retry Save' : 'Save Entity')}
           </button>
         </div>
       </div>
+
+      {/* Draft Recovery Alert */}
+      {localDraftAvailable && (
+        <div className="draft-recovery-alert">
+          <div className="draft-alert-info">
+            <AlertCircle size={15} className="text-accent" />
+            <span>
+              Found an unsaved local draft from{' '}
+              <strong>{formatDateTime(localDraftAvailable.savedAt)}</strong> ({formatRelativeTime(localDraftAvailable.savedAt)}).
+            </span>
+          </div>
+          <div className="draft-alert-actions">
+            <button
+              type="button"
+              className="btn-primary tiny"
+              onClick={handleRestoreDraft}
+            >
+              Restore Draft
+            </button>
+            <button
+              type="button"
+              className="btn-ghost tiny"
+              onClick={handleDiscardDraft}
+            >
+              Discard Draft
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="edit-body">
         {/* Left: Metadata, Properties, and Relationships Panel */}
@@ -627,6 +919,92 @@ export default function EntityEditPage({ mode }: Props) {
           setExistingMedia(updated);
         }}
       />
+
+      {/* Cross-Device Conflict Resolution Modal */}
+      {conflictData && (
+        <div className="conflict-modal-overlay" role="dialog" aria-modal="true">
+          <div className="conflict-modal-card">
+            <div className="conflict-modal-header">
+              <AlertTriangle size={18} color="#f59e0b" />
+              <h3>Cross-Device Edit Conflict Detected</h3>
+            </div>
+            <div className="conflict-modal-body">
+              <p className="conflict-modal-desc">
+                This article was modified in another tab or device at{' '}
+                <strong>{formatDateTime(conflictData.latestEntity.updatedAt)}</strong> ({formatRelativeTime(conflictData.latestEntity.updatedAt)}) while you were editing.
+                Choose an option below to ensure no work is lost:
+              </p>
+
+              <div className="conflict-comparison">
+                <div className="conflict-col">
+                  <div className="conflict-col-title">Your Current Draft</div>
+                  <div className="conflict-col-meta">
+                    Title: <strong>{conflictData.draftForm.title || '(Untitled)'}</strong>
+                  </div>
+                  <div className="conflict-col-meta">
+                    Canon Status: <span>{conflictData.draftForm.canonStatus}</span>
+                  </div>
+                  <div className="conflict-col-meta">
+                    Properties: <span>{Object.keys(conflictData.draftForm.properties || {}).length} fields</span>
+                  </div>
+                  <div className="conflict-preview">
+                    {extractPreviewText(conflictData.draftForm.article) || '(No article content)'}
+                  </div>
+                </div>
+
+                <div className="conflict-col highlight">
+                  <div className="conflict-col-title">Newer Version in Database</div>
+                  <div className="conflict-col-meta">
+                    Title: <strong>{conflictData.latestEntity.title}</strong>
+                  </div>
+                  <div className="conflict-col-meta">
+                    Canon Status: <span>{conflictData.latestEntity.canonStatus}</span>
+                  </div>
+                  <div className="conflict-col-meta">
+                    Properties: <span>{Object.keys(conflictData.latestEntity.properties || {}).length} fields</span>
+                  </div>
+                  <div className="conflict-preview">
+                    {extractPreviewText(conflictData.latestEntity.article) || '(No article content)'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="conflict-modal-actions">
+              <button
+                type="button"
+                className="btn-primary small"
+                onClick={handleForceOverwrite}
+                disabled={saving}
+              >
+                Overwrite with My Draft
+              </button>
+              <button
+                type="button"
+                className="btn-secondary small"
+                onClick={handleKeepStoredVersion}
+                disabled={saving}
+              >
+                Discard Draft &amp; Load Latest
+              </button>
+              <button
+                type="button"
+                className="btn-ghost small"
+                onClick={handleCopyDraftText}
+              >
+                {copied ? <><Check size={13} color="#10b981" /> Copied!</> : <><Copy size={13} /> Copy Draft Text</>}
+              </button>
+              <button
+                type="button"
+                className="btn-ghost small"
+                onClick={() => setConflictData(null)}
+              >
+                Review Manually
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

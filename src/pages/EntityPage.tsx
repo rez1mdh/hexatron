@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Edit2, Trash2, Image as ImageIcon, GitBranch, Compass, FileText, ChevronLeft, ChevronRight, Film } from 'lucide-react';
+import { Edit2, Trash2, Image as ImageIcon, GitBranch, Compass, FileText, ChevronLeft, ChevronRight, Film, Clock } from 'lucide-react';
 import {
   getEntity, getEntityTypes, getImages, softDeleteEntity,
   getWorld, getEntities, formatEntryNumber
@@ -15,6 +15,7 @@ import CanonBadge from '../components/ui/CanonBadge';
 import MediaGallery from '../components/ui/MediaGallery';
 import InteractiveChart from '../components/ui/InteractiveChart';
 import FamilyTree from '../components/ui/FamilyTree';
+import { formatFullDate, formatRelativeTime, formatDateTime } from '../utils/dateFormatter';
 import './pages.css';
 
 interface TocItem {
@@ -170,88 +171,105 @@ export default function EntityPage() {
 
   return (
     <div className="wiki-article-page">
-      {/* ── 1. Wikipedia Article Header & Meta ─────────────────────────────── */}
-      <header className="wiki-header">
-        <div className="wiki-header-meta">
-          <div className="wiki-breadcrumbs">
-            <div className="wiki-nav-arrows">
-              <button
-                className="wiki-nav-arrow-btn"
-                onClick={() => prevEntity ? navigate(`/entity/${prevEntity.id}`) : navigate(-1)}
-                title={prevEntity ? `Previous: ${prevEntity.title}` : 'Go back'}
-              >
-                <ChevronLeft size={14} />
-              </button>
-              <button
-                className="wiki-nav-arrow-btn"
-                onClick={() => nextEntity ? navigate(`/entity/${nextEntity.id}`) : navigate(1)}
-                title={nextEntity ? `Next: ${nextEntity.title}` : 'Go forward'}
-              >
-                <ChevronRight size={14} />
-              </button>
-            </div>
-            {worldTitle && <span className="wiki-breadcrumb-item">{worldTitle}</span>}
-            {worldTitle && <span className="wiki-breadcrumb-sep">/</span>}
-            {entityType && (
-              <span
-                className="wiki-breadcrumb-type"
-                style={{ color: entityType.color }}
-              >
-                {entityType.name}
-              </span>
-            )}
-            {formattedNumber && (
-              <span className="wiki-entry-badge" title="Permanent Entry Number">
-                {formattedNumber}
-              </span>
-            )}
-            <CanonBadge status={entity.canonStatus} />
+      {/* ── 1. Sticky Navigation & Article Meta Bar ──────────────────────── */}
+      <div className="wiki-sticky-header-meta">
+        <div className="wiki-breadcrumbs">
+          <div className="wiki-nav-arrows">
+            <button
+              className="wiki-nav-arrow-btn"
+              onClick={() => prevEntity ? navigate(`/entity/${prevEntity.id}`) : navigate(-1)}
+              title={prevEntity ? `Previous entity: ${prevEntity.title}` : 'Go back'}
+              aria-label="Previous entity"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <button
+              className="wiki-nav-arrow-btn"
+              onClick={() => nextEntity ? navigate(`/entity/${nextEntity.id}`) : navigate(1)}
+              title={nextEntity ? `Next entity: ${nextEntity.title}` : 'Go forward'}
+              aria-label="Next entity"
+            >
+              <ChevronRight size={14} />
+            </button>
           </div>
+          {worldTitle && <span className="wiki-breadcrumb-item">{worldTitle}</span>}
+          {worldTitle && <span className="wiki-breadcrumb-sep">/</span>}
+          {entityType && (
+            <span
+              className="wiki-breadcrumb-type"
+              style={{ color: entityType.color }}
+            >
+              {entityType.name}
+            </span>
+          )}
+          {formattedNumber && (
+            <span className="wiki-entry-badge" title="Permanent Entry Number">
+              {formattedNumber}
+            </span>
+          )}
+          <CanonBadge status={entity.canonStatus} />
 
-          <div className="wiki-header-actions">
-            <button
-              className="wiki-action-tab active"
-              title="Article view"
+          {/* Creation & Last Edited Timestamps */}
+          {(entity.createdAt || entity.updatedAt) && (
+            <div
+              className="wiki-timestamps-badge"
+              title={`${entity.createdAt ? `Created: ${formatDateTime(entity.createdAt)}\n` : ''}${entity.updatedAt ? `Last edited: ${formatDateTime(entity.updatedAt)}` : ''}`}
             >
-              <FileText size={13} /> Article
-            </button>
-            {isOwner && (
-              <button
-                className="wiki-action-tab"
-                onClick={() => navigate(`/entity/${entity.id}/edit`)}
-                title="Edit this article"
-              >
-                <Edit2 size={13} /> Edit
-              </button>
-            )}
-            <button
-              className="wiki-action-tab"
-              onClick={() => navigate(`/entity/${entity.id}/graph`)}
-              title="View in Network Graph"
-            >
-              <Compass size={13} /> Graph
-            </button>
-            {(entity.typeId === 'et-family' || entity.typeId === 'et-character') && (
-              <button
-                className={`wiki-action-tab ${showFamilyTree ? 'active' : ''}`}
-                onClick={() => setShowFamilyTree(!showFamilyTree)}
-                title="Toggle visual family tree"
-              >
-                <GitBranch size={13} /> Family Tree
-              </button>
-            )}
-            {isOwner && (
-              <button
-                className="wiki-action-tab danger"
-                onClick={handleDelete}
-                title="Delete entity"
-              >
-                <Trash2 size={13} /> Delete
-              </button>
-            )}
-          </div>
+              <Clock size={11} className="wiki-timestamp-icon" />
+              <span className="wiki-timestamp-text">
+                {entity.createdAt ? `Created ${formatFullDate(entity.createdAt)}` : ''}
+                {entity.createdAt && entity.updatedAt ? ' · ' : ''}
+                {entity.updatedAt ? `Edited ${formatRelativeTime(entity.updatedAt)}` : ''}
+              </span>
+            </div>
+          )}
         </div>
 
+        <div className="wiki-header-actions">
+          <button
+            className="wiki-action-tab active"
+            title="Article view"
+          >
+            <FileText size={13} /> Article
+          </button>
+          {isOwner && (
+            <button
+              className="wiki-action-tab"
+              onClick={() => navigate(`/entity/${entity.id}/edit`)}
+              title="Edit this article"
+            >
+              <Edit2 size={13} /> Edit
+            </button>
+          )}
+          <button
+            className="wiki-action-tab"
+            onClick={() => navigate(`/entity/${entity.id}/graph`)}
+            title="View in Network Graph"
+          >
+            <Compass size={13} /> Graph
+          </button>
+          {(entity.typeId === 'et-family' || entity.typeId === 'et-character') && (
+            <button
+              className={`wiki-action-tab ${showFamilyTree ? 'active' : ''}`}
+              onClick={() => setShowFamilyTree(!showFamilyTree)}
+              title="Toggle visual family tree"
+            >
+              <GitBranch size={13} /> Family Tree
+            </button>
+          )}
+          {isOwner && (
+            <button
+              className="wiki-action-tab danger"
+              onClick={handleDelete}
+              title="Delete entity"
+            >
+              <Trash2 size={13} /> Delete
+            </button>
+          )}
+        </div>
+      </div>
+
+      <header className="wiki-header">
         <h1 className="wiki-title">
           {formattedNumber ? <span className="wiki-title-num">{formattedNumber} — </span> : null}
           {entity.title}

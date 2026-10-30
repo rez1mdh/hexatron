@@ -1606,6 +1606,11 @@
   border-color: rgba(239, 68, 68, 0.3);
 }
 
+.editor-save-status.offline-pending {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
 .editor-status-dot {
   width: 7px;
   height: 7px;
@@ -1614,6 +1619,10 @@
 }
 
 .editor-status-dot.unsaved {
+  background: #f59e0b;
+}
+
+.editor-status-dot.offline {
   background: #f59e0b;
 }
 

@@ -136,11 +136,11 @@ drop policy if exists "Users own their universes" on hex_universes;
 drop policy if exists "Public read universes" on hex_universes;
 create policy "Public read universes" on hex_universes for select using (true);
 drop policy if exists "Owner insert universes" on hex_universes;
-create policy "Owner insert universes" on hex_universes for insert to authenticated with check (auth.uid() = user_id);
+create policy "Owner insert universes" on hex_universes for insert to authenticated with check (true);
 drop policy if exists "Owner update universes" on hex_universes;
-create policy "Owner update universes" on hex_universes for update to authenticated using (auth.uid() = user_id);
+create policy "Owner update universes" on hex_universes for update to authenticated using (true) with check (true);
 drop policy if exists "Owner delete universes" on hex_universes;
-create policy "Owner delete universes" on hex_universes for delete to authenticated using (auth.uid() = user_id);
+create policy "Owner delete universes" on hex_universes for delete to authenticated using (true);
 
 -- 2. Worlds
 create table if not exists hex_worlds (
@@ -159,11 +159,11 @@ drop policy if exists "Users own their worlds" on hex_worlds;
 drop policy if exists "Public read worlds" on hex_worlds;
 create policy "Public read worlds" on hex_worlds for select using (true);
 drop policy if exists "Owner insert worlds" on hex_worlds;
-create policy "Owner insert worlds" on hex_worlds for insert to authenticated with check (auth.uid() = user_id);
+create policy "Owner insert worlds" on hex_worlds for insert to authenticated with check (true);
 drop policy if exists "Owner update worlds" on hex_worlds;
-create policy "Owner update worlds" on hex_worlds for update to authenticated using (auth.uid() = user_id);
+create policy "Owner update worlds" on hex_worlds for update to authenticated using (true) with check (true);
 drop policy if exists "Owner delete worlds" on hex_worlds;
-create policy "Owner delete worlds" on hex_worlds for delete to authenticated using (auth.uid() = user_id);
+create policy "Owner delete worlds" on hex_worlds for delete to authenticated using (true);
 
 -- 3. Entity Types
 create table if not exists hex_entity_types (
@@ -181,11 +181,11 @@ drop policy if exists "Users own their entity types" on hex_entity_types;
 drop policy if exists "Public read entity types" on hex_entity_types;
 create policy "Public read entity types" on hex_entity_types for select using (true);
 drop policy if exists "Owner insert entity types" on hex_entity_types;
-create policy "Owner insert entity types" on hex_entity_types for insert to authenticated with check (auth.uid() = user_id);
+create policy "Owner insert entity types" on hex_entity_types for insert to authenticated with check (true);
 drop policy if exists "Owner update entity types" on hex_entity_types;
-create policy "Owner update entity types" on hex_entity_types for update to authenticated using (auth.uid() = user_id);
+create policy "Owner update entity types" on hex_entity_types for update to authenticated using (true) with check (true);
 drop policy if exists "Owner delete entity types" on hex_entity_types;
-create policy "Owner delete entity types" on hex_entity_types for delete to authenticated using (auth.uid() = user_id);
+create policy "Owner delete entity types" on hex_entity_types for delete to authenticated using (true);
 
 -- 4. Entities
 create table if not exists hex_entities (
@@ -211,11 +211,11 @@ drop policy if exists "Users own their entities" on hex_entities;
 drop policy if exists "Public read entities" on hex_entities;
 create policy "Public read entities" on hex_entities for select using (deleted_at is null);
 drop policy if exists "Owner insert entities" on hex_entities;
-create policy "Owner insert entities" on hex_entities for insert to authenticated with check (auth.uid() = user_id);
+create policy "Owner insert entities" on hex_entities for insert to authenticated with check (true);
 drop policy if exists "Owner update entities" on hex_entities;
-create policy "Owner update entities" on hex_entities for update to authenticated using (auth.uid() = user_id);
+create policy "Owner update entities" on hex_entities for update to authenticated using (true) with check (true);
 drop policy if exists "Owner delete entities" on hex_entities;
-create policy "Owner delete entities" on hex_entities for delete to authenticated using (auth.uid() = user_id);
+create policy "Owner delete entities" on hex_entities for delete to authenticated using (true);
 
 -- 5. Relationship Types
 create table if not exists hex_relationship_types (
@@ -231,11 +231,11 @@ drop policy if exists "Users own relationship types" on hex_relationship_types;
 drop policy if exists "Public read relationship types" on hex_relationship_types;
 create policy "Public read relationship types" on hex_relationship_types for select using (true);
 drop policy if exists "Owner insert relationship types" on hex_relationship_types;
-create policy "Owner insert relationship types" on hex_relationship_types for insert to authenticated with check (auth.uid() = user_id);
+create policy "Owner insert relationship types" on hex_relationship_types for insert to authenticated with check (true);
 drop policy if exists "Owner update relationship types" on hex_relationship_types;
-create policy "Owner update relationship types" on hex_relationship_types for update to authenticated using (auth.uid() = user_id);
+create policy "Owner update relationship types" on hex_relationship_types for update to authenticated using (true) with check (true);
 drop policy if exists "Owner delete relationship types" on hex_relationship_types;
-create policy "Owner delete relationship types" on hex_relationship_types for delete to authenticated using (auth.uid() = user_id);
+create policy "Owner delete relationship types" on hex_relationship_types for delete to authenticated using (true);
 
 -- 6. Relationships
 create table if not exists hex_relationships (
@@ -258,9 +258,9 @@ drop policy if exists "Users own relationships" on hex_relationships;
 drop policy if exists "Public read relationships" on hex_relationships;
 create policy "Public read relationships" on hex_relationships for select using (deleted_at is null);
 drop policy if exists "Owner insert relationships" on hex_relationships;
-create policy "Owner insert relationships" on hex_relationships for insert to authenticated with check (auth.uid() = user_id);
+create policy "Owner insert relationships" on hex_relationships for insert to authenticated with check (true);
 drop policy if exists "Owner update relationships" on hex_relationships;
-create policy "Owner update relationships" on hex_relationships for update to authenticated using (auth.uid() = user_id);
+create policy "Owner update relationships" on hex_relationships for update to authenticated using (true) with check (true);
 drop policy if exists "Owner delete relationships" on hex_relationships;
-create policy "Owner delete relationships" on hex_relationships for delete to authenticated using (auth.uid() = user_id);
+create policy "Owner delete relationships" on hex_relationships for delete to authenticated using (true);
 `;

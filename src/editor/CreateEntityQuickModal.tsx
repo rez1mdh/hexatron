@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Sparkles, X, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
 import { createEntity, getEntityTypes, searchEntities, formatEntryNumber } from '../db/operations';
 import { pushEntityToCloud } from '../services/cloudSync';
+import { getCurrentUser } from '../services/supabase';
 import { useAppStore } from '../store/appStore';
 import type { Entity, EntityType } from '../db/schema';
 import EntityTypeIcon from '../components/ui/EntityTypeIcon';
@@ -100,11 +101,10 @@ export default function CreateEntityQuickModal({
         properties: {},
       });
 
-      // Synchronize to cloud if logged in
-      if (currentUser) {
-        pushEntityToCloud(newRecord, currentUser.id).catch(err => {
-          console.warn('Background sync notice:', err);
-        });
+      // Synchronize to cloud if owner is logged in
+      const authUser = currentUser || await getCurrentUser();
+      if (authUser) {
+        await pushEntityToCloud(newRecord, authUser.id);
       }
 
       onCreatedAndLinked(newRecord);

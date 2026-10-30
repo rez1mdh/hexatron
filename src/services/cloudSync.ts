@@ -176,7 +176,7 @@ export async function syncFromCloudToLocal(user: User): Promise<{ entitiesSynced
     // ignore
   }
 
-  // Fetch remote records belonging to this user
+  // Fetch remote records from the encyclopedia project
   const [
     { data: universes },
     { data: worlds },
@@ -184,11 +184,11 @@ export async function syncFromCloudToLocal(user: User): Promise<{ entitiesSynced
     { data: relationships },
     { data: entityTypes },
   ] = await Promise.all([
-    client.from('hex_universes').select('*').eq('user_id', user.id),
-    client.from('hex_worlds').select('*').eq('user_id', user.id),
-    client.from('hex_entities').select('*').eq('user_id', user.id),
-    client.from('hex_relationships').select('*').eq('user_id', user.id),
-    client.from('hex_entity_types').select('*').eq('user_id', user.id),
+    client.from('hex_universes').select('*'),
+    client.from('hex_worlds').select('*'),
+    client.from('hex_entities').select('*').is('deleted_at', null),
+    client.from('hex_relationships').select('*').is('deleted_at', null),
+    client.from('hex_entity_types').select('*'),
   ]);
 
   const cleanUniverses = (universes || []).filter(u => u.title !== 'My Universe' || (worlds && worlds.some(w => w.universe_id === u.id)));
@@ -238,40 +238,79 @@ export async function syncFromCloudToLocal(user: User): Promise<{ entitiesSynced
     }
 
     if (entities && entities.length > 0) {
-      await db.entities.bulkPut(entities.map(e => ({
-        id: e.id,
-        worldId: e.world_id,
-        typeId: e.type_id,
-        title: e.title,
-        entryNumber: e.entry_number,
-        aliases: e.aliases || [],
-        article: e.article || undefined,
-        properties: e.properties || {},
-        tags: e.tags || [],
-        canonStatus: e.canon_status || 'canon',
-        demographicDatasets: e.demographic_datasets || [],
-        linkedEntityIds: e.linked_entity_ids || [],
-        createdAt: e.created_at,
-        updatedAt: e.updated_at,
-        deletedAt: e.deleted_at || undefined,
-      })));
+      const localEntities = await db.entities.toArray();
+      const localMap = new Map(localEntities.map(le => [le.id, le]));
+      const toPut: any[] = [];
+
+      for (const e of entities) {
+        const local = localMap.get(e.id);
+        const cloudUpdatedAt = Number(e.updated_at) || 0;
+        const localUpdatedAt = Number(local?.updatedAt) || 0;
+
+        // Preserve newer local edits against older cloud data
+        if (local && localUpdatedAt > cloudUpdatedAt) {
+          continue;
+        }
+
+        toPut.push({
+          id: e.id,
+          worldId: e.world_id,
+          typeId: e.type_id,
+          title: e.title,
+          entryNumber: e.entry_number ?? undefined,
+          parentId: (e.properties?.parentId as string) || (e.properties?.parent_id as string) || e.parent_id || undefined,
+          sortOrder: typeof e.properties?.sortOrder === 'number' ? e.properties.sortOrder : (typeof e.sort_order === 'number' ? e.sort_order : undefined),
+          aliases: e.aliases || [],
+          article: e.article || undefined,
+          properties: e.properties || {},
+          tags: e.tags || [],
+          canonStatus: e.canon_status || 'canon',
+          demographicDatasets: e.demographic_datasets || [],
+          linkedEntityIds: e.linked_entity_ids || [],
+          createdAt: e.created_at,
+          updatedAt: e.updated_at,
+          deletedAt: e.deleted_at || undefined,
+        });
+      }
+
+      if (toPut.length > 0) {
+        await db.entities.bulkPut(toPut);
+      }
     }
 
     if (relationships && relationships.length > 0) {
-      await db.relationships.bulkPut(relationships.map(r => ({
-        id: r.id,
-        fromEntityId: r.from_entity_id,
-        toEntityId: r.to_entity_id,
-        typeId: r.type_id,
-        worldId: r.world_id,
-        canonStatus: r.canon_status || 'canon',
-        dateStart: r.date_start || undefined,
-        dateEnd: r.date_end || undefined,
-        notes: r.notes || undefined,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at,
-        deletedAt: r.deleted_at || undefined,
-      })));
+      const localRels = await db.relationships.toArray();
+      const localRelMap = new Map(localRels.map(lr => [lr.id, lr]));
+      const relsToPut: any[] = [];
+
+      for (const r of relationships) {
+        const local = localRelMap.get(r.id);
+        const cloudUpdatedAt = Number(r.updated_at) || 0;
+        const localUpdatedAt = Number(local?.updatedAt) || 0;
+
+        if (local && localUpdatedAt > cloudUpdatedAt) {
+          continue;
+        }
+
+        relsToPut.push({
+          id: r.id,
+          fromEntityId: r.from_entity_id,
+          toEntityId: r.to_entity_id,
+          typeId: r.type_id,
+          worldId: r.world_id,
+          canonStatus: r.canon_status || 'canon',
+          dateStart: r.date_start || undefined,
+          dateEnd: r.date_end || undefined,
+          notes: r.notes || undefined,
+          createdAt: r.created_at,
+          updatedAt: r.updated_at,
+          deletedAt: r.deleted_at || undefined,
+        });
+      }
+
+      if (relsToPut.length > 0) {
+        await db.relationships.bulkPut(relsToPut);
+      }
     }
   });
 
@@ -370,40 +409,79 @@ export async function syncPublishedDataFromCloud(): Promise<{ entitiesSynced: nu
       }
 
       if (entities && entities.length > 0) {
-        await db.entities.bulkPut(entities.map(e => ({
-          id: e.id,
-          worldId: e.world_id,
-          typeId: e.type_id,
-          title: e.title,
-          entryNumber: e.entry_number,
-          aliases: e.aliases || [],
-          article: e.article || undefined,
-          properties: e.properties || {},
-          tags: e.tags || [],
-          canonStatus: e.canon_status || 'canon',
-          demographicDatasets: e.demographic_datasets || [],
-          linkedEntityIds: e.linked_entity_ids || [],
-          createdAt: e.created_at,
-          updatedAt: e.updated_at,
-          deletedAt: e.deleted_at || undefined,
-        })));
+        const localEntities = await db.entities.toArray();
+        const localMap = new Map(localEntities.map(le => [le.id, le]));
+        const toPut: any[] = [];
+
+        for (const e of entities) {
+          const local = localMap.get(e.id);
+          const cloudUpdatedAt = Number(e.updated_at) || 0;
+          const localUpdatedAt = Number(local?.updatedAt) || 0;
+
+          // Preserve newer local edits against older cloud data
+          if (local && localUpdatedAt > cloudUpdatedAt) {
+            continue;
+          }
+
+          toPut.push({
+            id: e.id,
+            worldId: e.world_id,
+            typeId: e.type_id,
+            title: e.title,
+            entryNumber: e.entry_number ?? undefined,
+            parentId: (e.properties?.parentId as string) || (e.properties?.parent_id as string) || e.parent_id || undefined,
+            sortOrder: typeof e.properties?.sortOrder === 'number' ? e.properties.sortOrder : (typeof e.sort_order === 'number' ? e.sort_order : undefined),
+            aliases: e.aliases || [],
+            article: e.article || undefined,
+            properties: e.properties || {},
+            tags: e.tags || [],
+            canonStatus: e.canon_status || 'canon',
+            demographicDatasets: e.demographic_datasets || [],
+            linkedEntityIds: e.linked_entity_ids || [],
+            createdAt: e.created_at,
+            updatedAt: e.updated_at,
+            deletedAt: e.deleted_at || undefined,
+          });
+        }
+
+        if (toPut.length > 0) {
+          await db.entities.bulkPut(toPut);
+        }
       }
 
       if (relationships && relationships.length > 0) {
-        await db.relationships.bulkPut(relationships.map(r => ({
-          id: r.id,
-          fromEntityId: r.from_entity_id,
-          toEntityId: r.to_entity_id,
-          typeId: r.type_id,
-          worldId: r.world_id,
-          canonStatus: r.canon_status || 'canon',
-          dateStart: r.date_start || undefined,
-          dateEnd: r.date_end || undefined,
-          notes: r.notes || undefined,
-          createdAt: r.created_at,
-          updatedAt: r.updated_at,
-          deletedAt: r.deleted_at || undefined,
-        })));
+        const localRels = await db.relationships.toArray();
+        const localRelMap = new Map(localRels.map(lr => [lr.id, lr]));
+        const relsToPut: any[] = [];
+
+        for (const r of relationships) {
+          const local = localRelMap.get(r.id);
+          const cloudUpdatedAt = Number(r.updated_at) || 0;
+          const localUpdatedAt = Number(local?.updatedAt) || 0;
+
+          if (local && localUpdatedAt > cloudUpdatedAt) {
+            continue;
+          }
+
+          relsToPut.push({
+            id: r.id,
+            fromEntityId: r.from_entity_id,
+            toEntityId: r.to_entity_id,
+            typeId: r.type_id,
+            worldId: r.world_id,
+            canonStatus: r.canon_status || 'canon',
+            dateStart: r.date_start || undefined,
+            dateEnd: r.date_end || undefined,
+            notes: r.notes || undefined,
+            createdAt: r.created_at,
+            updatedAt: r.updated_at,
+            deletedAt: r.deleted_at || undefined,
+          });
+        }
+
+        if (relsToPut.length > 0) {
+          await db.relationships.bulkPut(relsToPut);
+        }
       }
     });
 
@@ -577,21 +655,24 @@ export async function syncArmanitesToCloud(user: User): Promise<ArmaniteCloudSyn
 
 // ── Real-Time Cloud Push Helpers for Owner Actions ─────────────────────────
 
-export async function pushEntityToCloud(entity: any, userId: string) {
+export async function pushEntityToCloud(entity: any, userId?: string): Promise<any> {
   const client = getSupabaseClient();
-  if (!client || !userId) return;
+  if (!client) throw new Error('Cloud backend is not configured.');
 
   try {
-    const record = {
+    const record: any = {
       id: entity.id,
-      user_id: userId,
       world_id: entity.worldId,
       type_id: entity.typeId,
       title: entity.title,
       entry_number: entity.entryNumber || null,
       aliases: entity.aliases || [],
       article: entity.article || null,
-      properties: entity.properties || {},
+      properties: {
+        ...(entity.properties || {}),
+        ...(entity.parentId ? { parentId: entity.parentId } : {}),
+        ...(typeof entity.sortOrder === 'number' ? { sortOrder: entity.sortOrder } : {}),
+      },
       tags: entity.tags || [],
       canon_status: entity.canonStatus || 'canon',
       demographic_datasets: entity.demographicDatasets || [],
@@ -600,25 +681,40 @@ export async function pushEntityToCloud(entity: any, userId: string) {
       updated_at: entity.updatedAt,
       deleted_at: entity.deletedAt || null,
     };
-    const { error } = await client.from('hex_entities').upsert(record, { onConflict: 'id' });
+
+    if (userId) {
+      record.user_id = userId;
+    }
+
+    const { data, error } = await client
+      .from('hex_entities')
+      .upsert(record, { onConflict: 'id' })
+      .select();
+
     if (error) {
       console.error('[pushEntityToCloud] Supabase error:', error.message);
-      throw error;
+      throw new Error(`Database error: ${error.message}`);
     }
+
+    if (!data || data.length === 0) {
+      console.error('[pushEntityToCloud] 0 rows returned. RLS update check rejected the operation.');
+      throw new Error('Database rejected save: 0 rows affected. Please verify your owner account is signed in.');
+    }
+
+    return data[0];
   } catch (err) {
     console.error('Failed to push entity to cloud:', err);
     throw err;
   }
 }
 
-export async function pushRelationshipToCloud(rel: any, userId: string) {
+export async function pushRelationshipToCloud(rel: any, userId?: string): Promise<any> {
   const client = getSupabaseClient();
-  if (!client || !userId) return;
+  if (!client) throw new Error('Cloud backend is not configured.');
 
   try {
-    const record = {
+    const record: any = {
       id: rel.id,
-      user_id: userId,
       from_entity_id: rel.fromEntityId,
       to_entity_id: rel.toEntityId,
       type_id: rel.typeId,
@@ -631,25 +727,39 @@ export async function pushRelationshipToCloud(rel: any, userId: string) {
       updated_at: rel.updatedAt,
       deleted_at: rel.deletedAt || null,
     };
-    const { error } = await client.from('hex_relationships').upsert(record, { onConflict: 'id' });
+
+    if (userId) {
+      record.user_id = userId;
+    }
+
+    const { data, error } = await client
+      .from('hex_relationships')
+      .upsert(record, { onConflict: 'id' })
+      .select();
+
     if (error) {
       console.error('[pushRelationshipToCloud] Supabase error:', error.message);
-      throw error;
+      throw new Error(`Database error: ${error.message}`);
     }
+
+    if (!data || data.length === 0) {
+      throw new Error('Database rejected relationship save (0 rows affected).');
+    }
+
+    return data[0];
   } catch (err) {
     console.error('Failed to push relationship to cloud:', err);
     throw err;
   }
 }
 
-export async function pushWorldToCloud(world: any, userId: string) {
+export async function pushWorldToCloud(world: any, userId?: string) {
   const client = getSupabaseClient();
-  if (!client || !userId) return;
+  if (!client) return;
 
   try {
-    const record = {
+    const record: any = {
       id: world.id,
-      user_id: userId,
       universe_id: world.universeId,
       title: world.title,
       description: world.description || null,
@@ -658,56 +768,111 @@ export async function pushWorldToCloud(world: any, userId: string) {
       created_at: world.createdAt,
       updated_at: world.updatedAt,
     };
+    if (userId) record.user_id = userId;
     await client.from('hex_worlds').upsert(record, { onConflict: 'id' });
   } catch (err) {
     console.error('Failed to push world to cloud:', err);
   }
 }
 
-export async function pushUniverseToCloud(universe: any, userId: string) {
+export async function pushUniverseToCloud(universe: any, userId?: string) {
   const client = getSupabaseClient();
-  if (!client || !userId) return;
+  if (!client) return;
 
   try {
-    const record = {
+    const record: any = {
       id: universe.id,
-      user_id: userId,
       title: universe.title,
       description: universe.description || null,
       created_at: universe.createdAt,
       updated_at: universe.updatedAt,
     };
+    if (userId) record.user_id = userId;
     await client.from('hex_universes').upsert(record, { onConflict: 'id' });
   } catch (err) {
     console.error('Failed to push universe to cloud:', err);
   }
 }
 
-export async function pushSoftDeleteEntityToCloud(entityId: string, userId: string) {
+export async function pushSoftDeleteEntityToCloud(entityId: string, _userId?: string) {
   const client = getSupabaseClient();
-  if (!client || !userId) return;
+  if (!client) return;
 
   try {
-    await client.from('hex_entities').update({
-      deleted_at: Date.now(),
-      updated_at: Date.now(),
-    }).eq('id', entityId).eq('user_id', userId);
+    const { data, error } = await client
+      .from('hex_entities')
+      .update({
+        deleted_at: Date.now(),
+        updated_at: Date.now(),
+      })
+      .eq('id', entityId)
+      .select();
+
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      console.warn('[pushSoftDeleteEntityToCloud] 0 rows updated for entityId:', entityId);
+    }
   } catch (err) {
     console.error('Failed to soft delete entity in cloud:', err);
+    throw err;
   }
 }
 
-export async function pushDeleteRelationshipToCloud(relId: string, userId: string) {
+export async function pushDeleteRelationshipToCloud(relId: string, _userId?: string) {
   const client = getSupabaseClient();
-  if (!client || !userId) return;
+  if (!client) return;
 
   try {
-    await client.from('hex_relationships').update({
-      deleted_at: Date.now(),
-      updated_at: Date.now(),
-    }).eq('id', relId).eq('user_id', userId);
+    const { data, error } = await client
+      .from('hex_relationships')
+      .update({
+        deleted_at: Date.now(),
+        updated_at: Date.now(),
+      })
+      .eq('id', relId)
+      .select();
+
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      console.warn('[pushDeleteRelationshipToCloud] 0 rows updated for relId:', relId);
+    }
   } catch (err) {
     console.error('Failed to soft delete relationship in cloud:', err);
+    throw err;
+  }
+}
+
+/**
+ * Synchronizes pending local edits made offline or while unauthenticated to the cloud.
+ */
+export async function syncPendingLocalEditsToCloud(user: User): Promise<{ synced: number }> {
+  const client = getSupabaseClient();
+  if (!client || !user?.id) return { synced: 0 };
+
+  try {
+    const { data: cloudEntities } = await client.from('hex_entities').select('id, updated_at');
+    const cloudMap = new Map((cloudEntities || []).map(ce => [ce.id, Number(ce.updated_at) || 0]));
+
+    const localEntities = await db.entities.toArray();
+    let count = 0;
+
+    for (const le of localEntities) {
+      const cloudTs = cloudMap.get(le.id);
+      // If not in cloud, or local is newer by more than 1 second
+      if (cloudTs === undefined || (le.updatedAt || 0) > cloudTs + 1000) {
+        try {
+          await pushEntityToCloud(le, user.id);
+          count++;
+        } catch (err) {
+          console.warn(`Could not sync entity ${le.title} to cloud:`, err);
+        }
+      }
+    }
+
+    return { synced: count };
+  } catch (err) {
+    console.warn('[syncPendingLocalEditsToCloud] Sync check failed:', err);
+    return { synced: 0 };
   }
 }
 

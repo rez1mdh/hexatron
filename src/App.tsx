@@ -19,7 +19,7 @@ import { importAurytharData } from './db/importAurythar';
 import { useAppStore } from './store/appStore';
 import type { User } from '@supabase/supabase-js';
 import { getCurrentUser, subscribeToAuthState, isCloudConfigured } from './services/supabase';
-import { syncPublishedDataFromCloud, syncArmanitesToCloud, checkArmaniteCloudStatus } from './services/cloudSync';
+import { syncPublishedDataFromCloud, syncArmanitesToCloud, checkArmaniteCloudStatus, syncPendingLocalEditsToCloud } from './services/cloudSync';
 import { importArmaniteLore } from './db/importArmanites';
 
 function AppInit({ children }: { children: React.ReactNode }) {
@@ -33,6 +33,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
       setCurrentUser(user);
       if (user && isCloudConfigured()) {
         try {
+          await syncPendingLocalEditsToCloud(user);
           const status = await checkArmaniteCloudStatus();
           if (!status.isFullySynced) {
             console.log(`[AppInit] Owner ${user.email} signed in, but cloud has only ${status.cloudCount}/111 Armanite records. Running cloud sync...`);

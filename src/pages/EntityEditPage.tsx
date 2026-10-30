@@ -12,6 +12,7 @@ import {
 } from '../db/operations';
 import { useAppStore } from '../store/appStore';
 import { pushEntityToCloud, pushRelationshipToCloud, pushSoftDeleteEntityToCloud } from '../services/cloudSync';
+import { getCurrentUser, isCloudConfigured } from '../services/supabase';
 import type { Entity, EntityType, CanonStatus, Relationship, RelationshipType, StatisticalDataset, EntityImage, ImageRole } from '../db/schema';
 import ArticleEditor from '../editor/ArticleEditor';
 import EntityTypeIcon from '../components/ui/EntityTypeIcon';
@@ -82,7 +83,8 @@ export default function EntityEditPage({ mode }: Props) {
   const [aliasInput, setAliasInput] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'unsaved' | 'saving' | 'saved' | 'failed'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'unsaved' | 'saving' | 'saved' | 'failed' | 'offline_pending'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [baseUpdatedAt, setBaseUpdatedAt] = useState<number | null>(null);
@@ -348,64 +350,124 @@ export default function EntityEditPage({ mode }: Props) {
         baseUpdatedAtRef.current = confirmed.updatedAt;
       }
 
-      // 4. Synchronize to cloud if owner is authenticated
-      if (currentUser && confirmed) {
+      // 4. Synchronize to persistent cloud database
+      const cloudActive = isCloudConfigured();
+      const authUser = currentUser || await getCurrentUser();
+      const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+
+      if (cloudActive && authUser && isOnline && confirmed) {
         try {
-          await pushEntityToCloud(confirmed, currentUser.id);
-        } catch (cloudErr) {
-          console.warn('Background cloud sync deferred:', cloudErr);
-        }
-      }
+          // Push entity to cloud and verify confirmed row
+          await pushEntityToCloud(confirmed, authUser.id);
 
-      // 5. Save pending relationships
-      const currentPending = pendingRelationshipsRef.current;
-      if (currentPending.length > 0) {
-        for (const p of currentPending) {
-          const createdRel = await createRelationship({
-            fromEntityId: savedId,
-            toEntityId: p.toEntityId,
-            typeId: p.typeId,
-            worldId: wId,
-            canonStatus: p.canonStatus,
-            notes: p.notes,
-          });
-          if (currentUser) {
-            await pushRelationshipToCloud(createdRel, currentUser.id);
+          // 5. Save pending relationships to cloud
+          const currentPending = pendingRelationshipsRef.current;
+          if (currentPending.length > 0) {
+            for (const p of currentPending) {
+              const createdRel = await createRelationship({
+                fromEntityId: savedId,
+                toEntityId: p.toEntityId,
+                typeId: p.typeId,
+                worldId: wId,
+                canonStatus: p.canonStatus,
+                notes: p.notes,
+              });
+              await pushRelationshipToCloud(createdRel, authUser.id);
+            }
+            setPendingRelationships([]);
+            pendingRelationshipsRef.current = [];
+            const rels = await getRelationships(savedId);
+            setExistingRelationships(rels);
           }
+
+          // 6. Save portrait image if picked
+          if (imageFile) {
+            const blob = await imageFile.arrayBuffer().then(ab => new Blob([ab], { type: imageFile.type }));
+            await addImage({
+              entityId: savedId,
+              role: 'portrait',
+              localBlob: blob,
+              mimeType: imageFile.type,
+              caption: currentForm.title,
+              sortOrder: 0,
+            });
+            setImageFile(null);
+          }
+
+          // 7. Clear local draft since cloud write has been verified
+          removeDraftFromStorage();
+
+          setIsDirty(false);
+          isDirtyRef.current = false;
+          setLastSavedTime(new Date());
+          setSaveStatus('saved');
+          setErrorMessage('');
+
+          if (!isAutosave) {
+            navigate(`/entity/${savedId}`);
+          } else if (!isEdit) {
+            // Seamlessly switch URL so further autosaves update this newly created entity
+            navigate(`/entity/${savedId}/edit`, { replace: true });
+          }
+        } catch (cloudErr: any) {
+          console.error('[performSave] Cloud write failed:', cloudErr);
+          setSaveStatus('failed');
+          setErrorMessage(cloudErr.message || 'Cloud database write failed');
+          // PRESERVE draft in storage and keep dirty flag so work is not lost
+          persistDraftToStorage(currentForm, pendingRelationshipsRef.current);
+          if (!isAutosave) {
+            alert('Cloud save failed: ' + (cloudErr as Error).message);
+          }
+          return;
         }
-        setPendingRelationships([]);
-        pendingRelationshipsRef.current = [];
-        const rels = await getRelationships(savedId);
-        setExistingRelationships(rels);
-      }
+      } else {
+        // Offline or not logged in to cloud — saved locally in IndexedDB
+        // 5. Save pending relationships locally
+        const currentPending = pendingRelationshipsRef.current;
+        if (currentPending.length > 0) {
+          for (const p of currentPending) {
+            await createRelationship({
+              fromEntityId: savedId,
+              toEntityId: p.toEntityId,
+              typeId: p.typeId,
+              worldId: wId,
+              canonStatus: p.canonStatus,
+              notes: p.notes,
+            });
+          }
+          setPendingRelationships([]);
+          pendingRelationshipsRef.current = [];
+          const rels = await getRelationships(savedId);
+          setExistingRelationships(rels);
+        }
 
-      // 6. Save portrait image if picked
-      if (imageFile) {
-        const blob = await imageFile.arrayBuffer().then(ab => new Blob([ab], { type: imageFile.type }));
-        await addImage({
-          entityId: savedId,
-          role: 'portrait',
-          localBlob: blob,
-          mimeType: imageFile.type,
-          caption: currentForm.title,
-          sortOrder: 0,
-        });
-        setImageFile(null);
-      }
+        if (imageFile) {
+          const blob = await imageFile.arrayBuffer().then(ab => new Blob([ab], { type: imageFile.type }));
+          await addImage({
+            entityId: savedId,
+            role: 'portrait',
+            localBlob: blob,
+            mimeType: imageFile.type,
+            caption: currentForm.title,
+            sortOrder: 0,
+          });
+          setImageFile(null);
+        }
 
-      // 7. Clear local draft since changes are successfully confirmed in DB
-      removeDraftFromStorage();
+        setSaveStatus('offline_pending');
+        setErrorMessage(
+          !isOnline
+            ? 'Offline: changes saved locally in browser storage (waiting to synchronize).'
+            : 'Saved locally. Please sign in as owner to synchronize permanently with the cloud.'
+        );
+        persistDraftToStorage(currentForm, pendingRelationshipsRef.current);
+        setLastSavedTime(new Date());
 
-      setIsDirty(false);
-      isDirtyRef.current = false;
-      setLastSavedTime(new Date());
-      setSaveStatus('saved');
-
-      if (!isAutosave) {
-        navigate(`/entity/${savedId}`);
-      } else if (!isEdit) {
-        // Seamlessly switch URL so further autosaves update this newly created entity
-        navigate(`/entity/${savedId}/edit`, { replace: true });
+        if (!isAutosave) {
+          navigate(`/entity/${savedId}`);
+        } else if (!isEdit) {
+          navigate(`/entity/${savedId}/edit`, { replace: true });
+        }
       }
     } catch (err) {
       console.error('Save failed:', err);
@@ -554,13 +616,19 @@ export default function EntityEditPage({ mode }: Props) {
               </span>
             )}
             {saveStatus === 'saved' && (
-              <span className="editor-save-status saved" title={lastSavedTime ? `Saved to database at ${lastSavedTime.toLocaleTimeString()}` : 'All changes saved'}>
+              <span className="editor-save-status saved" title={lastSavedTime ? `Confirmed saved in cloud database at ${lastSavedTime.toLocaleTimeString()}` : 'All changes saved'}>
                 <span className="editor-status-dot saved" />
                 Saved {lastSavedTime ? lastSavedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
               </span>
             )}
+            {saveStatus === 'offline_pending' && (
+              <span className="editor-save-status offline-pending" title={errorMessage || 'Saved locally in browser storage. Waiting to synchronize with cloud database.'}>
+                <span className="editor-status-dot offline" />
+                Offline / Waiting to synchronize
+              </span>
+            )}
             {saveStatus === 'failed' && (
-              <span className="editor-save-status failed" title="Save failed. Click Retry Save to try again.">
+              <span className="editor-save-status failed" title={errorMessage || 'Save failed. Click Retry Save to try again.'}>
                 <span className="editor-status-dot failed" />
                 Save failed
               </span>
@@ -587,6 +655,19 @@ export default function EntityEditPage({ mode }: Props) {
           </button>
         </div>
       </div>
+
+      {/* Save Failed Error Banner */}
+      {saveStatus === 'failed' && errorMessage && (
+        <div className="editor-error-banner" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '6px', padding: '10px 14px', margin: '0 0 12px', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AlertCircle size={16} />
+            <span><strong>Save Failed:</strong> {errorMessage}</span>
+          </div>
+          <button type="button" className="btn-primary small" onClick={() => performSave(false)} style={{ background: '#ef4444', borderColor: '#dc2626' }}>
+            <RefreshCw size={12} /> Retry Cloud Save
+          </button>
+        </div>
+      )}
 
       {/* Draft Recovery Alert */}
       {localDraftAvailable && (

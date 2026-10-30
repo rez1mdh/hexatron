@@ -360,6 +360,20 @@
   display: flex; flex-direction: column; align-items: center; gap: 1rem;
 }
 
+/* ── Sticky Article Metadata Strip Variable & Containers ────────────────── */
+:root {
+  --workspace-tab-h: 36px;
+}
+
+.entity-page-container {
+  --sticky-meta-offset: 0px;
+}
+
+.entity-page-container.has-workspace-tabs,
+.entity-page-container:has(.workspace-tab-bar) {
+  --sticky-meta-offset: var(--workspace-tab-h, 36px);
+}
+
 /* ── Wikipedia Encyclopedia Article Page Layout ─────────────────────────── */
 .wiki-article-page {
   padding: 1.5rem 2.5rem 3rem;
@@ -375,7 +389,7 @@
 .wiki-sticky-header-meta,
 .wiki-header-meta {
   position: sticky;
-  top: 0;
+  top: var(--sticky-meta-offset, 0px);
   z-index: 25;
   background: var(--bg-surface);
   backdrop-filter: blur(12px);
@@ -385,10 +399,11 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
-  padding: 8px 0;
-  margin-bottom: 0.75rem;
+  padding: 8px 16px;
+  margin: 0 -16px 0.75rem -16px;
   border-bottom: 1px solid var(--border-subtle);
-  transition: all var(--transition);
+  transition: top 0.18s cubic-bezier(0.16, 1, 0.3, 1), background-color var(--transition);
+  box-sizing: border-box;
 }
 
 .wiki-timestamps-badge {
@@ -832,19 +847,30 @@
     padding: 0 14px 4.5rem;
     max-width: 100%;
     width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
     box-sizing: border-box;
   }
 
   .wiki-sticky-header-meta,
   .wiki-header-meta {
+    position: sticky;
+    top: var(--sticky-meta-offset, 0px);
+    z-index: 25;
+    background: var(--bg-surface);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-subtle);
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 8px;
-    padding: 6px 0;
+    padding: 7px 14px;
+    margin: 0 -14px 0.5rem -14px;
+    box-sizing: border-box;
+    width: calc(100% + 28px);
+    max-width: calc(100% + 28px);
   }
 
   .wiki-breadcrumbs {
@@ -1920,23 +1946,26 @@
 
 /* ── Mobile Responsive Treatment & Android Optimizations (<= 768px) ───── */
 @media (max-width: 768px) {
-  /* 1. Mobile Minimized Article Actions Panel */
+  /* 1. Mobile Minimized Article Actions Panel & Sticky Metadata Strip */
   .wiki-sticky-header-meta {
+    position: sticky;
+    top: var(--sticky-meta-offset, 0px);
+    z-index: 25;
+    background: var(--bg-surface);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-subtle);
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 8px;
-    padding: 6px 0;
-    margin-bottom: 0.5rem;
-    position: sticky;
-    top: 0;
-    z-index: 25;
-    background: var(--bg-surface);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border-subtle);
+    padding: 7px 14px;
+    margin: 0 -14px 0.5rem -14px;
+    box-sizing: border-box;
+    width: calc(100% + 28px);
+    max-width: calc(100% + 28px);
   }
 
   .wiki-breadcrumbs {
@@ -1947,6 +1976,45 @@
     flex-wrap: wrap;
     gap: 6px;
     font-size: 0.74rem;
+  }
+
+  .wiki-nav-arrows {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+
+  .wiki-nav-arrow-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .wiki-breadcrumbs .wiki-breadcrumb-item {
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .wiki-breadcrumbs .wiki-breadcrumb-parent-link {
+    max-width: min(130px, 35vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .wiki-timestamps-badge {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* Minimized compact Actions toggle handle */
@@ -2055,7 +2123,7 @@
     padding: 0.5rem 12px calc(6rem + env(safe-area-inset-bottom, 16px));
     max-width: 100%;
     width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
     box-sizing: border-box;
   }
 

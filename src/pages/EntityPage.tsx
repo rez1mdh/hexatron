@@ -73,7 +73,8 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
     setCurrentEntity, pushRecentEntity, isOwner, currentUser,
     favoriteEntityIds, toggleFavoriteEntity,
     readerMode, toggleReaderMode,
-    splitViewEnabled, splitSecondaryId, splitRatio, setSplitRatio
+    splitViewEnabled, splitSecondaryId, splitRatio, setSplitRatio,
+    tabs
   } = useAppStore();
 
   const [entity, setEntity] = useState<Entity | null>(null);
@@ -304,8 +305,21 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
     );
   }
 
+  const hasWorkspaceTabs = isOwner && !isSecondaryPane && !readerMode && (tabs.length > 1 || splitViewEnabled);
+
   return (
-    <div className="entity-page-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', minWidth: 0, width: '100%', maxWidth: '100%' }}>
+    <div
+      className={`entity-page-container ${hasWorkspaceTabs ? 'has-workspace-tabs' : 'no-workspace-tabs'}`}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100%',
+        minWidth: 0,
+        width: '100%',
+        maxWidth: '100%',
+        '--sticky-meta-offset': hasWorkspaceTabs ? '36px' : '0px',
+      } as React.CSSProperties}
+    >
       {/* Workspace Tab Strip (for owner, hidden in clean reader mode) */}
       {!isSecondaryPane && !readerMode && (
         <MultiArticleWorkspace
@@ -421,9 +435,9 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
               >
                 <Clock size={11} className="wiki-timestamp-icon" />
                 <span className="wiki-timestamp-text">
-                  {entity.createdAt ? `Created ${formatFullDate(entity.createdAt)}` : ''}
-                  {entity.createdAt && entity.updatedAt ? ' · ' : ''}
-                  {entity.updatedAt ? `Edited ${formatRelativeTime(entity.updatedAt)}` : ''}
+                  <span className="wiki-ts-created">{entity.createdAt ? `Created ${formatFullDate(entity.createdAt)}` : ''}</span>
+                  {entity.createdAt && entity.updatedAt ? <span className="wiki-ts-sep"> · </span> : ''}
+                  <span className="wiki-ts-edited">{entity.updatedAt ? `Edited ${formatRelativeTime(entity.updatedAt)}` : ''}</span>
                 </span>
               </div>
             )}

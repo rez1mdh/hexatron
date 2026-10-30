@@ -6,6 +6,9 @@ import { createClient, type SupabaseClient, type User, type Session } from '@sup
 const STORAGE_KEY_URL = 'hexatron-supabase-url';
 const STORAGE_KEY_ANON = 'hexatron-supabase-anon-key';
 
+export const DEFAULT_SUPABASE_URL = 'https://areypflhznvzgvycerfz.supabase.co';
+export const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_Sxk-EOQxr7yZyhdYY_Fh5g_XP1u9hC-';
+
 export function getStoredCloudConfig(): { url: string; key: string } {
   const envUrl = (import.meta.env.VITE_SUPABASE_URL as string) || '';
   const envKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || '';
@@ -13,8 +16,8 @@ export function getStoredCloudConfig(): { url: string; key: string } {
   const localKey = localStorage.getItem(STORAGE_KEY_ANON) || '';
 
   return {
-    url: (envUrl || localUrl).trim(),
-    key: (envKey || localKey).trim(),
+    url: (envUrl || localUrl || DEFAULT_SUPABASE_URL).trim(),
+    key: (envKey || localKey || DEFAULT_SUPABASE_ANON_KEY).trim(),
   };
 }
 

@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Menu, Terminal, ChevronLeft, ChevronRight,
-  Network, Zap, Edit3, Star, Compass
+  Network, Zap, Edit3, Star, Compass,
+  FileText, BookOpen, GitBranch, Trash2
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
+import { getEntity, type Entity } from '../../db/operations';
 import CommandPalette from '../ui/CommandPalette';
 import AuthModal from '../auth/AuthModal';
 import AccountMenu from './AccountMenu';
@@ -22,11 +24,15 @@ export default function TopBar() {
     currentEntityId,
     favoriteEntityIds,
     favoriteWorldIds,
-    setFavoriteModalOpen
+    setFavoriteModalOpen,
+    readerMode,
+    toggleReaderMode,
+    toggleFavoriteEntity
   } = useAppStore();
 
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [currentEntity, setCurrentEntityObj] = useState<Entity | null>(null);
 
   // Global Ctrl+K / Cmd+K listener & hexatron-open-palette listener
   useEffect(() => {
@@ -47,7 +53,17 @@ export default function TopBar() {
     };
   }, []);
 
-  const isEntityView = location.pathname.startsWith('/entity/') && !location.pathname.includes('/edit') && currentEntityId;
+  const isEntityView = location.pathname.startsWith('/entity/') && !location.pathname.includes('/edit') && !!currentEntityId;
+
+  useEffect(() => {
+    if (isEntityView && currentEntityId) {
+      getEntity(currentEntityId).then(ent => setCurrentEntityObj(ent || null));
+    } else {
+      setCurrentEntityObj(null);
+    }
+  }, [isEntityView, currentEntityId]);
+
+  const isFavorite = currentEntityId ? favoriteEntityIds.includes(currentEntityId) : false;
 
   return (
     <header className="topbar">
@@ -118,17 +134,101 @@ export default function TopBar() {
           <span className="pill-text">Guide</span>
         </button>
 
-        {/* Contextual Edit Article button */}
-        {isEntityView && isOwner && (
-          <button
-            type="button"
-            className="topbar-action-pill"
-            onClick={() => navigate(`/entity/${currentEntityId}/edit`)}
-            title="Edit Article"
-          >
-            <Edit3 size={13} />
-            <span className="pill-text">Edit</span>
-          </button>
+        {/* Windows / Desktop Article Actions (only shown on desktop viewports when viewing an entity) */}
+        {isEntityView && currentEntityId && (
+          <div className="topbar-entity-actions desktop-only" role="toolbar" aria-label="Article Actions">
+            {/* Article view button */}
+            <button
+              type="button"
+              className={`topbar-action-pill ${location.pathname === `/entity/${currentEntityId}` && !readerMode ? 'active' : ''}`}
+              onClick={() => {
+                if (readerMode) toggleReaderMode();
+                navigate(`/entity/${currentEntityId}`);
+              }}
+              title="Article view"
+            >
+              <FileText size={13} />
+              <span className="pill-text">Article</span>
+            </button>
+
+            {/* Reader Mode Toggle */}
+            <button
+              type="button"
+              className={`topbar-action-pill ${readerMode ? 'active text-accent' : ''}`}
+              onClick={toggleReaderMode}
+              title={readerMode ? 'Exit clean reading mode' : 'Switch to clean reading mode'}
+            >
+              <BookOpen size={13} />
+              <span className="pill-text">Reader</span>
+            </button>
+
+            {/* Favorite button (Owner only) */}
+            {isOwner && (
+              <button
+                type="button"
+                className={`topbar-action-pill ${isFavorite ? 'active favorited' : ''}`}
+                onClick={() => toggleFavoriteEntity(currentEntityId)}
+                title={isFavorite ? 'Remove from favorites' : 'Pin to favorites'}
+              >
+                <Star
+                  size={13}
+                  fill={isFavorite ? '#f59e0b' : 'none'}
+                  color={isFavorite ? '#f59e0b' : 'currentColor'}
+                />
+                <span className="pill-text">{isFavorite ? 'Favorited' : 'Favorite'}</span>
+              </button>
+            )}
+
+            {/* Edit Article (Owner only) */}
+            {isOwner && (
+              <button
+                type="button"
+                className="topbar-action-pill"
+                onClick={() => navigate(`/entity/${currentEntityId}/edit`)}
+                title="Edit Article"
+              >
+                <Edit3 size={13} />
+                <span className="pill-text">Edit</span>
+              </button>
+            )}
+
+            {/* Network Graph */}
+            <button
+              type="button"
+              className="topbar-action-pill"
+              onClick={() => navigate(`/entity/${currentEntityId}/graph`)}
+              title="View in Network Graph"
+            >
+              <Compass size={13} />
+              <span className="pill-text">Graph</span>
+            </button>
+
+            {/* Family Tree (for character or family entities) */}
+            {currentEntity && (currentEntity.typeId === 'et-family' || currentEntity.typeId === 'et-character') && (
+              <button
+                type="button"
+                className="topbar-action-pill"
+                onClick={() => window.dispatchEvent(new CustomEvent('hexatron-toggle-family-tree'))}
+                title="Toggle visual family tree"
+              >
+                <GitBranch size={13} />
+                <span className="pill-text">Family Tree</span>
+              </button>
+            )}
+
+            {/* Delete (Owner only) */}
+            {isOwner && (
+              <button
+                type="button"
+                className="topbar-action-pill danger"
+                onClick={() => window.dispatchEvent(new CustomEvent('hexatron-delete-entity'))}
+                title="Delete entity"
+              >
+                <Trash2 size={13} />
+                <span className="pill-text">Delete</span>
+              </button>
+            )}
+          </div>
         )}
 
         {/* Linked Entities Sidebar Toggle */}

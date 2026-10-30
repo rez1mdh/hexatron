@@ -85,6 +85,8 @@ export interface Entity {
   typeId: string;
   title: string;
   entryNumber?: number;
+  parentId?: string;      // Hierarchical parent entity (file-explorer folder hierarchy)
+  sortOrder?: number;     // Sibling sort order within folder
   aliases: string[];
   // TipTap ProseMirror JSON doc stored as string for IndexedDB indexing
   article?: string;
@@ -189,6 +191,10 @@ export class HexatronDB extends Dexie {
 
     this.version(2).stores({
       entities:          'id, worldId, typeId, title, entryNumber, canonStatus, createdAt, updatedAt, deletedAt, *tags, *aliases, *linkedEntityIds',
+    });
+
+    this.version(3).stores({
+      entities:          'id, worldId, parentId, typeId, title, entryNumber, canonStatus, createdAt, updatedAt, deletedAt, *tags, *aliases, *linkedEntityIds',
     });
   }
 }

@@ -72,6 +72,7 @@ interface AppStore {
   openTab: (tab: { id: string; title: string; typeId?: string }) => void;
   closeTab: (id: string) => void;
   closeAllTabs: () => void;
+  reorderTabs: (newTabs: Array<{ id: string; title: string; typeId?: string; isDirty?: boolean }>) => void;
   setTabDirty: (id: string, isDirty: boolean) => void;
   setActiveTabId: (id: string | null) => void;
   setSplitViewEnabled: (enabled: boolean) => void;
@@ -176,6 +177,11 @@ export const useAppStore = create<AppStore>((set) => ({
   closeAllTabs: () => set(() => {
     sessionStorage.removeItem('hexatron-workspace-tabs');
     return { tabs: [], activeTabId: null, splitViewEnabled: false, splitSecondaryId: null };
+  }),
+
+  reorderTabs: (newTabs) => set(() => {
+    sessionStorage.setItem('hexatron-workspace-tabs', JSON.stringify(newTabs));
+    return { tabs: newTabs };
   }),
 
   setTabDirty: (id, isDirty) => set((s) => {

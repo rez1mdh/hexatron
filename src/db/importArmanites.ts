@@ -4159,16 +4159,22 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
       existing.tags.forEach(t => tags.add(t));
     }
 
+    const firstParentSrcId = m.parents && m.parents.length > 0 ? m.parents[0] : undefined;
+    const parentEntityId = firstParentSrcId ? srcToEntityId.get(firstParentSrcId) : (m.isArmanas || m.isDescendant || m.isAncestor ? cultureId : undefined);
+
     const entityRecord: Entity = {
       id: finalId,
       worldId: finalWorldId,
       typeId: 'et-character',
       title: m.displayTitle,
+      parentId: parentEntityId,
       entryNumber: assignedEntryNumber,
       aliases: Array.from(new Set([...(m.aliases || []), m.entityId, m.sourceId, m.displayTitle, m.rawName, m.givenName].filter(Boolean))),
       article: articleDoc,
       properties: {
         ...(existing?.properties || {}),
+        parentId: parentEntityId,
+        part_of: parentEntityId,
         givenName: m.givenName,
         familyName: 'Hannik',
         gender: m.gender || 'unspecified',

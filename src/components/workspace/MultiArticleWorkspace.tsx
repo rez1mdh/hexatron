@@ -32,6 +32,7 @@ export default function MultiArticleWorkspace({
     openTab,
     closeTab,
     closeAllTabs,
+    reorderTabs,
     splitViewEnabled,
     splitSecondaryId,
     splitRatio,
@@ -45,6 +46,12 @@ export default function MultiArticleWorkspace({
   const [secondarySearchQuery, setSecondarySearchQuery] = useState('');
   const [recentEntities, setRecentEntities] = useState<Entity[]>([]);
   const isDraggingRef = useRef(false);
+
+  // Drag and Drop Tab Reordering State (Part 6)
+  const [draggedTabIndex, setDraggedTabIndex] = useState<number | null>(null);
+  const [dropTabIndex, setDropTabIndex] = useState<number | null>(null);
+  const [dropSide, setDropSide] = useState<'left' | 'right' | null>(null);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
 
   // Keep tabs synced with current entity page if owner is browsing
   useEffect(() => {
@@ -129,17 +136,116 @@ export default function MultiArticleWorkspace({
     }
   }
 
+  function handleDropTab(targetIdx: number, side: 'left' | 'right') {
+    if (draggedTabIndex === null || draggedTabIndex === targetIdx) {
+      setDraggedTabIndex(null);
+      setDropTabIndex(null);
+      setDropSide(null);
+      return;
+    }
+    const nextTabs = [...tabs];
+    const [movedTab] = nextTabs.splice(draggedTabIndex, 1);
+    let insertIdx = targetIdx;
+    if (draggedTabIndex < targetIdx) {
+      insertIdx = side === 'left' ? targetIdx - 1 : targetIdx;
+    } else {
+      insertIdx = side === 'left' ? targetIdx : targetIdx + 1;
+    }
+    insertIdx = Math.max(0, Math.min(nextTabs.length, insertIdx));
+    nextTabs.splice(insertIdx, 0, movedTab);
+    reorderTabs(nextTabs);
+    setDraggedTabIndex(null);
+    setDropTabIndex(null);
+    setDropSide(null);
+  }
+
+  function handleTouchStart(e: React.TouchEvent, idx: number) {
+    touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    setDraggedTabIndex(idx);
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (draggedTabIndex === null) return;
+    const touch = e.touches[0];
+    const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+    const tabElem = elem?.closest('.workspace-tab') as HTMLElement | null;
+    if (tabElem && tabElem.dataset.tabIndex) {
+      const idx = parseInt(tabElem.dataset.tabIndex, 10);
+      const rect = tabElem.getBoundingClientRect();
+      const mid = rect.left + rect.width / 2;
+      setDropTabIndex(idx);
+      setDropSide(touch.clientX < mid ? 'left' : 'right');
+    }
+  }
+
+  function handleTouchEnd() {
+    if (draggedTabIndex !== null && dropTabIndex !== null && dropSide !== null) {
+      handleDropTab(dropTabIndex, dropSide);
+    }
+    setDraggedTabIndex(null);
+    setDropTabIndex(null);
+    setDropSide(null);
+    touchStartPos.current = null;
+  }
+
   return (
     <div className="workspace-tab-bar" aria-label="Workspace Tabs">
-      <div className="workspace-tabs-scroll">
-        {tabs.map(tab => {
+      <div
+        className="workspace-tabs-scroll"
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {tabs.map((tab, idx) => {
           const isActive = tab.id === (currentEntityId || activeTabId);
+          const isDragging = draggedTabIndex === idx;
+          const isTarget = dropTabIndex === idx;
           return (
             <div
               key={tab.id}
-              className={`workspace-tab ${isActive ? 'active' : ''}`}
+              data-tab-index={idx}
+              className={`workspace-tab ${isActive ? 'active' : ''} ${isDragging ? 'is-dragging' : ''} ${isTarget && dropSide === 'left' ? 'drag-over-left' : ''} ${isTarget && dropSide === 'right' ? 'drag-over-right' : ''}`}
               onClick={() => handleTabClick(tab.id)}
               title={tab.title}
+              draggable
+              onDragStart={(e) => {
+                setDraggedTabIndex(idx);
+                e.dataTransfer.setData('text/plain', String(idx));
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+              onDragEnd={() => {
+                setDraggedTabIndex(null);
+                setDropTabIndex(null);
+                setDropSide(null);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (draggedTabIndex === null || draggedTabIndex === idx) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const mid = rect.left + rect.width / 2;
+                const side = e.clientX < mid ? 'left' : 'right';
+                if (dropTabIndex !== idx || dropSide !== side) {
+                  setDropTabIndex(idx);
+                  setDropSide(side);
+                }
+              }}
+              onDragLeave={(e) => {
+                const nextTarget = e.relatedTarget as Node | null;
+                if (!e.currentTarget.contains(nextTarget)) {
+                  if (dropTabIndex === idx) {
+                    setDropTabIndex(null);
+                    setDropSide(null);
+                  }
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (dropSide) {
+                  handleDropTab(idx, dropSide);
+                }
+              }}
+              onTouchStart={(e) => handleTouchStart(e, idx)}
             >
               {tab.typeId && <span className="workspace-tab-dot" />}
               <span className="workspace-tab-title truncate">{tab.title}</span>

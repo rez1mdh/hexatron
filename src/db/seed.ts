@@ -348,6 +348,7 @@ export const BUILT_IN_ENTITY_TYPES: EntityType[] = [
 ];
 
 export const BUILT_IN_RELATIONSHIP_TYPES = [
+  { id: 'rt-part-of',       name: 'part of',          reverseName: 'has part',           color: '#6366f1', isBuiltIn: true },
   { id: 'rt-parent-of',     name: 'parent of',       reverseName: 'child of',           color: '#7c6af7', isBuiltIn: true },
   { id: 'rt-member-of',     name: 'member of',        reverseName: 'has member',         color: '#4f9ef7', isBuiltIn: true },
   { id: 'rt-located-in',    name: 'located in',       reverseName: 'contains',           color: '#4ff7c8', isBuiltIn: true },

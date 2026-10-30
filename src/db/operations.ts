@@ -1083,3 +1083,180 @@ export async function importAll(jsonString: string): Promise<void> {
   }
   await restoreBackup(report.normalizedData);
 }
+
+// ── Hierarchical Parent-Child Operations ───────────────────────────────────
+
+export async function getParentEntity(entityId: string): Promise<Entity | null> {
+  const ent = await db.entities.get(entityId);
+  if (!ent || ent.deletedAt) return null;
+
+  // 1. Direct parentId
+  if (ent.parentId) {
+    const parent = await db.entities.get(ent.parentId);
+    if (parent && !parent.deletedAt) return parent;
+  }
+
+  // 2. Properties fallback (parentId, parent_id, part_of)
+  const propParent = ent.properties?.parentId || ent.properties?.parent_id || ent.properties?.part_of;
+  if (typeof propParent === 'string' && propParent) {
+    const parent = await db.entities.get(propParent);
+    if (parent && !parent.deletedAt) return parent;
+  }
+
+  // 3. rt-part-of relationship (child -> parent)
+  const partOfRel = await db.relationships
+    .where('fromEntityId').equals(entityId)
+    .filter(r => !r.deletedAt && r.typeId === 'rt-part-of')
+    .first();
+  if (partOfRel) {
+    const parent = await db.entities.get(partOfRel.toEntityId);
+    if (parent && !parent.deletedAt) return parent;
+  }
+
+  // 4. rt-parent-of relationship (parent -> child)
+  const parentOfRel = await db.relationships
+    .where('toEntityId').equals(entityId)
+    .filter(r => !r.deletedAt && r.typeId === 'rt-parent-of')
+    .first();
+  if (parentOfRel) {
+    const parent = await db.entities.get(parentOfRel.fromEntityId);
+    if (parent && !parent.deletedAt) return parent;
+  }
+
+  return null;
+}
+
+export async function getChildEntities(parentEntityId: string): Promise<Entity[]> {
+  const childMap = new Map<string, Entity>();
+
+  // 1. Directly indexed parentId
+  const directChildren = await db.entities
+    .where('parentId').equals(parentEntityId)
+    .filter(e => !e.deletedAt)
+    .toArray();
+  for (const c of directChildren) {
+    childMap.set(c.id, c);
+  }
+
+  // 2. Query rt-part-of relationships (child -> parent)
+  const partOfRels = await db.relationships
+    .where('toEntityId').equals(parentEntityId)
+    .filter(r => !r.deletedAt && r.typeId === 'rt-part-of')
+    .toArray();
+  for (const r of partOfRels) {
+    if (!childMap.has(r.fromEntityId)) {
+      const c = await db.entities.get(r.fromEntityId);
+      if (c && !c.deletedAt) childMap.set(c.id, c);
+    }
+  }
+
+  // 3. Query rt-parent-of relationships (parent -> child)
+  const parentOfRels = await db.relationships
+    .where('fromEntityId').equals(parentEntityId)
+    .filter(r => !r.deletedAt && r.typeId === 'rt-parent-of')
+    .toArray();
+  for (const r of parentOfRels) {
+    if (!childMap.has(r.toEntityId)) {
+      const c = await db.entities.get(r.toEntityId);
+      if (c && !c.deletedAt) childMap.set(c.id, c);
+    }
+  }
+
+  // Sort children by entryNumber if available, or sortOrder, or title
+  const result = Array.from(childMap.values());
+  result.sort((a, b) => {
+    if (typeof a.sortOrder === 'number' && typeof b.sortOrder === 'number') {
+      return a.sortOrder - b.sortOrder;
+    }
+    if (typeof a.entryNumber === 'number' && typeof b.entryNumber === 'number') {
+      return a.entryNumber - b.entryNumber;
+    }
+    return a.title.localeCompare(b.title);
+  });
+  return result;
+}
+
+/**
+ * Validates whether candidateDescendantId is a descendant of ancestorId.
+ * Used to strictly prevent circular folder nesting.
+ */
+export async function isDescendantOf(candidateDescendantId: string, ancestorId: string): Promise<boolean> {
+  if (candidateDescendantId === ancestorId) return true;
+  const visited = new Set<string>();
+  let currentId: string | undefined = candidateDescendantId;
+
+  while (currentId && !visited.has(currentId)) {
+    visited.add(currentId);
+    const parent = await getParentEntity(currentId);
+    if (!parent) break;
+    if (parent.id === ancestorId) return true;
+    currentId = parent.id;
+  }
+  return false;
+}
+
+export async function updateEntityParent(
+  entityId: string,
+  newParentId: string | undefined,
+  newOrder?: number
+): Promise<void> {
+  if (newParentId === entityId) {
+    throw new Error('An entity cannot be its own parent.');
+  }
+
+  if (newParentId) {
+    const wouldCreateCycle = await isDescendantOf(newParentId, entityId);
+    if (wouldCreateCycle) {
+      throw new Error('Circular hierarchy detected: cannot move an entity inside its own child or descendant.');
+    }
+  }
+
+  const existing = await db.entities.get(entityId);
+  if (!existing) throw new Error(`Entity ${entityId} not found.`);
+
+  const now = Date.now();
+  const updatedProps = {
+    ...(existing.properties || {}),
+    parentId: newParentId || null,
+    part_of: newParentId || null,
+  };
+
+  const patch: Partial<Entity> = {
+    parentId: newParentId,
+    properties: updatedProps,
+    updatedAt: now,
+  };
+  if (newOrder !== undefined) {
+    patch.sortOrder = newOrder;
+  }
+
+  await db.entities.update(entityId, patch);
+  const updatedEntity = await db.entities.get(entityId);
+  await appendChange('entities', 'update', updatedEntity, entityId);
+
+  // Update or delete rt-part-of relationship
+  const existingRels = await db.relationships
+    .where('fromEntityId').equals(entityId)
+    .filter(r => !r.deletedAt && r.typeId === 'rt-part-of')
+    .toArray();
+  for (const r of existingRels) {
+    await db.relationships.update(r.id, { deletedAt: now, updatedAt: now });
+    await appendChange('relationships', 'delete', { id: r.id });
+  }
+
+  if (newParentId) {
+    const newRel: Relationship = {
+      id: uuidv4(),
+      fromEntityId: entityId,
+      toEntityId: newParentId,
+      typeId: 'rt-part-of',
+      worldId: existing.worldId,
+      canonStatus: existing.canonStatus || 'canon',
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.relationships.add(newRel);
+    await appendChange('relationships', 'create', newRel);
+  }
+}
+

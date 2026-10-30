@@ -10,9 +10,11 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import {
-  getUniverses, getWorlds, getEntities, getRelationships, getEntityTypes,
+  getUniverses, getWorlds, getEntities, getRelationships, getEntityTypes, updateEntityParent,
   type Universe, type World, type Entity, type Relationship, type EntityType
 } from '../../db/operations';
+import { getCurrentUser } from '../../services/supabase';
+import { migrateLocalDataToCloud } from '../../services/cloudSync';
 import EntityTypeIcon from './EntityTypeIcon';
 import './NestedEntityTree.css';
 
@@ -34,11 +36,25 @@ interface TreeNode {
   entryNumber?: number;
 }
 
+function isDescendantOfLocal(candidateId: string, ancestorId: string, parentMap: Map<string, string>): boolean {
+  if (candidateId === ancestorId) return true;
+  let cur: string | undefined = candidateId;
+  const visited = new Set<string>();
+  while (cur && !visited.has(cur)) {
+    visited.add(cur);
+    const p = parentMap.get(cur);
+    if (!p) break;
+    if (p === ancestorId) return true;
+    cur = p;
+  }
+  return false;
+}
+
 export default function NestedEntityTree({ onSelectEntity }: Props) {
   const navigate = useNavigate();
   const {
     universeVersion, currentWorldId, currentEntityId,
-    setCurrentWorld, setCurrentEntity, setLeftSidebarOpen
+    setCurrentWorld, setCurrentEntity, setLeftSidebarOpen, isOwner
   } = useAppStore();
 
   const [universes, setUniverses] = useState<Universe[]>([]);
@@ -48,11 +64,16 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
   const [entityTypes, setEntityTypes] = useState<EntityType[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Drag and Drop state (Part 5)
+  const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [dropPosition, setDropPosition] = useState<'inside' | 'above' | 'below' | null>(null);
+
   // Search filter
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mode: 'focused' (default: shows active entity and ancestor path) vs 'browse' (explores all children)
-  const [treeMode, setTreeMode] = useState<'focused' | 'browse'>('focused');
+  // Mode: 'browse' (default file explorer: explores all branches) vs 'focused' (focuses on active path)
+  const [treeMode, setTreeMode] = useState<'browse' | 'focused'>('browse');
 
   // Manually expanded parents in focused mode
   const [manuallyExpandedParents, setManuallyExpandedParents] = useState<Set<string>>(new Set());
@@ -76,37 +97,32 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
   }, []);
 
   // Fetch all hierarchy data
-  useEffect(() => {
-    let cancelled = false;
-    async function loadData() {
-      setLoading(true);
-      try {
-        const [u, w, e, r, et] = await Promise.all([
-          getUniverses(),
-          getWorlds(),
-          getEntities(),
-          getRelationships(),
-          getEntityTypes(),
-        ]);
-        if (!cancelled) {
-          const cleanU = u.filter(uni => uni.title !== 'My Universe' || w.some(world => world.universeId === uni.id));
-          setUniverses(cleanU);
-          setWorlds(w);
-          setEntities(e);
-          setRelationships(r);
-          setEntityTypes(et);
-        }
-      } catch (err) {
-        console.error('Failed to load tree data:', err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [u, w, e, r, et] = await Promise.all([
+        getUniverses(),
+        getWorlds(),
+        getEntities(),
+        getRelationships(),
+        getEntityTypes(),
+      ]);
+      const cleanU = u.filter(uni => uni.title !== 'My Universe' || w.some(world => world.universeId === uni.id));
+      setUniverses(cleanU);
+      setWorlds(w);
+      setEntities(e);
+      setRelationships(r);
+      setEntityTypes(et);
+    } catch (err) {
+      console.error('Failed to load tree data:', err);
+    } finally {
+      setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
     loadData();
-    return () => {
-      cancelled = true;
-    };
-  }, [universeVersion]);
+  }, [universeVersion, loadData]);
 
   // Index maps
   const typeMap = useMemo(() => new Map(entityTypes.map(t => [t.id, t])), [entityTypes]);
@@ -116,7 +132,28 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
     const childrenMap = new Map<string, Set<string>>();
     const eMap = new Map<string, Entity>(entities.map(e => [e.id, e]));
 
-    // Process relationships
+    // 1. Direct parentId on entity (first-class folder parent)
+    entities.forEach(ent => {
+      if (ent.parentId && eMap.has(ent.parentId) && ent.parentId !== ent.id) {
+        if (!childrenMap.has(ent.parentId)) childrenMap.set(ent.parentId, new Set());
+        childrenMap.get(ent.parentId)!.add(ent.id);
+        if (!parentMap.has(ent.id)) parentMap.set(ent.id, ent.parentId);
+      }
+    });
+
+    // 2. Process properties (parent_id, parentId, part_of)
+    entities.forEach(ent => {
+      if (ent.properties && !parentMap.has(ent.id)) {
+        const propParent = ent.properties.parent_id || ent.properties.parentId || ent.properties.part_of;
+        if (typeof propParent === 'string' && propParent && eMap.has(propParent) && propParent !== ent.id) {
+          if (!childrenMap.has(propParent)) childrenMap.set(propParent, new Set());
+          childrenMap.get(propParent)!.add(ent.id);
+          parentMap.set(ent.id, propParent);
+        }
+      }
+    });
+
+    // 3. Process relationships (rt-part-of, rt-parent-of)
     relationships.forEach(rel => {
       let parentId: string | undefined;
       let childId: string | undefined;
@@ -130,20 +167,10 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
       }
 
       if (parentId && childId && parentId !== childId && eMap.has(parentId) && eMap.has(childId)) {
-        if (!childrenMap.has(parentId)) childrenMap.set(parentId, new Set());
-        childrenMap.get(parentId)!.add(childId);
-        if (!parentMap.has(childId)) parentMap.set(childId, parentId);
-      }
-    });
-
-    // Process properties (parent_id, parentId, part_of)
-    entities.forEach(ent => {
-      if (ent.properties) {
-        const propParent = ent.properties.parent_id || ent.properties.parentId || ent.properties.part_of;
-        if (typeof propParent === 'string' && propParent && eMap.has(propParent) && propParent !== ent.id) {
-          if (!childrenMap.has(propParent)) childrenMap.set(propParent, new Set());
-          childrenMap.get(propParent)!.add(ent.id);
-          if (!parentMap.has(ent.id)) parentMap.set(ent.id, propParent);
+        if (!parentMap.has(childId)) {
+          if (!childrenMap.has(parentId)) childrenMap.set(parentId, new Set());
+          childrenMap.get(parentId)!.add(childId);
+          parentMap.set(childId, parentId);
         }
       }
     });
@@ -171,6 +198,9 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
       });
 
       childNodes.sort((a, b) => {
+        if (typeof a.entity?.sortOrder === 'number' && typeof b.entity?.sortOrder === 'number') {
+          return a.entity.sortOrder - b.entity.sortOrder;
+        }
         if (a.entryNumber !== undefined && b.entryNumber !== undefined) {
           return a.entryNumber - b.entryNumber;
         }
@@ -447,13 +477,104 @@ export default function NestedEntityTree({ onSelectEntity }: Props) {
     const isParentInFocusedPath = treeMode === 'focused' && focusedPathSet.has(node.id) && !manuallyExpandedParents.has(node.id);
     const hasHiddenSiblings = isParentInFocusedPath && totalOriginalChildren > node.children.length;
 
+    const isDraggingThis = draggedNodeId === node.id;
+    const isTargetThis = dropTargetId === node.id;
+    const canDrag = isOwner && node.type === 'entity';
+
     const indentPx = depth * 14;
 
     return (
       <div key={node.id} id={`tree-node-${node.id}`} className="net-node-item">
         <div
-          className={`net-row ${isCurrent ? 'active' : ''} ${isAncestor ? 'ancestor' : ''} ${isMatched ? 'search-matched' : ''}`}
+          className={`net-row ${isCurrent ? 'active' : ''} ${isAncestor ? 'ancestor' : ''} ${isMatched ? 'search-matched' : ''} ${isDraggingThis ? 'is-dragging' : ''} ${isTargetThis && dropPosition === 'inside' ? 'drag-target-inside' : ''} ${isTargetThis && dropPosition === 'above' ? 'drag-target-above' : ''} ${isTargetThis && dropPosition === 'below' ? 'drag-target-below' : ''}`}
           style={{ paddingLeft: `${indentPx + 4}px`, '--indent-depth': `${indentPx}px` } as React.CSSProperties}
+          draggable={canDrag}
+          onDragStart={(e) => {
+            if (!canDrag) return;
+            e.dataTransfer.setData('text/plain', node.id);
+            e.dataTransfer.effectAllowed = 'move';
+            setDraggedNodeId(node.id);
+          }}
+          onDragEnd={() => {
+            setDraggedNodeId(null);
+            setDropTargetId(null);
+            setDropPosition(null);
+          }}
+          onDragOver={(e) => {
+            if (!draggedNodeId || draggedNodeId === node.id) return;
+            if (node.type !== 'entity') return;
+            if (isDescendantOfLocal(node.id, draggedNodeId, parentOfEntity)) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'move';
+
+            const rect = e.currentTarget.getBoundingClientRect();
+            const relY = e.clientY - rect.top;
+            const height = rect.height;
+
+            let pos: 'inside' | 'above' | 'below' = 'inside';
+            if (relY < height * 0.25) {
+              pos = 'above';
+            } else if (relY > height * 0.75) {
+              pos = 'below';
+            }
+
+            if (dropTargetId !== node.id || dropPosition !== pos) {
+              setDropTargetId(node.id);
+              setDropPosition(pos);
+            }
+          }}
+          onDragLeave={(e) => {
+            const nextTarget = e.relatedTarget as Node | null;
+            if (!e.currentTarget.contains(nextTarget)) {
+              if (dropTargetId === node.id) {
+                setDropTargetId(null);
+                setDropPosition(null);
+              }
+            }
+          }}
+          onDrop={async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!draggedNodeId || draggedNodeId === node.id) return;
+            if (isDescendantOfLocal(node.id, draggedNodeId, parentOfEntity)) return;
+
+            const currentDragged = draggedNodeId;
+            const currentTarget = node.id;
+            const currentPos = dropPosition;
+
+            setDraggedNodeId(null);
+            setDropTargetId(null);
+            setDropPosition(null);
+
+            let newParentId: string | undefined;
+            let newOrder: number | undefined;
+
+            if (currentPos === 'inside') {
+              newParentId = currentTarget;
+            } else {
+              newParentId = parentOfEntity.get(currentTarget);
+              const siblings = Array.from(childrenOfEntity.get(newParentId || '') || []);
+              const targetIdx = siblings.indexOf(currentTarget);
+              newOrder = currentPos === 'above' ? targetIdx : targetIdx + 1;
+            }
+
+            try {
+              await updateEntityParent(currentDragged, newParentId, newOrder);
+              if (newParentId) {
+                setExpandedIds(prev => new Set(prev).add(newParentId!));
+              }
+              await loadData();
+
+              const user = await getCurrentUser();
+              if (user) {
+                await migrateLocalDataToCloud(user);
+              }
+            } catch (err) {
+              console.error('Failed to move entity:', err);
+            }
+          }}
         >
           {/* 1. Expand / Collapse chevron control */}
           {hasChildren || hasHiddenSiblings ? (

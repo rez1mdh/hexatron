@@ -6,6 +6,8 @@ import { db, type StatisticalDataset, type Entity, type Relationship } from './s
 import { getNextEntryNumber, extractLinkedEntityIds } from './operations';
 import { linkMentionsInArticleString } from '../utils/entityLinker';
 import { importArmaniteLore } from './importArmanites';
+import { getCurrentUser } from '../services/supabase';
+import { migrateLocalDataToCloud } from '../services/cloudSync';
 
 // Helper to create valid TipTap ProseMirror document JSON strings
 function makeDoc(sections: { heading?: string; paragraphs?: string[]; list?: string[] }[]): string {
@@ -105,6 +107,8 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
   let updatedCount = 0;
   let newCount = 0;
 
+  const entityKeyToParentKey = new Map<string, string>();
+
   function registerOrAuditEntity(
     key: string,
     title: string,
@@ -113,8 +117,12 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
     properties: Record<string, unknown> = {},
     tags: string[] = [],
     aliases: string[] = [],
-    demographicDatasets?: StatisticalDataset[]
+    demographicDatasets?: StatisticalDataset[],
+    parentKey?: string
   ): string {
+    if (parentKey) {
+      entityKeyToParentKey.set(key, parentKey);
+    }
     const existing = existingByTitle.get(title.trim().toLowerCase());
     if (existing) {
       // PRESERVE STABLE ID & PERMANENT ENTRY NUMBER
@@ -229,7 +237,10 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
       terrain: 'Alpine Ranges, River Valleys, Prairies, Coastal Fjords, Desert Mesas',
       status: 'Active',
     },
-    ['geography', 'continent', 'landmass']
+    ['geography', 'continent', 'landmass'],
+    [],
+    undefined,
+    'cosmo-planet-aurythar'
   );
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -428,7 +439,8 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
     },
     ['federation', 'superpower', 'continental', 'fsa'],
     ['FSA', 'Federated States', 'Aurythar'],
-    fsaDemographics
+    fsaDemographics,
+    'cosmo-continent-aurythar'
   );
 
   registerOrAuditEntity(
@@ -445,7 +457,10 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
       },
     ]),
     { governmentType: 'Mercantile Monarchy', capital: 'Kalthar-Shai', status: 'Existing' },
-    ['foreign', 'homeland', 'mercantile']
+    ['foreign', 'homeland', 'mercantile'],
+    [],
+    undefined,
+    'cosmo-continent-aurythar'
   );
 
   registerOrAuditEntity(
@@ -461,7 +476,10 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
       },
     ]),
     { governmentType: 'Feudal Monarchy', status: 'Existing' },
-    ['foreign', 'feudal', 'northern']
+    ['foreign', 'feudal', 'northern'],
+    [],
+    undefined,
+    'cosmo-continent-aurythar'
   );
 
   registerOrAuditEntity(
@@ -477,7 +495,10 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
       },
     ]),
     { governmentType: 'Merchant League', status: 'Existing' },
-    ['foreign', 'maritime', 'trade']
+    ['foreign', 'maritime', 'trade'],
+    [],
+    undefined,
+    'cosmo-continent-aurythar'
   );
 
   registerOrAuditEntity(
@@ -493,7 +514,10 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
       },
     ]),
     { governmentType: 'Tribal Confederacy', status: 'Existing' },
-    ['tribal', 'indigenous', 'frontier']
+    ['tribal', 'indigenous', 'frontier'],
+    [],
+    undefined,
+    'cosmo-continent-aurythar'
   );
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -625,7 +649,10 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
         climate: g.climate,
         status: 'Active',
       },
-      ['governorate', 'fsa-region', 'administrative-division']
+      ['governorate', 'fsa-region', 'administrative-division'],
+      [],
+      undefined,
+      'nation-fsa'
     );
   }
 
@@ -714,7 +741,9 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
         status: 'Active',
       },
       ['federal-state', 'fsa-member', st.govKey],
-      [st.name, `State of ${st.name}`]
+      [st.name, `State of ${st.name}`],
+      undefined,
+      st.govKey
     );
   }
 
@@ -739,6 +768,7 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
   ];
 
   for (const c of majorCities) {
+    const stateKey = `state-${c.state.replace(/^State of /, '').toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
     registerOrAuditEntity(
       c.key,
       c.name,
@@ -761,7 +791,9 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
         status: 'Active',
       },
       ['city', 'urban-center', 'settlement'],
-      c.aliases || []
+      c.aliases || [],
+      undefined,
+      stateKey
     );
   }
 
@@ -1135,7 +1167,10 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
         },
       ]),
       { headquarters: gb.hq },
-      ['governance', 'parliament', 'constitution']
+      ['governance', 'parliament', 'constitution'],
+      [],
+      undefined,
+      gb.key === 'gov-parliament' ? 'nation-fsa' : 'gov-parliament'
     );
   }
 
@@ -1181,7 +1216,10 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
         },
       ]),
       { headquarters: s.hq, strength: s.strength },
-      ['military', 'security', 'intelligence', 'fsa-defense']
+      ['military', 'security', 'intelligence', 'fsa-defense'],
+      [],
+      undefined,
+      'nation-fsa'
     );
   }
 
@@ -1212,7 +1250,10 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
         },
       ]),
       { headquarters: fb.hq },
-      ['finance', 'banking', 'economy']
+      ['finance', 'banking', 'economy'],
+      [],
+      undefined,
+      fb.key === 'bank-valmorri-state' ? 'gov-valmorri' : 'nation-fsa'
     );
   }
 
@@ -1983,6 +2024,28 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
 
   // Auto-link all entity articles across the audited world
   console.log(`[importAurythar] Resolving and auto-linking inline mentions across ${entitiesToUpsert.length} entities...`);
+  // Resolve parentId and register rt-part-of hierarchy relationships
+  for (const ent of entitiesToUpsert) {
+    let entKey: string | undefined;
+    for (const [k, id] of eMap.entries()) {
+      if (id === ent.id) { entKey = k; break; }
+    }
+    if (entKey && entityKeyToParentKey.has(entKey)) {
+      const pKey = entityKeyToParentKey.get(entKey)!;
+      const pId = eMap.get(pKey);
+      if (pId && pId !== ent.id) {
+        ent.parentId = pId;
+        ent.properties = {
+          ...(ent.properties || {}),
+          parentId: pId,
+          parent_id: pId,
+          part_of: pId,
+        };
+        addRel(entKey, pKey, 'rt-part-of', 'Administrative division / territorial component');
+      }
+    }
+  }
+
   for (const ent of entitiesToUpsert) {
     if (ent.article) {
       const linked = linkMentionsInArticleString(ent.article, entitiesToUpsert, ent.id);
@@ -2012,6 +2075,17 @@ export async function importAurytharData(forceAudit: boolean = true): Promise<Au
   // Import authoritative Armanite Family Tree & Armanites Culture
   const armaniteReport = await importArmaniteLore(worldId);
   console.log(`[importAurythar] Armanite Lore imported: ${armaniteReport.totalPeopleInExport} people, ${armaniteReport.totalParentChildRelationships} parent-child, ${armaniteReport.totalSpouseRelationships} spouses.`);
+
+  // Cloud Auto-Sync
+  try {
+    const user = await getCurrentUser();
+    if (user) {
+      console.log('[importAurythar] Owner authenticated. Syncing complete audited Aurythar universe to cloud...');
+      await migrateLocalDataToCloud(user);
+    }
+  } catch (cloudErr) {
+    console.warn('[importAurythar] Cloud sync notice:', cloudErr);
+  }
 
   console.log(`[importAurythar] Cosmological & lore audit completed successfully!`);
 

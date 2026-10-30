@@ -353,6 +353,42 @@
   text-align: center;
 }
 
+/* ── Drag & Drop Styling (Part 5) ─────────────────────────────────────── */
+.net-row.is-dragging {
+  opacity: 0.45;
+  filter: grayscale(0.5);
+}
+
+.net-row.drag-target-inside {
+  background: var(--accent-subtle) !important;
+  outline: 2px dashed var(--accent) !important;
+  outline-offset: -2px;
+}
+
+.net-row.drag-target-above::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.net-row.drag-target-below::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
 /* ── Accessibility & Reduced Motion ───────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .net-branch {

@@ -1,15 +1,15 @@
 // src/pages/EntityPage.tsx — Wikipedia-style article-first encyclopedia layout
 
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Edit2, Trash2, Image as ImageIcon, GitBranch, Compass, FileText,
   ChevronLeft, ChevronRight, ChevronDown, Film, Clock, Star, BookOpen, List,
-  Minimize2, Columns, ZoomIn, ZoomOut, Sliders
+  Minimize2, Columns, ZoomIn, ZoomOut, Sliders, Folder, Layers
 } from 'lucide-react';
 import {
   getEntity, getEntityTypes, getImages, softDeleteEntity,
-  getWorld, getEntities, formatEntryNumber
+  getWorld, getEntities, formatEntryNumber, getParentEntity, getChildEntities
 } from '../db/operations';
 import { useAppStore } from '../store/appStore';
 import { pushSoftDeleteEntityToCloud } from '../services/cloudSync';
@@ -87,6 +87,8 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
   const [isMobileTocOpen, setIsMobileTocOpen] = useState(false);
   const [readerFontSize, setReaderFontSize] = useState<'normal' | 'large' | 'huge'>('normal');
   const [isMobileActionsOpen, setIsMobileActionsOpen] = useState(false);
+  const [parentEntity, setParentEntity] = useState<Entity | null>(null);
+  const [childEntities, setChildEntities] = useState<Entity[]>([]);
 
   const isDraggingSplitRef = useRef(false);
 
@@ -171,6 +173,14 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
         // Load all entities for backlinks and cross-references
         const allEnts = await getEntities(e.worldId);
         setAvailableEntities(allEnts);
+
+        // Load hierarchical parent entity and direct child entities
+        const [parent, children] = await Promise.all([
+          getParentEntity(e.id),
+          getChildEntities(e.id),
+        ]);
+        setParentEntity(parent);
+        setChildEntities(children);
       })
       .catch(err => {
         console.error('Failed to load entity:', err);
@@ -195,6 +205,17 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
 
   const tocItems = useMemo(() => extractTocItems(entity?.article), [entity?.article]);
 
+  const childSectionTitle = useMemo(() => {
+    if (!entity) return 'Subdivisions & Child Entities';
+    if (entity.typeId === 'et-continent') return 'Sovereign Realms & Continental Nations';
+    if (entity.typeId === 'et-nation') return 'Autonomous Governorates & Territories';
+    if (entity.typeId === 'et-governorate') return 'Constituent Federal States';
+    if (entity.typeId === 'et-state') return 'Cities, Settlements & Districts';
+    if (entity.typeId === 'et-family') return 'Members, Heirs & Dynasty Branches';
+    if (entity.typeId === 'et-organization') return 'Departments, Chambers & Affiliated Bodies';
+    return 'Subdivisions & Direct Components';
+  }, [entity]);
+
   // Adjacent entities navigation
   const { prevEntity, nextEntity } = useMemo(() => {
     if (!entity || availableEntities.length <= 1) return { prevEntity: null, nextEntity: null };
@@ -212,7 +233,7 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
     };
   }, [entity, availableEntities]);
 
-  async function handleDelete() {
+  const handleDelete = useCallback(async () => {
     if (!entity) return;
     if (!confirm(`Delete "${entity.title}"?`)) return;
     const worldId = entity.worldId;
@@ -225,7 +246,19 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
     } else {
       navigate('/');
     }
-  }
+  }, [entity, currentUser, navigate]);
+
+  // Listen for desktop toolbar custom event triggers
+  useEffect(() => {
+    const handleToggleTree = () => setShowFamilyTree(prev => !prev);
+    const handleDeleteEvent = () => handleDelete();
+    window.addEventListener('hexatron-toggle-family-tree', handleToggleTree);
+    window.addEventListener('hexatron-delete-entity', handleDeleteEvent);
+    return () => {
+      window.removeEventListener('hexatron-toggle-family-tree', handleToggleTree);
+      window.removeEventListener('hexatron-delete-entity', handleDeleteEvent);
+    };
+  }, [handleDelete]);
 
   if (notFound) return <div className="page-container"><p className="text-muted">Entity not found.</p></div>;
   if (!entity) return <div className="page-loading">Loading article…</div>;
@@ -351,6 +384,20 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
             </div>
             {worldTitle && <span className="wiki-breadcrumb-item">{worldTitle}</span>}
             {worldTitle && <span className="wiki-breadcrumb-sep">/</span>}
+            {parentEntity && (
+              <>
+                <button
+                  type="button"
+                  className="wiki-breadcrumb-parent-link"
+                  onClick={() => navigate(`/entity/${parentEntity.id}`)}
+                  title={`Part of: ${parentEntity.title}`}
+                >
+                  <Folder size={11} className="mr-1 inline-block" />
+                  <span>{parentEntity.title}</span>
+                </button>
+                <span className="wiki-breadcrumb-sep">/</span>
+              </>
+            )}
             {entityType && (
               <span
                 className="wiki-breadcrumb-type"
@@ -502,7 +549,7 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
       {/* ── 2. Primary Article Layout ───────────────────────────────────── */}
       <article className="wiki-main-column">
         {/* Wikipedia Infobox floating on the top-right of the article */}
-          {((portrait && portrait.localBlob) || hasProperties) && (
+          {((portrait && portrait.localBlob) || hasProperties || parentEntity) && (
             <aside className="wiki-infobox" aria-label="Quick Facts">
               <div className="wiki-infobox-header">
                 <div className="wiki-infobox-title">{entity.title}</div>
@@ -522,10 +569,26 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
                 </div>
               )}
 
-              {hasProperties && (
+              {(hasProperties || parentEntity) && (
                 <table className="wiki-infobox-table">
                   <tbody>
-                    {Object.entries(entity.properties!).map(([k, v]) => {
+                    {parentEntity && (
+                      <tr className="wiki-infobox-parent-row">
+                        <th scope="row">Part of</th>
+                        <td>
+                          <button
+                            type="button"
+                            className="wiki-infobox-link-btn"
+                            onClick={() => navigate(`/entity/${parentEntity.id}`)}
+                            title={`Navigate to parent: ${parentEntity.title}`}
+                          >
+                            {parentEntity.title}
+                          </button>
+                        </td>
+                      </tr>
+                    )}
+                    {hasProperties && Object.entries(entity.properties!).map(([k, v]) => {
+                      if (k === 'parentId' || k === 'parent_id' || k === 'part_of') return null;
                       const label = fieldLabelMap.get(k) || k.replace(/_/g, ' ');
                       let displayVal = String(v ?? '');
                       if (Array.isArray(v)) displayVal = v.join(', ');
@@ -575,6 +638,54 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
       </article>
 
       {/* ── 3. Secondary Sections strictly AFTER the main article ────────── */}
+      {/* ── Direct Child Entities / Subdivisions (Wikipedia Style) ─────── */}
+      {childEntities.length > 0 && (
+        <section className="wiki-secondary-section wiki-children-section">
+          <h2 className="wiki-section-heading">
+            <Layers size={15} /> {childSectionTitle} ({childEntities.length})
+          </h2>
+          <div className="wiki-children-grid">
+            {childEntities.map(child => {
+              const childFormattedNum = formatEntryNumber(child.entryNumber);
+              return (
+                <div
+                  key={child.id}
+                  className="wiki-child-card"
+                  onClick={() => navigate(`/entity/${child.id}`)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter') navigate(`/entity/${child.id}`); }}
+                  title={`Read article: ${child.title}`}
+                >
+                  <div className="wiki-child-card-top">
+                    <span className="wiki-child-card-type">{child.typeId.replace('et-', '')}</span>
+                    {childFormattedNum && (
+                      <span className="wiki-child-card-num">{childFormattedNum}</span>
+                    )}
+                  </div>
+                  <h3 className="wiki-child-card-title">{child.title}</h3>
+                  {child.properties && typeof child.properties.capital === 'string' && (
+                    <div className="wiki-child-card-meta">
+                      <span className="meta-lbl">Capital:</span> {child.properties.capital}
+                    </div>
+                  )}
+                  {child.properties && typeof child.properties.population === 'string' && (
+                    <div className="wiki-child-card-meta">
+                      <span className="meta-lbl">Pop:</span> {child.properties.population}
+                    </div>
+                  )}
+                  {child.properties && typeof child.properties.rulingCluster === 'string' && (
+                    <div className="wiki-child-card-meta">
+                      <span className="meta-lbl">Ruling:</span> {child.properties.rulingCluster}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {entity.demographicDatasets && entity.demographicDatasets.length > 0 && (
         <section className="wiki-secondary-section">
           <h2 className="wiki-section-heading">Demographics &amp; Statistics</h2>

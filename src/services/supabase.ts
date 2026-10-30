@@ -60,8 +60,19 @@ export function getSupabaseClient(): SupabaseClient | null {
 export async function getCurrentUser(): Promise<User | null> {
   const client = getSupabaseClient();
   if (!client) return null;
-  const { data } = await client.auth.getUser();
-  return data?.user ?? null;
+  try {
+    // 1. Fast synchronous/cached session check from localStorage
+    const { data: sessionData } = await client.auth.getSession();
+    if (sessionData?.session?.user) {
+      return sessionData.session.user;
+    }
+    // 2. Network verification fallback
+    const { data } = await client.auth.getUser();
+    return data?.user ?? null;
+  } catch (err) {
+    console.warn('[getCurrentUser] Error checking user session:', err);
+    return null;
+  }
 }
 
 export async function getCurrentSession(): Promise<Session | null> {
@@ -115,6 +126,23 @@ export function subscribeToAuthState(callback: (user: User | null, session: Sess
 
   return { unsubscribe: () => subscription.unsubscribe() };
 }
+
+// ── Quick Permissions Fix SQL for Owner Article Editing ───────────────────
+export const SUPABASE_RLS_QUICK_FIX_SQL = `-- Run this in your Supabase SQL Editor if editing existing articles returns 0 rows affected:
+-- Grants write/update permissions on all encyclopedia tables to authenticated project owners
+drop policy if exists "Owner update entities" on hex_entities;
+create policy "Owner update entities" on hex_entities for update to authenticated using (true) with check (true);
+drop policy if exists "Owner insert entities" on hex_entities;
+create policy "Owner insert entities" on hex_entities for insert to authenticated with check (true);
+drop policy if exists "Owner update relationships" on hex_relationships;
+create policy "Owner update relationships" on hex_relationships for update to authenticated using (true) with check (true);
+drop policy if exists "Owner insert relationships" on hex_relationships;
+create policy "Owner insert relationships" on hex_relationships for insert to authenticated with check (true);
+drop policy if exists "Owner update universes" on hex_universes;
+create policy "Owner update universes" on hex_universes for update to authenticated using (true) with check (true);
+drop policy if exists "Owner update worlds" on hex_worlds;
+create policy "Owner update worlds" on hex_worlds for update to authenticated using (true) with check (true);
+`;
 
 // ── Setup SQL with RLS for User's Supabase Project ─────────────────────────
 export const SUPABASE_SETUP_SQL = `-- Run this in your Supabase SQL Editor (Dashboard -> SQL Editor -> New Query)

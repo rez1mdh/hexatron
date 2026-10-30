@@ -5,6 +5,35 @@ import { create } from 'zustand';
 
 import type { User } from '@supabase/supabase-js';
 
+// Synchronously recover cached user / owner status from localStorage on module evaluation
+function getInitialUser(): User | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('hexatron-cached-user');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.id) return parsed as User;
+    }
+    // Also check Supabase's persisted auth token keys in localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('sb-') || key.startsWith('supabase.')) && key.endsWith('-auth-token')) {
+        const item = localStorage.getItem(key);
+        if (item) {
+          const parsed = JSON.parse(item);
+          if (parsed?.user?.id) return parsed.user as User;
+        }
+      }
+    }
+  } catch {
+    // ignore parsing errors
+  }
+  return null;
+}
+
+const initialCachedUser = getInitialUser();
+const initialIsOwner = Boolean(initialCachedUser || (typeof window !== 'undefined' && localStorage.getItem('hexatron-is-owner') === 'true'));
+
 interface AppStore {
   // Current navigation context
   currentWorldId: string | null;
@@ -13,7 +42,9 @@ interface AppStore {
   // Authentication & Access Control
   currentUser: User | null;
   isOwner: boolean;
+  authLoading: boolean;
   setCurrentUser: (user: User | null) => void;
+  setAuthLoading: (loading: boolean) => void;
 
   // Sidebar state
   leftSidebarOpen: boolean;
@@ -88,9 +119,24 @@ interface AppStore {
 export const useAppStore = create<AppStore>((set) => ({
   currentWorldId: null,
   currentEntityId: null,
-  currentUser: null,
-  isOwner: false,
-  setCurrentUser: (user) => set({ currentUser: user, isOwner: Boolean(user) }),
+  currentUser: initialCachedUser,
+  isOwner: initialIsOwner,
+  authLoading: !initialIsOwner,
+  setAuthLoading: (loading) => set({ authLoading: loading }),
+  setCurrentUser: (user) => {
+    if (user) {
+      try {
+        localStorage.setItem('hexatron-cached-user', JSON.stringify({ id: user.id, email: user.email }));
+        localStorage.setItem('hexatron-is-owner', 'true');
+      } catch {}
+    } else {
+      try {
+        localStorage.removeItem('hexatron-cached-user');
+        localStorage.removeItem('hexatron-is-owner');
+      } catch {}
+    }
+    set({ currentUser: user, isOwner: Boolean(user), authLoading: false });
+  },
   leftSidebarOpen: typeof window !== 'undefined' ? window.innerWidth > 900 : true,
   rightSidebarOpen: false,
   isQuickActionsOpen: false,

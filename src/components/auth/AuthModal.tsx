@@ -10,7 +10,7 @@ import {
 import {
   getStoredCloudConfig, saveCloudConfig, isCloudConfigured,
   getCurrentUser, signInWithEmail, signUpWithEmail, signOutUser, resetPasswordForEmail,
-  subscribeToAuthState, SUPABASE_SETUP_SQL
+  subscribeToAuthState, SUPABASE_SETUP_SQL, SUPABASE_RLS_QUICK_FIX_SQL
 } from '../../services/supabase';
 import {
   getLocalDataStats, migrateLocalDataToCloud, syncFromCloudToLocal, syncPublishedDataFromCloud,
@@ -42,6 +42,7 @@ export default function AuthModal({ isOpen, onClose }: Props) {
   const [cloudUrl, setCloudUrl] = useState('');
   const [cloudKey, setCloudKey] = useState('');
   const [sqlCopied, setSqlCopied] = useState(false);
+  const [quickFixCopied, setQuickFixCopied] = useState(false);
 
   // Migration Stats
   const [localStats, setLocalStats] = useState<MigrationSummary | null>(null);
@@ -188,6 +189,12 @@ export default function AuthModal({ isOpen, onClose }: Props) {
     navigator.clipboard.writeText(SUPABASE_SETUP_SQL);
     setSqlCopied(true);
     setTimeout(() => setSqlCopied(false), 2500);
+  }
+
+  function handleCopyQuickFixSql() {
+    navigator.clipboard.writeText(SUPABASE_RLS_QUICK_FIX_SQL);
+    setQuickFixCopied(true);
+    setTimeout(() => setQuickFixCopied(false), 2500);
   }
 
   async function handleDownloadBackup() {
@@ -551,6 +558,25 @@ export default function AuthModal({ isOpen, onClose }: Props) {
                 </button>
               </div>
 
+              {/* Permissions & SQL Quick Fix */}
+              <div className="auth-sync-card">
+                <div className="auth-sync-header">
+                  <Key size={14} className="text-accent" />
+                  <span className="auth-sync-title">Database Write Permissions</span>
+                </div>
+                <p className="auth-sync-desc">
+                  If editing existing articles reports RLS restrictions or 0 rows affected, run this quick SQL update in your Supabase SQL Editor to grant authenticated write permissions.
+                </p>
+                <button
+                  type="button"
+                  className="btn-ghost small"
+                  onClick={handleCopyQuickFixSql}
+                >
+                  {quickFixCopied ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
+                  {quickFixCopied ? 'Permissions SQL Copied!' : 'Copy Permissions SQL'}
+                </button>
+              </div>
+
               <div className="auth-footer-actions">
                 <button
                   type="button"
@@ -605,7 +631,16 @@ export default function AuthModal({ isOpen, onClose }: Props) {
                     onClick={handleCopySql}
                   >
                     {sqlCopied ? <Check size={13} /> : <Copy size={13} />}
-                    {sqlCopied ? 'SQL Copied!' : 'Copy Supabase SQL Setup'}
+                    {sqlCopied ? 'Setup SQL Copied!' : 'Copy SQL Setup'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-ghost small"
+                    onClick={handleCopyQuickFixSql}
+                    title="Copy permissions update SQL for existing articles"
+                  >
+                    {quickFixCopied ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
+                    {quickFixCopied ? 'Permissions SQL Copied!' : 'Copy Permissions SQL'}
                   </button>
                   <button type="submit" className="btn-primary small">
                     Save Credentials

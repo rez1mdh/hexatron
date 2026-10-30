@@ -655,9 +655,16 @@ export async function syncArmanitesToCloud(user: User): Promise<ArmaniteCloudSyn
 
 // ── Real-Time Cloud Push Helpers for Owner Actions ─────────────────────────
 
-export async function pushEntityToCloud(entity: any, userId?: string): Promise<any> {
+export interface CloudPushResult {
+  success: boolean;
+  data?: any;
+  error?: string;
+  rlsRestricted?: boolean;
+}
+
+export async function pushEntityToCloud(entity: any, userId?: string): Promise<CloudPushResult> {
   const client = getSupabaseClient();
-  if (!client) throw new Error('Cloud backend is not configured.');
+  if (!client) return { success: false, error: 'Cloud backend is not configured.' };
 
   try {
     const record: any = {
@@ -682,8 +689,21 @@ export async function pushEntityToCloud(entity: any, userId?: string): Promise<a
       deleted_at: entity.deletedAt || null,
     };
 
+    // Only set user_id for newly inserted entities so we never conflict with existing row ownership
     if (userId) {
-      record.user_id = userId;
+      try {
+        const { data: existing } = await client
+          .from('hex_entities')
+          .select('id, user_id')
+          .eq('id', entity.id)
+          .maybeSingle();
+
+        if (!existing) {
+          record.user_id = userId;
+        }
+      } catch {
+        record.user_id = userId;
+      }
     }
 
     const { data, error } = await client
@@ -692,25 +712,29 @@ export async function pushEntityToCloud(entity: any, userId?: string): Promise<a
       .select();
 
     if (error) {
-      console.error('[pushEntityToCloud] Supabase error:', error.message);
-      throw new Error(`Database error: ${error.message}`);
+      console.warn('[pushEntityToCloud] Supabase error:', error.message);
+      return { success: false, error: error.message };
     }
 
     if (!data || data.length === 0) {
-      console.error('[pushEntityToCloud] 0 rows returned. RLS update check rejected the operation.');
-      throw new Error('Database rejected save: 0 rows affected. Please verify your owner account is signed in.');
+      console.warn('[pushEntityToCloud] 0 rows returned. RLS update check restricted the operation.');
+      return {
+        success: false,
+        rlsRestricted: true,
+        error: 'Database rejected save: 0 rows affected. RLS permissions may need updating in Supabase SQL editor.',
+      };
     }
 
-    return data[0];
+    return { success: true, data: data[0] };
   } catch (err) {
-    console.error('Failed to push entity to cloud:', err);
-    throw err;
+    console.warn('Failed to push entity to cloud:', err);
+    return { success: false, error: (err as Error).message };
   }
 }
 
-export async function pushRelationshipToCloud(rel: any, userId?: string): Promise<any> {
+export async function pushRelationshipToCloud(rel: any, userId?: string): Promise<CloudPushResult> {
   const client = getSupabaseClient();
-  if (!client) throw new Error('Cloud backend is not configured.');
+  if (!client) return { success: false, error: 'Cloud backend is not configured.' };
 
   try {
     const record: any = {
@@ -729,7 +753,19 @@ export async function pushRelationshipToCloud(rel: any, userId?: string): Promis
     };
 
     if (userId) {
-      record.user_id = userId;
+      try {
+        const { data: existing } = await client
+          .from('hex_relationships')
+          .select('id, user_id')
+          .eq('id', rel.id)
+          .maybeSingle();
+
+        if (!existing) {
+          record.user_id = userId;
+        }
+      } catch {
+        record.user_id = userId;
+      }
     }
 
     const { data, error } = await client
@@ -738,18 +774,22 @@ export async function pushRelationshipToCloud(rel: any, userId?: string): Promis
       .select();
 
     if (error) {
-      console.error('[pushRelationshipToCloud] Supabase error:', error.message);
-      throw new Error(`Database error: ${error.message}`);
+      console.warn('[pushRelationshipToCloud] Supabase error:', error.message);
+      return { success: false, error: error.message };
     }
 
     if (!data || data.length === 0) {
-      throw new Error('Database rejected relationship save (0 rows affected).');
+      return {
+        success: false,
+        rlsRestricted: true,
+        error: 'Database rejected relationship save (0 rows affected).',
+      };
     }
 
-    return data[0];
+    return { success: true, data: data[0] };
   } catch (err) {
-    console.error('Failed to push relationship to cloud:', err);
-    throw err;
+    console.warn('Failed to push relationship to cloud:', err);
+    return { success: false, error: (err as Error).message };
   }
 }
 

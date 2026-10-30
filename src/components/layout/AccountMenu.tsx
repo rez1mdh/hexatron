@@ -6,14 +6,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
 import {
   User as UserIcon, ShieldCheck, Cloud, Star, Layers, Zap,
-  LogOut, ChevronDown, X, Check, Settings, RefreshCw
+  LogOut, ChevronDown, X, Check, Settings, RefreshCw, Copy
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import {
   getCurrentUser,
   subscribeToAuthState,
   signOutUser,
-  isCloudConfigured
+  isCloudConfigured,
+  SUPABASE_RLS_QUICK_FIX_SQL
 } from '../../services/supabase';
 import { syncArmanitesToCloud, checkArmaniteCloudStatus } from '../../services/cloudSync';
 import { importArmaniteLore } from '../../db/importArmanites';
@@ -36,18 +37,21 @@ export default function AccountMenu({ onOpenAuth }: AccountMenuProps) {
   const [syncingArmanites, setSyncingArmanites] = useState(false);
   const [armaniteStatus, setArmaniteStatus] = useState<{ isFullySynced: boolean; cloudCount: number; targetCount: number } | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [sqlCopied, setSqlCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Sync auth state
   useEffect(() => {
     getCurrentUser().then(user => {
       setCurrentUser(user);
+      if (user) useAppStore.getState().setCurrentUser(user);
       if (user && isCloudConfigured()) {
         checkArmaniteCloudStatus().then(setArmaniteStatus).catch(console.warn);
       }
     });
     const sub = subscribeToAuthState(user => {
       setCurrentUser(user);
+      if (user) useAppStore.getState().setCurrentUser(user);
       if (user && isCloudConfigured()) {
         checkArmaniteCloudStatus().then(setArmaniteStatus).catch(console.warn);
       }
@@ -272,6 +276,20 @@ export default function AccountMenu({ onOpenAuth }: AccountMenuProps) {
                   <Layers size={15} />
                   <span>Manage Universes</span>
                 </button>
+
+                <button
+                  type="button"
+                  className="account-action-item"
+                  onClick={() => {
+                    navigator.clipboard.writeText(SUPABASE_RLS_QUICK_FIX_SQL);
+                    setSqlCopied(true);
+                    setTimeout(() => setSqlCopied(false), 2500);
+                  }}
+                  title="Copy SQL snippet to run in Supabase SQL editor to ensure owner editing permissions on all articles"
+                >
+                  {sqlCopied ? <Check size={15} color="#10b981" /> : <Copy size={15} />}
+                  <span>{sqlCopied ? 'Permissions SQL Copied!' : 'Copy Permissions SQL'}</span>
+                </button>
               </>
             )}
 
@@ -399,6 +417,20 @@ export default function AccountMenu({ onOpenAuth }: AccountMenuProps) {
                   >
                     <Layers size={16} />
                     <span>Manage Universes</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="account-action-item"
+                    onClick={() => {
+                      navigator.clipboard.writeText(SUPABASE_RLS_QUICK_FIX_SQL);
+                      setSqlCopied(true);
+                      setTimeout(() => setSqlCopied(false), 2500);
+                    }}
+                    title="Copy SQL snippet to run in Supabase SQL editor to ensure owner editing permissions on all articles"
+                  >
+                    {sqlCopied ? <Check size={16} color="#10b981" /> : <Copy size={16} />}
+                    <span>{sqlCopied ? 'Permissions SQL Copied!' : 'Copy Permissions SQL'}</span>
                   </button>
                 </>
               )}

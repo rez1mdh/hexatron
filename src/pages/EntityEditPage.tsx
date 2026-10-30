@@ -22,6 +22,7 @@ import RelationshipEditor, { type PendingRelationship } from '../components/ui/R
 import DemographicDatasetEditor from '../components/ui/DemographicDatasetEditor';
 import InheritanceAssistant from '../components/ui/InheritanceAssistant';
 import InsertMediaModal from '../components/ui/InsertMediaModal';
+import AuthModal from '../components/auth/AuthModal';
 import { formatDateTime, formatRelativeTime } from '../utils/dateFormatter';
 import './pages.css';
 
@@ -51,8 +52,9 @@ function extractPreviewText(articleJson?: string): string {
 export default function EntityEditPage({ mode }: Props) {
   const { entityId, worldId } = useParams<{ entityId?: string; worldId?: string }>();
   const navigate = useNavigate();
-  const { isOwner, currentUser } = useAppStore();
+  const { isOwner, currentUser, authLoading } = useAppStore();
   const isEdit = mode === 'edit' || !!entityId;
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   const [entityTypes, setEntityTypes] = useState<EntityType[]>([]);
   const [relationshipTypes, setRelationshipTypes] = useState<RelationshipType[]>([]);
@@ -350,124 +352,83 @@ export default function EntityEditPage({ mode }: Props) {
         baseUpdatedAtRef.current = confirmed.updatedAt;
       }
 
-      // 4. Synchronize to persistent cloud database
+      // 4. Save pending relationships locally in IndexedDB
+      const currentPending = pendingRelationshipsRef.current;
+      if (currentPending.length > 0) {
+        for (const p of currentPending) {
+          const createdRel = await createRelationship({
+            fromEntityId: savedId,
+            toEntityId: p.toEntityId,
+            typeId: p.typeId,
+            worldId: wId,
+            canonStatus: p.canonStatus,
+            notes: p.notes,
+          });
+          const authUser = currentUser || await getCurrentUser();
+          if (authUser && isCloudConfigured()) {
+            pushRelationshipToCloud(createdRel, authUser.id).catch(console.warn);
+          }
+        }
+        setPendingRelationships([]);
+        pendingRelationshipsRef.current = [];
+        const rels = await getRelationships(savedId);
+        setExistingRelationships(rels);
+      }
+
+      // 5. Save portrait image locally if picked
+      if (imageFile) {
+        const blob = await imageFile.arrayBuffer().then(ab => new Blob([ab], { type: imageFile.type }));
+        await addImage({
+          entityId: savedId,
+          role: 'portrait',
+          localBlob: blob,
+          mimeType: imageFile.type,
+          caption: currentForm.title,
+          sortOrder: 0,
+        });
+        setImageFile(null);
+      }
+
+      // 6. Confirmed saved locally in Dexie: clear temporary drafts and dirty flag
+      removeDraftFromStorage();
+      setIsDirty(false);
+      isDirtyRef.current = false;
+      setLastSavedTime(new Date());
+
+      // 7. Synchronize to persistent cloud database
       const cloudActive = isCloudConfigured();
       const authUser = currentUser || await getCurrentUser();
       const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
 
       if (cloudActive && authUser && isOnline && confirmed) {
         try {
-          // Push entity to cloud and verify confirmed row
-          await pushEntityToCloud(confirmed, authUser.id);
-
-          // 5. Save pending relationships to cloud
-          const currentPending = pendingRelationshipsRef.current;
-          if (currentPending.length > 0) {
-            for (const p of currentPending) {
-              const createdRel = await createRelationship({
-                fromEntityId: savedId,
-                toEntityId: p.toEntityId,
-                typeId: p.typeId,
-                worldId: wId,
-                canonStatus: p.canonStatus,
-                notes: p.notes,
-              });
-              await pushRelationshipToCloud(createdRel, authUser.id);
-            }
-            setPendingRelationships([]);
-            pendingRelationshipsRef.current = [];
-            const rels = await getRelationships(savedId);
-            setExistingRelationships(rels);
-          }
-
-          // 6. Save portrait image if picked
-          if (imageFile) {
-            const blob = await imageFile.arrayBuffer().then(ab => new Blob([ab], { type: imageFile.type }));
-            await addImage({
-              entityId: savedId,
-              role: 'portrait',
-              localBlob: blob,
-              mimeType: imageFile.type,
-              caption: currentForm.title,
-              sortOrder: 0,
-            });
-            setImageFile(null);
-          }
-
-          // 7. Clear local draft since cloud write has been verified
-          removeDraftFromStorage();
-
-          setIsDirty(false);
-          isDirtyRef.current = false;
-          setLastSavedTime(new Date());
-          setSaveStatus('saved');
-          setErrorMessage('');
-
-          if (!isAutosave) {
-            navigate(`/entity/${savedId}`);
-          } else if (!isEdit) {
-            // Seamlessly switch URL so further autosaves update this newly created entity
-            navigate(`/entity/${savedId}/edit`, { replace: true });
+          const cloudRes = await pushEntityToCloud(confirmed, authUser.id);
+          if (cloudRes.success) {
+            setSaveStatus('saved');
+            setErrorMessage('');
+          } else {
+            setSaveStatus('offline_pending');
+            setErrorMessage(
+              cloudRes.rlsRestricted
+                ? 'Saved locally! Database notice: Run the quick permissions fix in your Supabase SQL editor to sync pre-existing entries.'
+                : `Saved locally! Cloud sync pending: ${cloudRes.error || 'Sync queued'}`
+            );
           }
         } catch (cloudErr: any) {
-          console.error('[performSave] Cloud write failed:', cloudErr);
-          setSaveStatus('failed');
-          setErrorMessage(cloudErr.message || 'Cloud database write failed');
-          // PRESERVE draft in storage and keep dirty flag so work is not lost
-          persistDraftToStorage(currentForm, pendingRelationshipsRef.current);
-          if (!isAutosave) {
-            alert('Cloud save failed: ' + (cloudErr as Error).message);
-          }
-          return;
+          console.warn('[performSave] Cloud push warning:', cloudErr);
+          setSaveStatus('offline_pending');
+          setErrorMessage('Saved locally! Cloud synchronization will complete automatically.');
         }
       } else {
-        // Offline or not logged in to cloud — saved locally in IndexedDB
-        // 5. Save pending relationships locally
-        const currentPending = pendingRelationshipsRef.current;
-        if (currentPending.length > 0) {
-          for (const p of currentPending) {
-            await createRelationship({
-              fromEntityId: savedId,
-              toEntityId: p.toEntityId,
-              typeId: p.typeId,
-              worldId: wId,
-              canonStatus: p.canonStatus,
-              notes: p.notes,
-            });
-          }
-          setPendingRelationships([]);
-          pendingRelationshipsRef.current = [];
-          const rels = await getRelationships(savedId);
-          setExistingRelationships(rels);
-        }
+        setSaveStatus('saved');
+        setErrorMessage('');
+      }
 
-        if (imageFile) {
-          const blob = await imageFile.arrayBuffer().then(ab => new Blob([ab], { type: imageFile.type }));
-          await addImage({
-            entityId: savedId,
-            role: 'portrait',
-            localBlob: blob,
-            mimeType: imageFile.type,
-            caption: currentForm.title,
-            sortOrder: 0,
-          });
-          setImageFile(null);
-        }
-
-        setSaveStatus('offline_pending');
-        setErrorMessage(
-          !isOnline
-            ? 'Offline: changes saved locally in browser storage (waiting to synchronize).'
-            : 'Saved locally. Please sign in as owner to synchronize permanently with the cloud.'
-        );
-        persistDraftToStorage(currentForm, pendingRelationshipsRef.current);
-        setLastSavedTime(new Date());
-
-        if (!isAutosave) {
-          navigate(`/entity/${savedId}`);
-        } else if (!isEdit) {
-          navigate(`/entity/${savedId}/edit`, { replace: true });
-        }
+      if (!isAutosave) {
+        navigate(`/entity/${savedId}`);
+      } else if (!isEdit) {
+        // Seamlessly switch URL so further autosaves update this newly created entity
+        navigate(`/entity/${savedId}/edit`, { replace: true });
       }
     } catch (err) {
       console.error('Save failed:', err);
@@ -572,6 +533,18 @@ export default function EntityEditPage({ mode }: Props) {
     }
   }
 
+  if (authLoading) {
+    return (
+      <div className="page-container narrow" style={{ paddingTop: 80, textAlign: 'center' }}>
+        <div style={{ maxWidth: 440, margin: '0 auto', background: 'var(--surface-raised)', padding: 32, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <div className="loading-spinner" style={{ margin: '0 auto 16px' }} />
+          <h3 style={{ fontSize: 18, marginBottom: 8 }}>Verifying Owner Access…</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Connecting to authentication session…</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isOwner) {
     return (
       <div className="page-container narrow" style={{ paddingTop: 60, textAlign: 'center' }}>
@@ -580,18 +553,22 @@ export default function EntityEditPage({ mode }: Props) {
           <p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
             This encyclopedia is currently in public read-only mode. Creating or modifying articles, entities, and relationships requires signing in as the verified owner.
           </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button className="btn-primary small" onClick={() => setIsAuthOpen(true)}>
+              Sign In as Owner
+            </button>
             <button className="btn-ghost small" onClick={() => navigate(-1)}>
               Go Back
             </button>
             <button
-              className="btn-primary small"
+              className="btn-ghost small"
               onClick={() => navigate(entityId ? `/entity/${entityId}` : (worldId ? `/world/${worldId}` : '/'))}
             >
               View Published Content
             </button>
           </div>
         </div>
+        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       </div>
     );
   }
@@ -1086,6 +1063,8 @@ export default function EntityEditPage({ mode }: Props) {
           </div>
         </div>
       )}
+      {/* Authentication Modal */}
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
     </div>
   );
 }

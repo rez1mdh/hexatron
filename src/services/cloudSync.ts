@@ -516,7 +516,7 @@ export async function checkArmaniteCloudStatus(): Promise<{
     const { count, error } = await client
       .from('hex_entities')
       .select('id', { count: 'exact', head: true })
-      .contains('tags', ['armanite']);
+      .contains('tags', JSON.stringify(['armanite']));
 
     if (error) {
       console.warn('[checkArmaniteCloudStatus] query warning:', error.message);
@@ -636,7 +636,7 @@ export async function syncArmanitesToCloud(user: User): Promise<ArmaniteCloudSyn
   const { count: verifiedEntityCount } = await client
     .from('hex_entities')
     .select('id', { count: 'exact', head: true })
-    .contains('tags', ['armanite']);
+    .contains('tags', JSON.stringify(['armanite']));
 
   const { count: verifiedRelCount } = await client
     .from('hex_relationships')
@@ -689,21 +689,8 @@ export async function pushEntityToCloud(entity: any, userId?: string): Promise<C
       deleted_at: entity.deletedAt || null,
     };
 
-    // Only set user_id for newly inserted entities so we never conflict with existing row ownership
     if (userId) {
-      try {
-        const { data: existing } = await client
-          .from('hex_entities')
-          .select('id, user_id')
-          .eq('id', entity.id)
-          .maybeSingle();
-
-        if (!existing) {
-          record.user_id = userId;
-        }
-      } catch {
-        record.user_id = userId;
-      }
+      record.user_id = userId;
     }
 
     const { data, error } = await client
@@ -753,19 +740,7 @@ export async function pushRelationshipToCloud(rel: any, userId?: string): Promis
     };
 
     if (userId) {
-      try {
-        const { data: existing } = await client
-          .from('hex_relationships')
-          .select('id, user_id')
-          .eq('id', rel.id)
-          .maybeSingle();
-
-        if (!existing) {
-          record.user_id = userId;
-        }
-      } catch {
-        record.user_id = userId;
-      }
+      record.user_id = userId;
     }
 
     const { data, error } = await client

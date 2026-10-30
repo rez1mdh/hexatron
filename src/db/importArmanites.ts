@@ -4279,7 +4279,18 @@ export async function importArmaniteLore(targetWorldId?: string): Promise<Armani
       await db.entities.bulkDelete(oldNonUuids.map(e => e.id));
     }
 
-    await db.entities.bulkPut(entitiesToUpsert);
+    // Preserve any existing entities and local owner edits against factory overwrite
+    const existingMap = new Map(existingEntities.map(e => [e.id, e]));
+    const entitiesToInsertOrPreserve = entitiesToUpsert.map(newEnt => {
+      const existing = existingMap.get(newEnt.id);
+      if (existing) {
+        // If entity already exists in local database, preserve it so edits are never wiped
+        return existing;
+      }
+      return newEnt;
+    });
+
+    await db.entities.bulkPut(entitiesToInsertOrPreserve);
 
     // Clean old relations with matching IDs to avoid collision
     const relIds = relationshipsToInsert.map(r => r.id);

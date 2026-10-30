@@ -28,20 +28,12 @@ function AppInit({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
 
-    // 1. Subscribe to owner auth state changes & auto-sync Armanite lore if owner is logged in
+    // 1. Subscribe to owner auth state changes & auto-sync pending edits to cloud
     const handleAuthChange = async (user: User | null) => {
       setCurrentUser(user);
       if (user && isCloudConfigured()) {
         try {
           await syncPendingLocalEditsToCloud(user);
-          const status = await checkArmaniteCloudStatus();
-          if (!status.isFullySynced) {
-            console.log(`[AppInit] Owner ${user.email} signed in, but cloud has only ${status.cloudCount}/111 Armanite records. Running cloud sync...`);
-            await importArmaniteLore();
-            const report = await syncArmanitesToCloud(user);
-            console.log('[AppInit] Cloud sync successful:', report);
-            bumpUniverseVersion();
-          }
         } catch (err) {
           console.warn('[AppInit] Owner cloud auto-sync check error:', err);
         }

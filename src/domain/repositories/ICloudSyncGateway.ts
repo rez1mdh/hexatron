@@ -10,3 +10,4 @@ export interface ICloudSyncGateway {
   pushSoftDelete(entityId: string, userId: string): Promise<Result<{ entityId: string }>>;
   isConfigured(): boolean;
 }
+

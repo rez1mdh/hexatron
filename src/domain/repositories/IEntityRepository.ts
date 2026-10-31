@@ -17,3 +17,4 @@ export interface IEntityRepository {
   getImages(entityId: string): Promise<EntityImage[]>;
   getRelationships(entityId: string): Promise<Relationship[]>;
 }
+

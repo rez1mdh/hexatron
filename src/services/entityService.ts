@@ -33,3 +33,4 @@ export const entityService = {
     return deleteEntityUseCase.execute(entityId, userId);
   },
 };
+

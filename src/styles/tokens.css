@@ -5,11 +5,11 @@
 
 :root[data-theme="dark"], :root {
   /* ── Backgrounds ─────────────────────────────────────────── */
-  --bg-base:        #000000;
-  --bg-surface:     #161618;
-  --bg-elevated:    #1c1c1e;
-  --bg-overlay:     #2c2c2e;
-  --bg-hover:       #262629;
+  --bg-base:        #09090b;
+  --bg-surface:     #141417;
+  --bg-elevated:    #1c1c20;
+  --bg-overlay:     #27272a;
+  --bg-hover:       #222226;
 
   /* ── Brand / Accent ──────────────────────────────────────── */
   --accent:         #6366f1;
@@ -57,7 +57,7 @@
   --shadow-lg:  0 12px 32px rgba(0, 0, 0, 0.5);
 
   /* ── Typography ──────────────────────────────────────────── */
-  --font-sans:  -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", sans-serif;
+  --font-sans:  "Geist", "Satoshi", -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", sans-serif;
   --font-mono:  "SF Mono", Menlo, Consolas, Monaco, monospace;
   --font-serif: "New York", "Charter", Georgia, serif;
 

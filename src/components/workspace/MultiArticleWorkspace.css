@@ -37,31 +37,35 @@
   gap: 6px;
   padding: 4px 10px;
   height: 28px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
   font-size: 0.78rem;
+  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  max-width: 170px;
+  max-width: 180px;
   user-select: none;
-  transition: all var(--transition);
+  transition: background-color var(--transition), border-color var(--transition), color var(--transition);
   position: relative;
 }
 
 .workspace-tab:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
-  border-color: var(--border);
+  border-color: var(--border-subtle);
+}
+
+.workspace-tab:active {
+  transform: scale(0.98);
 }
 
 .workspace-tab.active {
-  background: var(--bg-surface);
-  border-color: var(--accent);
-  color: var(--accent-text);
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 .workspace-tab-dot {
@@ -69,7 +73,7 @@
   height: 6px;
   border-radius: 50%;
   background: var(--accent);
-  opacity: 0.8;
+  opacity: 0.9;
   flex-shrink: 0;
 }
 
@@ -99,12 +103,37 @@
   cursor: pointer;
   padding: 0;
   margin-left: 2px;
-  transition: all var(--transition);
+  transition: background-color var(--transition), color var(--transition);
 }
 
 .workspace-tab-close:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
+}
+
+.workspace-tab-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color var(--transition), color var(--transition), border-color var(--transition);
+  flex-shrink: 0;
+}
+
+.workspace-tab-add-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.workspace-tab-add-btn:active {
+  transform: scale(0.96);
 }
 
 .workspace-tools {
@@ -127,19 +156,23 @@
   font-size: 0.72rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: background-color var(--transition), border-color var(--transition), color var(--transition);
 }
 
 .workspace-tool-btn:hover {
   background: var(--bg-hover);
-  border-color: var(--accent-dim);
+  border-color: var(--border-strong);
   color: var(--text-primary);
 }
 
+.workspace-tool-btn:active {
+  transform: scale(0.98);
+}
+
 .workspace-tool-btn.active {
-  background: rgba(139, 92, 246, 0.15);
-  border-color: var(--accent);
-  color: var(--accent-text);
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
 }
 
 @media (max-width: 600px) {

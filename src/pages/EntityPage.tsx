@@ -298,7 +298,7 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
     );
   }
 
-  const hasWorkspaceTabs = isOwner && !isSecondaryPane && !readerMode && (tabs.length > 1 || splitViewEnabled);
+  const hasWorkspaceTabs = !isSecondaryPane && !readerMode && tabs.length >= 1;
 
   return (
     <div

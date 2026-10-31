@@ -53,15 +53,15 @@ export default function MultiArticleWorkspace({
   const [dropSide, setDropSide] = useState<'left' | 'right' | null>(null);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
 
-  // Keep tabs synced with current entity page if owner is browsing
+  // Keep tabs synced with current entity page
   useEffect(() => {
-    if (!currentEntityId || !currentTitle || !isOwner) return;
+    if (!currentEntityId || !currentTitle) return;
     openTab({
       id: currentEntityId,
       title: currentTitle,
       typeId: currentTypeId,
     });
-  }, [currentEntityId, currentTitle, currentTypeId, isOwner, openTab]);
+  }, [currentEntityId, currentTitle, currentTypeId, openTab]);
 
   // Load candidates for secondary split pane
   useEffect(() => {
@@ -98,8 +98,8 @@ export default function MultiArticleWorkspace({
     };
   }, [setSplitRatio]);
 
-  // If user is not the owner or has no tabs, render nothing
-  if (!isOwner || tabs.length <= 1 && !splitViewEnabled) {
+  // If no tabs are open, render nothing
+  if (tabs.length === 0) {
     return null;
   }
 
@@ -262,6 +262,17 @@ export default function MultiArticleWorkspace({
             </div>
           );
         })}
+
+        {/* Add Tab Button */}
+        <button
+          type="button"
+          className="workspace-tab-add-btn"
+          onClick={() => window.dispatchEvent(new CustomEvent('hexatron-open-palette'))}
+          title="Open article in tab (Ctrl+K)"
+          aria-label="Add tab"
+        >
+          <Plus size={13} />
+        </button>
       </div>
 
       <div className="workspace-tools">

@@ -25,19 +25,16 @@
 }
 
 .page-hero-title {
-  font-size: 3rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  background: linear-gradient(135deg, var(--accent-text) 0%, var(--text-primary) 60%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 2.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
   margin-bottom: 0.4rem;
 }
 
 .page-hero-sub {
   color: var(--text-secondary);
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 /* ── Sections ──────────────────────────────────────────────────────────── */
@@ -54,12 +51,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 1rem;
+  font-size: 0.88rem;
   font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-size: 0.8rem;
+  color: var(--text-primary);
 }
 
 /* ── World cards grid ──────────────────────────────────────────────────── */
@@ -74,9 +68,9 @@
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 1.2rem;
+  padding: 1.25rem;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: border-color var(--transition), background-color var(--transition);
   text-align: left;
   overflow: hidden;
   min-height: 110px;
@@ -85,16 +79,15 @@
 }
 
 .world-card:hover {
-  border-color: var(--world-color, var(--accent));
-  box-shadow: 0 0 0 1px var(--world-color, var(--accent)), var(--shadow-md);
-  transform: translateY(-1px);
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
 }
 
 .world-card-accent {
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--world-color, var(--accent));
+  height: 2px;
+  background: var(--world-color, var(--border-strong));
 }
 
 .world-card-body { flex: 1; display: flex; flex-direction: column; gap: 4px; padding-top: 8px; }

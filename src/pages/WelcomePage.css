@@ -59,13 +59,12 @@
   align-items: center;
   gap: 5px;
   padding: 3px 8px;
-  border-radius: 9999px;
-  background: var(--accent-dim);
-  color: var(--accent-text);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
   font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-weight: 500;
 }
 
 .welcome-save-pill.success {
@@ -136,9 +135,7 @@
 }
 
 .welcome-btn-primary:hover {
-  background: var(--accent-hover, #0284c7);
-  box-shadow: 0 4px 12px var(--accent-glow);
-  transform: translateY(-1px);
+  background: var(--accent-hover, #4f46e5);
 }
 
 .welcome-btn-primary.small {

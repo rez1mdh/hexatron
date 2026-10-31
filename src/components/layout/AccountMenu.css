@@ -50,7 +50,6 @@
 
 .account-status-pip.online {
   background: #22c55e;
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.45);
 }
 
 /* Desktop Username label */
@@ -66,16 +65,14 @@
 .account-trigger-owner-badge {
   display: inline-flex;
   align-items: center;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: 0.7rem;
+  font-weight: 500;
   padding: 1px 6px;
   border-radius: 3px;
-  background: rgba(139, 92, 246, 0.18);
-  color: var(--accent-text);
-  border: 1px solid rgba(139, 92, 246, 0.35);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
   line-height: 1.2;
-  text-transform: uppercase;
 }
 
 .account-trigger-chevron {
@@ -94,25 +91,25 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(99, 102, 241, 0.45));
-  border: 1.5px solid var(--accent);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
   color: var(--text-primary);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease;
   user-select: none;
   flex-shrink: 0;
 }
 
 .account-trigger-mobile-avatar:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
 .account-trigger-mobile-avatar:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--border-strong);
   outline-offset: 2px;
 }
 
@@ -125,7 +122,6 @@
   border-radius: 50%;
   background: #22c55e;
   border: 2px solid var(--bg-surface);
-  box-shadow: 0 0 4px rgba(34, 197, 94, 0.4);
 }
 
 .account-trigger-mobile-guest {
@@ -242,11 +238,9 @@
 }
 
 .account-card-title {
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .account-card-close-btn {
@@ -280,14 +274,14 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), #4f46e5);
-  color: #fff;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 1.1rem;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
   flex-shrink: 0;
 }
 

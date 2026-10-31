@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   HardDrive, Trash2, X, AlertCircle, Film, Image as ImageIcon,
-  ExternalLink, CheckCircle, RefreshCw
+  ExternalLink, CheckCircle, RefreshCw, Info
 } from 'lucide-react';
 import type { EntityImage } from '../../db/schema';
 import {
@@ -125,8 +125,9 @@ export default function OfflineMediaModal({ isOpen, onClose }: Props) {
             )}
           </div>
 
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-            💡 Offline media is stored locally in this browser's IndexedDB. Downloaded files remain accessible when disconnected from the internet. Removing an offline copy does not delete the original from cloud storage.
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4, display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+            <Info size={13} className="text-secondary" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <span>Offline media is stored locally in this browser's IndexedDB. Downloaded files remain accessible when disconnected from the internet. Removing an offline copy does not delete the original from cloud storage.</span>
           </p>
 
           {/* Media List */}

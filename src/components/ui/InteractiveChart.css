@@ -116,13 +116,13 @@
 .donut-center-title {
   font-size: 0.72rem;
   color: var(--text-muted);
-  text-transform: uppercase;
 }
 
 .donut-center-val {
   font-size: 1.15rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Bar chart */
@@ -184,12 +184,14 @@
 }
 
 .bar-val-pct {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
 .bar-val-cnt {
   font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .linked-indicator {

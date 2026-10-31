@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Link2, Calendar, MapPin, AlertTriangle } from 'lucide-react';
 import type { StatisticalDataset, DemographicEntry, Entity } from '../../db/schema';
 import './InteractiveChart.css';
 
@@ -158,7 +159,11 @@ export default function InteractiveChart({
             >
               <div className="bar-label-col truncate">
                 <span className="bar-category-name">{entry.name}</span>
-                {entry.entityId && <span className="linked-indicator" title="Connected entity article">🔗</span>}
+                {entry.entityId && (
+                  <span className="linked-indicator" title="Connected entity article">
+                    <Link2 size={11} className="inline-block text-secondary" />
+                  </span>
+                )}
               </div>
 
               <div className="bar-track-col">
@@ -198,8 +203,18 @@ export default function InteractiveChart({
         <div>
           <h4 className="chart-title">{dataset.title}</h4>
           <div className="chart-meta-row">
-            {dataset.year && <span className="chart-meta-chip">📅 {dataset.year}</span>}
-            {dataset.geographicalScope && <span className="chart-meta-chip">📍 {dataset.geographicalScope}</span>}
+            {dataset.year && (
+              <span className="chart-meta-chip">
+                <Calendar size={11} className="inline-block mr-1 text-secondary" />
+                <span className="tabular-nums">{dataset.year}</span>
+              </span>
+            )}
+            {dataset.geographicalScope && (
+              <span className="chart-meta-chip">
+                <MapPin size={11} className="inline-block mr-1 text-secondary" />
+                <span>{dataset.geographicalScope}</span>
+              </span>
+            )}
             {dataset.confidence && (
               <span className={`chart-meta-chip confidence-${dataset.confidence}`}>
                 {dataset.confidence}
@@ -210,7 +225,8 @@ export default function InteractiveChart({
 
         {dataset.isMutuallyExclusive && totalPercentage > 0 && Math.abs(totalPercentage - 100) > 0.05 && (
           <div className="chart-warning-badge" title="Percentages do not equal 100%">
-            ⚠️ Total: {totalPercentage.toFixed(1)}% (Incomplete or estimated)
+            <AlertTriangle size={11} className="inline-block mr-1 text-warning" />
+            <span>Total: {totalPercentage.toFixed(1)}% (Incomplete or estimated)</span>
           </div>
         )}
       </div>

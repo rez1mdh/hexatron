@@ -1012,7 +1012,7 @@ export default function ArticleEditor({
             if (data.mediaType === 'image') {
               editor?.chain().focus().setImage({ src, alt: data.caption || data.title }).run();
             } else {
-              editor?.chain().focus().insertContent(`<p><a href="${src}" target="_blank" rel="noopener noreferrer">🎬 Video: ${data.title || data.caption || src}</a></p>`).run();
+              editor?.chain().focus().insertContent(`<p><a href="${src}" target="_blank" rel="noopener noreferrer">Video: ${data.title || data.caption || src}</a></p>`).run();
             }
           }
           if (currentEntityId) {

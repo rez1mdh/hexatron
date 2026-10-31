@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Globe, Plus, BookOpen, Clock, Sliders, Trash2,
-  Compass, ArrowLeft, Layers, ShieldCheck, ArrowRight
+  Compass, ArrowLeft, Layers, ShieldCheck, ArrowRight, Eye
 } from 'lucide-react';
 import {
   getUniverses, getWorlds, getEntity, getUniverseStats, getWorldStats,
@@ -113,14 +113,17 @@ export default function HomePage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: 'rgba(139, 92, 246, 0.15)',
-          border: '1px solid var(--accent)',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border)',
           padding: '8px 16px',
           borderRadius: 'var(--radius-md)',
           marginBottom: '1.5rem',
           fontSize: '0.85rem'
         }}>
-          <span>👁️ Previewing public visitor landing experience. Private dashboard and draft data are hidden.</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+            <Eye size={14} className="text-secondary" />
+            <span>Previewing public visitor landing experience. Private dashboard and draft data are hidden.</span>
+          </span>
           <button className="btn-primary tiny" onClick={() => setPreviewPublicView(false)}>
             Back to Dashboard
           </button>

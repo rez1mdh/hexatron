@@ -12,6 +12,7 @@ import {
   getWorld, getEntities, formatEntryNumber, getParentEntity, getChildEntities
 } from '../db/operations';
 import { useAppStore } from '../store/appStore';
+import { entityService } from '../services/entityService';
 import { pushSoftDeleteEntityToCloud } from '../services/cloudSync';
 import type { Entity, EntityType, EntityImage } from '../db/schema';
 import ArticleEditor from '../editor/ArticleEditor';
@@ -154,41 +155,32 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
       pushRecentEntity(entityId);
     }
 
-    getEntity(entityId)
-      .then(async e => {
-        if (!e || e.deletedAt) { setNotFound(true); return; }
+    entityService.getEntity(entityId)
+      .then(async res => {
+        if (!res.success) {
+          setNotFound(true);
+          return;
+        }
+
+        const { entity: e, type: t, world: w, parent, children, images: imgs } = res.data;
         setEntity(e);
         if (e.typeId === 'et-family') {
           setShowFamilyTree(true);
         }
-
-        // Load type
-        const types = await getEntityTypes();
-        const t = types.find(x => x.id === e.typeId) ?? null;
         setEntityType(t);
-
-        // Load world title
-        const w = await getWorld(e.worldId);
         setWorldTitle(w?.title ?? '');
+        setParentEntity(parent);
+        setChildEntities(children);
+        setImages(imgs);
 
         // Load all entities for backlinks and cross-references
         const allEnts = await getEntities(e.worldId);
         setAvailableEntities(allEnts);
-
-        // Load hierarchical parent entity and direct child entities
-        const [parent, children] = await Promise.all([
-          getParentEntity(e.id),
-          getChildEntities(e.id),
-        ]);
-        setParentEntity(parent);
-        setChildEntities(children);
       })
       .catch(err => {
-        console.error('Failed to load entity:', err);
+        console.error('Failed to load entity via entityService:', err);
         setNotFound(true);
       });
-
-    getImages(entityId).then(setImages).catch(() => {});
   }, [entityId, setCurrentEntity, pushRecentEntity]);
 
   // Assign IDs to rendered headings in ArticleEditor for smooth TOC jump links
@@ -238,14 +230,15 @@ export default function EntityPage({ overrideEntityId, isSecondaryPane = false }
     if (!entity) return;
     if (!confirm(`Delete "${entity.title}"?`)) return;
     const worldId = entity.worldId;
-    await softDeleteEntity(entity.id);
-    if (currentUser) {
-      await pushSoftDeleteEntityToCloud(entity.id, currentUser.id);
-    }
-    if (worldId) {
-      navigate(`/world/${worldId}`);
+    const res = await entityService.deleteEntity(entity.id, currentUser?.id);
+    if (res.success) {
+      if (worldId) {
+        navigate(`/world/${worldId}`);
+      } else {
+        navigate('/');
+      }
     } else {
-      navigate('/');
+      alert(`Failed to delete entity: ${res.error.message}`);
     }
   }, [entity, currentUser, navigate]);
 

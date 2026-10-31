@@ -11,6 +11,7 @@ import {
   addImage, getImages, deleteImage, updateImage, getEntities, getRelationships, createRelationship, getRelationshipTypes, getWorlds, softDeleteEntity
 } from '../db/operations';
 import { useAppStore } from '../store/appStore';
+import { entityService } from '../services/entityService';
 import { pushEntityToCloud, pushRelationshipToCloud, pushSoftDeleteEntityToCloud } from '../services/cloudSync';
 import { getCurrentUser, isCloudConfigured } from '../services/supabase';
 import type { Entity, EntityType, CanonStatus, Relationship, RelationshipType, StatisticalDataset, EntityImage, ImageRole } from '../db/schema';
@@ -324,35 +325,37 @@ export default function EntityEditPage({ mode }: Props) {
       }
       if (!wId) throw new Error('No world exists yet. Please create a world first.');
 
-      const data = {
-        worldId: wId,
-        typeId: currentForm.typeId,
-        title: currentForm.title.trim(),
-        aliases: currentForm.aliases,
-        tags: currentForm.tags,
-        canonStatus: currentForm.canonStatus,
-        article: currentForm.article || undefined,
-        properties: currentForm.properties,
-        demographicDatasets: currentForm.demographicDatasets.length > 0 ? currentForm.demographicDatasets : undefined,
-      };
+      const authUser = currentUser || await getCurrentUser();
 
-      let savedId: string;
-      if (isEdit && currentEntityId) {
-        await updateEntity(currentEntityId, data);
-        savedId = currentEntityId;
-      } else {
-        const created = await createEntity(data);
-        savedId = created.id;
+      // 3. Delegate mutation to SaveEntityUseCase via entityService
+      const saveResult = await entityService.saveEntity({
+        input: {
+          id: isEdit && currentEntityId ? currentEntityId : undefined,
+          worldId: wId,
+          typeId: currentForm.typeId,
+          title: currentForm.title.trim(),
+          aliases: currentForm.aliases,
+          tags: currentForm.tags,
+          canonStatus: currentForm.canonStatus,
+          article: currentForm.article || undefined,
+          properties: currentForm.properties,
+          demographicDatasets: currentForm.demographicDatasets.length > 0 ? currentForm.demographicDatasets : undefined,
+        },
+        userId: authUser?.id,
+      });
+
+      if (!saveResult.success) {
+        throw new Error(saveResult.error.message);
       }
 
-      // 3. Update baseUpdatedAt from confirmed database state
-      const confirmed = await getEntity(savedId);
-      if (confirmed) {
-        setBaseUpdatedAt(confirmed.updatedAt);
-        baseUpdatedAtRef.current = confirmed.updatedAt;
-      }
+      const savedEntity = saveResult.data.entity;
+      const savedId = savedEntity.id;
 
-      // 4. Save pending relationships locally in IndexedDB
+      // 4. Update baseUpdatedAt from confirmed database state
+      setBaseUpdatedAt(savedEntity.updatedAt);
+      baseUpdatedAtRef.current = savedEntity.updatedAt;
+
+      // 5. Save pending relationships locally in IndexedDB & sync
       const currentPending = pendingRelationshipsRef.current;
       if (currentPending.length > 0) {
         for (const p of currentPending) {
@@ -364,7 +367,6 @@ export default function EntityEditPage({ mode }: Props) {
             canonStatus: p.canonStatus,
             notes: p.notes,
           });
-          const authUser = currentUser || await getCurrentUser();
           if (authUser && isCloudConfigured()) {
             pushRelationshipToCloud(createdRel, authUser.id).catch(console.warn);
           }
@@ -375,7 +377,7 @@ export default function EntityEditPage({ mode }: Props) {
         setExistingRelationships(rels);
       }
 
-      // 5. Save portrait image locally if picked
+      // 6. Save portrait image locally if picked
       if (imageFile) {
         const blob = await imageFile.arrayBuffer().then(ab => new Blob([ab], { type: imageFile.type }));
         await addImage({
@@ -389,36 +391,20 @@ export default function EntityEditPage({ mode }: Props) {
         setImageFile(null);
       }
 
-      // 6. Confirmed saved locally in Dexie: clear temporary drafts and dirty flag
+      // 7. Confirmed saved locally in Dexie: clear temporary drafts and dirty flag
       removeDraftFromStorage();
       setIsDirty(false);
       isDirtyRef.current = false;
       setLastSavedTime(new Date());
 
-      // 7. Synchronize to persistent cloud database
-      const cloudActive = isCloudConfigured();
-      const authUser = currentUser || await getCurrentUser();
-      const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
-
-      if (cloudActive && authUser && isOnline && confirmed) {
-        try {
-          const cloudRes = await pushEntityToCloud(confirmed, authUser.id);
-          if (cloudRes.success) {
-            setSaveStatus('saved');
-            setErrorMessage('');
-          } else {
-            setSaveStatus('offline_pending');
-            setErrorMessage(
-              cloudRes.rlsRestricted
-                ? 'Saved locally! Database notice: Run the quick permissions fix in your Supabase SQL editor to sync pre-existing entries.'
-                : `Saved locally! Cloud sync pending: ${cloudRes.error || 'Sync queued'}`
-            );
-          }
-        } catch (cloudErr: any) {
-          console.warn('[performSave] Cloud push warning:', cloudErr);
-          setSaveStatus('offline_pending');
-          setErrorMessage('Saved locally! Cloud synchronization will complete automatically.');
-        }
+      // 8. Update save status according to UseCase outcome
+      if (saveResult.data.cloudSyncPending) {
+        setSaveStatus('offline_pending');
+        setErrorMessage(
+          saveResult.data.cloudSyncMessage?.includes('42501') || saveResult.data.cloudSyncMessage?.includes('permission')
+            ? 'Saved locally. Cloud sync pending owner permissions.'
+            : 'Saved locally. Cloud synchronization queued.'
+        );
       } else {
         setSaveStatus('saved');
         setErrorMessage('');
@@ -635,12 +621,12 @@ export default function EntityEditPage({ mode }: Props) {
 
       {/* Save Failed Error Banner */}
       {saveStatus === 'failed' && errorMessage && (
-        <div className="editor-error-banner" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '6px', padding: '10px 14px', margin: '0 0 12px', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+        <div className="editor-error-banner" style={{ background: 'var(--bg-surface)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', margin: '0 0 16px', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <AlertCircle size={16} />
             <span><strong>Save Failed:</strong> {errorMessage}</span>
           </div>
-          <button type="button" className="btn-primary small" onClick={() => performSave(false)} style={{ background: '#ef4444', borderColor: '#dc2626' }}>
+          <button type="button" className="btn-primary small" onClick={() => performSave(false)}>
             <RefreshCw size={12} /> Retry Cloud Save
           </button>
         </div>
